@@ -1,6 +1,6 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
-import { userRoutes } from "./routes/users.js";
+import { userRoutes } from "./routes/users/index.js";
 
 export async function buildApp() {
   const app = Fastify({

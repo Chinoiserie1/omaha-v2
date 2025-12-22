@@ -11,9 +11,11 @@ This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native
 Each app has its own detailed CLAUDE.md file:
 
 - **`apps/web/`** - Next.js 15 web application (port 3000)
+
   - See [apps/web/CLAUDE.md](./apps/web/CLAUDE.md)
 
 - **`apps/back/`** - Fastify 5 REST API server (port 3001)
+
   - See [apps/back/CLAUDE.md](./apps/back/CLAUDE.md)
 
 - **`apps/native/`** - Expo SDK 52 React Native application
@@ -24,12 +26,15 @@ Each app has its own detailed CLAUDE.md file:
 Each package has its own detailed CLAUDE.md file:
 
 - **`packages/shared/`** - Shared types, DTOs, and Zod schemas
+
   - See [packages/shared/CLAUDE.md](./packages/shared/CLAUDE.md)
 
 - **`packages/database/`** - Prisma ORM setup, schema, and client
+
   - See [packages/database/CLAUDE.md](./packages/database/CLAUDE.md)
 
 - **`packages/config-eslint/`** - Shared ESLint 9 flat configurations
+
   - See [packages/config-eslint/CLAUDE.md](./packages/config-eslint/CLAUDE.md)
 
 - **`packages/config-typescript/`** - Shared TypeScript configurations
@@ -103,16 +108,16 @@ Environment variables are managed in `turbo.json` under `globalEnv`.
 
 ### Technology Stack
 
-| Layer | Technology | Version |
-|-------|------------|---------|
-| Monorepo | Turborepo | 2.7.x |
-| Web Frontend | Next.js | 15.x |
-| Mobile | Expo / React Native | SDK 52 |
-| Backend | Fastify | 5.x |
-| Database | PostgreSQL + Prisma | 6.x |
-| Validation | Zod | 3.x |
-| Linting | ESLint | 9.x (flat config) |
-| Language | TypeScript | 5.7.x |
+| Layer        | Technology          | Version           |
+| ------------ | ------------------- | ----------------- |
+| Monorepo     | Turborepo           | 2.7.x             |
+| Web Frontend | Next.js             | 15.x              |
+| Mobile       | Expo / React Native | SDK 52            |
+| Backend      | Fastify             | 5.x               |
+| Database     | PostgreSQL + Prisma | 6.x               |
+| Validation   | Zod                 | 3.x               |
+| Linting      | ESLint              | 9.x (flat config) |
+| Language     | TypeScript          | 5.7.x             |
 
 ### ESM Only
 
@@ -125,6 +130,7 @@ All packages use ESM (`"type": "module"`). There is no CommonJS output.
 - **Inferred Types**: DTOs are inferred from Zod schemas in `packages/shared/src/dto/`
 
 All apps import from `@repo/shared`:
+
 ```typescript
 import { createUserSchema, type CreateUserDto, type User } from "@repo/shared";
 ```
@@ -132,6 +138,7 @@ import { createUserSchema, type CreateUserDto, type User } from "@repo/shared";
 ### Database Access
 
 Prisma client is exported from `packages/database`:
+
 ```typescript
 import { prisma, type User } from "@repo/database";
 ```
@@ -139,11 +146,13 @@ import { prisma, type User } from "@repo/database";
 ## Turbo Pipeline
 
 The build order is:
+
 1. `packages/database` (Prisma generate)
 2. `packages/shared` (build with tsup)
 3. `apps/*` (build each app)
 
 Key tasks:
+
 - `build`: Depends on `^build` and `^db:generate`
 - `dev`: Persistent, depends on `^db:generate`
 - `lint`: Depends on `^build`
@@ -188,9 +197,67 @@ Key tasks:
 - No `any` types (warn)
 - Unused variables must be prefixed with `_`
 
+## File Organization (Single Responsibility)
+
+**Each file must have ONE clear responsibility.** Keep files small and focused.
+
+### Rules
+
+1. **One logic per file** - Each file handles a single concern
+2. **Max ~100 lines** - If a file exceeds 100 lines, consider splitting it
+3. **Extract early** - Don't wait for files to become large; extract when a second responsibility appears
+
+### Backend (Fastify)
+
+```
+routes/
+├── users/
+│   ├── index.ts          # Route registration only
+│   ├── handlers/
+│   │   ├── list.ts       # GET / handler
+│   │   ├── get.ts        # GET /:id handler
+│   │   ├── create.ts     # POST / handler
+│   │   ├── update.ts     # PATCH /:id handler
+│   │   └── delete.ts     # DELETE /:id handler
+│   └── validation.ts     # Shared validation helpers (if needed)
+```
+
+### Frontend (Next.js / React Native)
+
+```
+app/
+├── page.tsx              # Page container (orchestration only)
+├── components/
+│   ├── UserForm.tsx      # Form logic + inputs
+│   └── ValidationResult.tsx  # Result display
+```
+
+### Packages
+
+```
+packages/shared/src/
+├── types/
+│   ├── user.ts           # User-related types
+│   └── api.ts            # API response types
+├── schemas/
+│   ├── user.ts           # User Zod schemas
+│   └── pagination.ts     # Pagination schema
+```
+
+### What belongs in each file type
+
+| File Type | Contains | Does NOT contain |
+|-----------|----------|------------------|
+| Handler | Single endpoint logic | Multiple endpoints, route setup |
+| Component | Single UI concern | Business logic, multiple components |
+| Schema | Related validations | Unrelated schemas |
+| Types | Related interfaces | Implementation logic |
+| Index | Exports/registration | Business logic |
+
 ## Node.js Version
 
 This project requires Node.js 20 or higher. Use `.nvmrc` with nvm:
+
 ```bash
 nvm use
 ```
@@ -198,6 +265,7 @@ nvm use
 ## Workspace Dependencies
 
 Internal packages use the workspace protocol:
+
 ```json
 {
   "dependencies": {
