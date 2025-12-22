@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
 import { createUserSchema, type CreateUserDto } from "@repo/shared";
-import { formStyles } from "./styles.js";
+import { formStyles } from "../../styles/home.js";
 import { ValidationResult } from "./ValidationResult.js";
 
 export function UserForm() {

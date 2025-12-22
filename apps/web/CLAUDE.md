@@ -19,13 +19,58 @@ apps/web/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx          # Root layout
 │   ├── page.tsx            # Home page
-│   └── globals.css         # Global styles
-├── components/             # React components (when needed)
+│   ├── globals.css         # Global styles
+│   └── components/         # Components used only by root page
+├── components/             # Shared components (used across multiple pages)
 ├── next.config.ts          # Next.js configuration
 ├── tsconfig.json           # TypeScript config (extends @repo/config-typescript/nextjs.json)
 ├── eslint.config.js        # ESLint config (uses @repo/config-eslint/next)
 └── package.json
 ```
+
+## Component Organization (Colocation)
+
+**Components should be as close as possible to where they are used.**
+
+### Rules
+
+1. **Single-use components**: Place in a `components/` folder next to the page that uses them
+2. **Shared components**: Place in root `components/` folder when used by multiple pages
+
+### Examples
+
+```
+app/
+├── page.tsx                      # Uses UserForm, ValidationResult
+├── components/
+│   ├── UserForm.tsx              # Only used by root page
+│   └── ValidationResult.tsx      # Only used by root page
+├── users/
+│   ├── page.tsx                  # Uses UserCard, UserList
+│   ├── [id]/
+│   │   ├── page.tsx              # Uses UserProfile
+│   │   └── components/
+│   │       └── UserProfile.tsx   # Only used by user detail page
+│   └── components/
+│       ├── UserCard.tsx          # Only used in /users
+│       └── UserList.tsx          # Only used in /users
+└── settings/
+    ├── page.tsx
+    └── components/
+        └── SettingsForm.tsx      # Only used in /settings
+
+components/                       # ROOT: Shared across multiple pages
+├── Button.tsx                    # Used everywhere
+├── Modal.tsx                     # Used in multiple pages
+└── LoadingSpinner.tsx            # Used everywhere
+```
+
+### When to Move a Component
+
+- **Stay colocated**: Component is only used in one page/section
+- **Move to root**: Component is needed in 2+ unrelated pages
+
+Next.js App Router allows non-page files inside `app/` - only files that export a default page component become routes.
 
 ## Development
 

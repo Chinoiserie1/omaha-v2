@@ -1,5 +1,5 @@
 import { View, Text } from "react-native";
-import { resultStyles } from "./styles.js";
+import { resultStyles } from "../../styles/home.js";
 
 interface ValidationResultProps {
   result: string | null;

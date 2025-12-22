@@ -17,9 +17,13 @@ This is the **Expo SDK 52** React Native application using Expo Router for navig
 
 ```
 apps/native/
-├── app/                    # Expo Router (file-based routing)
+├── app/                    # Expo Router (file-based routing) - ROUTES ONLY
 │   ├── _layout.tsx         # Root layout with Stack navigator
 │   └── index.tsx           # Home screen
+├── components/             # All components (organized by feature)
+│   ├── home/               # Components for home screen
+│   └── shared/             # Shared components across screens
+├── styles/                 # Shared styles
 ├── assets/                 # Static assets (icons, images)
 ├── app.json                # Expo configuration
 ├── babel.config.js         # Babel configuration
@@ -28,6 +32,71 @@ apps/native/
 ├── eslint.config.js        # ESLint config (uses @repo/config-eslint/react)
 └── package.json
 ```
+
+## Component Organization (Parallel Structure)
+
+**Expo Router limitation**: All files inside `app/` are treated as routes. Components CANNOT be colocated inside the `app/` directory.
+
+**Solution**: Use a parallel folder structure in `components/` that mirrors the route structure.
+
+### Rules
+
+1. **Screen-specific components**: Place in `components/{screen-name}/` folder
+2. **Shared components**: Place in `components/shared/` folder
+3. **NEVER place components inside `app/`** - they will become routes
+
+### Examples
+
+```
+app/                              # ROUTES ONLY - no components here!
+├── _layout.tsx
+├── index.tsx                     # Home screen → uses components/home/*
+├── users/
+│   ├── _layout.tsx
+│   ├── index.tsx                 # Users list → uses components/users/*
+│   └── [id].tsx                  # User detail → uses components/users/detail/*
+└── settings.tsx                  # Settings → uses components/settings/*
+
+components/                       # ALL components live here
+├── home/                         # Components for app/index.tsx
+│   ├── UserForm.tsx
+│   └── ValidationResult.tsx
+├── users/                        # Components for app/users/*
+│   ├── UserCard.tsx
+│   ├── UserList.tsx
+│   └── detail/                   # Components for app/users/[id].tsx
+│       └── UserProfile.tsx
+├── settings/                     # Components for app/settings.tsx
+│   └── SettingsForm.tsx
+└── shared/                       # Used across multiple screens
+    ├── Button.tsx
+    ├── Modal.tsx
+    └── LoadingSpinner.tsx
+
+styles/                           # Shared StyleSheet definitions
+├── colors.ts
+├── typography.ts
+└── spacing.ts
+```
+
+### Import Pattern
+
+```typescript
+// In app/index.tsx
+import { UserForm } from "../components/home/UserForm";
+import { ValidationResult } from "../components/home/ValidationResult";
+
+// In app/users/index.tsx
+import { UserCard } from "../../components/users/UserCard";
+import { Button } from "../../components/shared/Button";
+```
+
+### When to Move a Component
+
+- **Stay in feature folder**: Component is only used by one screen
+- **Move to shared/**: Component is needed by 2+ screens
+
+See: [Expo Router Core Concepts](https://docs.expo.dev/router/basics/core-concepts/) - Non-navigation components must live outside `app/` directory.
 
 ## Development
 
@@ -53,6 +122,7 @@ pnpm --filter @repo/native lint
 ### Expo Config (app.json)
 
 Key settings:
+
 - `scheme: "autopilot"` - Deep linking scheme
 - `newArchEnabled: true` - React Native New Architecture
 - `experiments.typedRoutes: true` - Type-safe routing
@@ -60,6 +130,7 @@ Key settings:
 ### Metro Config
 
 Automatically configured for monorepo support (Expo SDK 52+):
+
 ```javascript
 const { getDefaultConfig } = require("expo/metro-config");
 const config = getDefaultConfig(__dirname);
@@ -73,6 +144,7 @@ Extends `expo/tsconfig.base` with strict settings.
 ### ESLint
 
 Uses `@repo/config-eslint/react` which includes:
+
 - React and React Hooks rules
 - TypeScript ESLint
 
@@ -109,7 +181,7 @@ if (!validation.success) {
 import { Link, router } from "expo-router";
 
 // Declarative
-<Link href="/about">Go to About</Link>
+<Link href="/about">Go to About</Link>;
 
 // Imperative
 router.push("/about");
@@ -162,6 +234,7 @@ const styles = StyleSheet.create({
 ## Assets
 
 Place in `assets/` directory:
+
 - `icon.png` - App icon (1024x1024)
 - `splash-icon.png` - Splash screen
 - `adaptive-icon.png` - Android adaptive icon
@@ -170,6 +243,7 @@ Place in `assets/` directory:
 ## Building for Production
 
 Use EAS Build:
+
 ```bash
 npx eas build --platform ios
 npx eas build --platform android
@@ -178,6 +252,7 @@ npx eas build --platform android
 ## Environment Variables
 
 Use `expo-constants` or environment config:
+
 ```typescript
 import Constants from "expo-constants";
 const apiUrl = Constants.expoConfig?.extra?.apiUrl;
