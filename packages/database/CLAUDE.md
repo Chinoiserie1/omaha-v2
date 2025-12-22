@@ -11,6 +11,16 @@ This package contains the **Prisma ORM setup** including schema definition, clie
 - **TypeScript**: 5.7.x (strict mode)
 - **Output**: ESM only
 
+## Database Environments
+
+| Environment | Provider | Setup |
+|-------------|----------|-------|
+| **Local** | Docker (PostgreSQL 16) | `pnpm db:up` starts container via docker-compose |
+| **Staging** | Railway | Managed PostgreSQL instance |
+| **Production** | Railway | Managed PostgreSQL instance |
+
+The `DATABASE_URL` environment variable determines which database is used. Each environment has its own URL configured in the respective deployment platform.
+
 ## Directory Structure
 
 ```
@@ -31,13 +41,17 @@ packages/database/
 ## Development
 
 ```bash
+# Start local database (Docker)
+pnpm db:up
+
+# Stop local database
+pnpm db:down
+
 # Generate Prisma client (required after schema changes)
 pnpm db:generate
-# Or from root:
-pnpm --filter @repo/database db:generate
 
 # Run migrations in development
-pnpm --filter @repo/database db:migrate
+pnpm db:migrate
 
 # Push schema changes (dev only, no migration)
 pnpm --filter @repo/database db:push
@@ -154,9 +168,14 @@ const products = await prisma.product.findMany();
 
 ## Environment Variables
 
-Required in root `.env`:
-```env
+Required `DATABASE_URL` in root `.env` (or deployment platform):
+
+```bash
+# Local (Docker - matches docker-compose.yml)
 DATABASE_URL="postgresql://user:password@localhost:5432/autopilot"
+
+# Staging/Production (Railway - set in Railway dashboard)
+DATABASE_URL="postgresql://postgres:xxx@xxx.railway.app:5432/railway"
 ```
 
 ## Database Operations
@@ -237,9 +256,15 @@ pnpm db:generate
 
 ### Connection Issues
 
-1. Check `DATABASE_URL` is correct
-2. Ensure PostgreSQL is running
-3. Check network/firewall settings
+**Local:**
+1. Run `pnpm db:up` to start Docker container
+2. Verify container is running: `docker ps`
+3. Check `DATABASE_URL` matches docker-compose.yml credentials
+
+**Staging/Production:**
+1. Verify Railway database is provisioned
+2. Check `DATABASE_URL` is set correctly in Railway dashboard
+3. Ensure deployment has access to Railway network
 
 ### Migration Conflicts
 
