@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
 import { createUserSchema, type CreateUserDto } from "@repo/shared";
-import { formStyles } from "../../styles/home.js";
 import { ValidationResult } from "./ValidationResult.js";
 
 export function UserForm() {
@@ -28,10 +27,10 @@ export function UserForm() {
 
   return (
     <>
-      <View style={formStyles.form}>
-        <Text style={formStyles.label}>Email</Text>
+      <View className="gap-3">
+        <Text className="text-base font-medium text-gray-900">Email</Text>
         <TextInput
-          style={formStyles.input}
+          className="border border-gray-300 rounded-lg p-3 text-base"
           value={email}
           onChangeText={setEmail}
           placeholder="user@example.com"
@@ -39,16 +38,23 @@ export function UserForm() {
           autoCapitalize="none"
         />
 
-        <Text style={formStyles.label}>Name (optional)</Text>
+        <Text className="text-base font-medium text-gray-900">
+          Name (optional)
+        </Text>
         <TextInput
-          style={formStyles.input}
+          className="border border-gray-300 rounded-lg p-3 text-base"
           value={name}
           onChangeText={setName}
           placeholder="John Doe"
         />
 
-        <Pressable style={formStyles.button} onPress={handleValidate}>
-          <Text style={formStyles.buttonText}>Validate with Zod</Text>
+        <Pressable
+          className="bg-blue-600 p-4 rounded-lg items-center active:bg-blue-700"
+          onPress={handleValidate}
+        >
+          <Text className="text-white font-semibold text-base">
+            Validate with Zod
+          </Text>
         </Pressable>
       </View>
 

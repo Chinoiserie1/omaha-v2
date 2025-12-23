@@ -1,5 +1,4 @@
 import { View, Text } from "react-native";
-import { resultStyles } from "../../styles/home.js";
 
 interface ValidationResultProps {
   result: string | null;
@@ -9,8 +8,8 @@ export function ValidationResult({ result }: ValidationResultProps) {
   if (!result) return null;
 
   return (
-    <View style={resultStyles.container}>
-      <Text style={resultStyles.text}>{result}</Text>
+    <View className="bg-gray-100 p-4 rounded-lg mt-4">
+      <Text className="font-mono text-sm text-gray-800">{result}</Text>
     </View>
   );
 }

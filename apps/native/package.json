@@ -4,22 +4,33 @@
   "private": true,
   "main": "expo-router/entry",
   "scripts": {
-    "dev": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "start": "expo start",
+    "dev": "npx expo prebuild --clean && expo run:ios",
+    "build": "npx expo prebuild",
+    "android": "expo run:android",
+    "android:release": "expo prebuild --clean && expo run:android --variant release",
+    "ios": "expo run:ios",
+    "ios:release": "expo prebuild --clean && expo run:ios --configuration Release",
     "web": "expo start --web",
-    "build": "echo 'Use EAS Build for production builds'",
+    "test": "jest --watchAll",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf .expo"
+    "clean": "rm -rf .expo ios android",
+    "eas:ios:build": "eas build -p ios --profile production",
+    "eas:ios:submit": "eas submit -p ios --profile production",
+    "eas:android:build": "eas build -p android --profile production",
+    "eas:android:submit": "eas submit -p android --profile production",
+    "eas-build-post-install": "cd ../.. && pnpm db:generate && pnpm build"
   },
   "dependencies": {
     "@repo/shared": "workspace:*",
     "expo": "~52.0.0",
     "expo-router": "~4.0.0",
     "expo-status-bar": "~2.0.0",
+    "nativewind": "^4.2.1",
     "react": "18.3.1",
     "react-native": "0.76.5",
+    "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "4.14.0",
     "react-native-screens": "~4.4.0"
   },
@@ -28,6 +39,7 @@
     "@repo/config-eslint": "workspace:*",
     "@repo/config-typescript": "workspace:*",
     "@types/react": "~18.3.12",
+    "tailwindcss": "^3.4.17",
     "typescript": "^5.7.2"
   }
 }

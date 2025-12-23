@@ -44,6 +44,36 @@ Each package has its own detailed CLAUDE.md file:
 
 This project uses **pnpm** (v9.15.0). Always use `pnpm` commands, not npm or yarn.
 
+## Command Execution Rules
+
+**IMPORTANT: All commands MUST be executed from the repository root directory.**
+
+### Why Root-Only Execution?
+
+- Turborepo orchestrates tasks across all packages with proper dependency ordering
+- Environment variables and caching are managed centrally
+- Ensures consistent behavior across all workspaces
+
+### Rules
+
+1. **Always run from root** - Never `cd` into `apps/` or `packages/` to run commands
+2. **Use root scripts only** - All scripts in root `package.json` are the single source of truth
+3. **Use filters for specific apps** - `pnpm --filter @repo/web dev` instead of `cd apps/web && pnpm dev`
+
+### Examples
+
+```bash
+# CORRECT - Run from root
+pnpm dev                          # Start all apps
+pnpm --filter @repo/native dev    # Start only native app
+pnpm lint                         # Lint all packages
+pnpm --filter @repo/back lint     # Lint only backend
+
+# WRONG - Never do this
+cd apps/web && pnpm dev           # DON'T cd into apps
+cd packages/shared && pnpm build  # DON'T cd into packages
+```
+
 ## Development Commands
 
 ### Starting Development
@@ -157,6 +187,56 @@ Key tasks:
 - `dev`: Persistent, depends on `^db:generate`
 - `lint`: Depends on `^build`
 - `typecheck`: Depends on `^build` and `^db:generate`
+
+### Adding New Scripts
+
+**When implementing a new CLI script, you MUST update both `package.json` and `turbo.json`.**
+
+#### Steps to Add a New Script
+
+1. **Add to root `package.json`** - Create the script entry
+2. **Add to `turbo.json`** - Register the task in the pipeline
+3. **Configure task properties** - Set dependencies, outputs, and caching
+
+#### turbo.json Task Configuration
+
+```json
+{
+  "tasks": {
+    "my-new-task": {
+      "dependsOn": ["^build"],      // Run after dependencies build
+      "outputs": ["dist/**"],        // Cache these outputs
+      "cache": true,                 // Enable caching (false for side-effects)
+      "persistent": false            // true for long-running tasks (dev servers)
+    }
+  }
+}
+```
+
+#### Common Task Patterns
+
+| Task Type | `cache` | `persistent` | `dependsOn` |
+|-----------|---------|--------------|-------------|
+| Build | `true` | `false` | `["^build"]` |
+| Dev server | `false` | `true` | `["^db:generate"]` |
+| Lint/Test | `true` | `false` | `["^build"]` |
+| DB commands | `false` | `false` | `[]` |
+
+#### Example: Adding a `format` Script
+
+```bash
+# 1. Add to root package.json
+"format": "turbo run format"
+
+# 2. Add to turbo.json tasks
+"format": {
+  "outputs": [],
+  "cache": false
+}
+
+# 3. Add to each app's package.json that needs formatting
+"format": "prettier --write ."
+```
 
 ## Port Assignments
 
