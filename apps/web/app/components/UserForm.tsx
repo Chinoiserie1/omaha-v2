@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { createUserSchema, type CreateUserDto } from "@repo/shared";
-import { ValidationResult } from "./ValidationResult.js";
+import { ValidationResult } from "./ValidationResult";
 
 export function UserForm() {
   const [email, setEmail] = useState("");

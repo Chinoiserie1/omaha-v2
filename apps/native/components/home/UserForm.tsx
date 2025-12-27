@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { View, Text, TextInput, Pressable } from "react-native";
 import { createUserSchema, type CreateUserDto } from "@repo/shared";
-import { ValidationResult } from "./ValidationResult.js";
+import { ValidationResult } from "./ValidationResult";
 
 export function UserForm() {
   const [email, setEmail] = useState("");

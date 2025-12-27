@@ -1,6 +1,6 @@
 import { Text, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { UserForm } from "../components/home/UserForm.js";
+import { UserForm } from "../components/home/UserForm";
 
 export default function HomeScreen() {
   return (
