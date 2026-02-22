@@ -15,9 +15,10 @@ export const completeOnboardingSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
   username: z
     .string()
-    .min(1, "Username is required")
+    .min(1, "Username cannot be empty")
     .max(15, "Username must be 15 characters or less")
-    .regex(usernameRegex, "Only letters, numbers, and underscores allowed"),
+    .regex(usernameRegex, "Only letters, numbers, and underscores allowed")
+    .optional(),
   twitterId: z.string().optional(),
   twitterUsername: z.string().optional(),
   profileImageUrl: z.string().url().optional(),

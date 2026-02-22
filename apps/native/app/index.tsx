@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
@@ -17,22 +17,24 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
 export default function LandingScreen() {
   const { isReady, user } = usePrivy();
   const router = useRouter();
+  const hasRedirected = useRef(false);
 
   const contentOpacity = useSharedValue(1);
   const contentTranslateY = useSharedValue(0);
 
   const checkOnboardingStatus = useCallback(async () => {
-    if (!user) return;
+    if (!user || hasRedirected.current) return;
 
     try {
       const privyId = user.id;
       const response = await fetch(
-        `${API_URL}/api/users?privyId=${privyId}`
+        `${API_URL}/api/onboarding/status?privyId=${encodeURIComponent(privyId)}`
       );
 
       if (response.ok) {
         const data = await response.json();
-        if (data.data?.onboardingCompleted) {
+        if (data.success && data.data?.onboardingCompleted) {
+          hasRedirected.current = true;
           router.replace("/(app)");
           return;
         }
@@ -42,12 +44,13 @@ export default function LandingScreen() {
     }
 
     // Authenticated but not onboarded
+    hasRedirected.current = true;
     router.replace("/(onboarding)/connect-twitter");
   }, [user, router]);
 
-  // Check auth state and redirect
+  // Check auth state and redirect (only once)
   useEffect(() => {
-    if (!isReady) return;
+    if (!isReady || hasRedirected.current) return;
 
     if (user) {
       checkOnboardingStatus();
@@ -55,7 +58,8 @@ export default function LandingScreen() {
   }, [isReady, user, checkOnboardingStatus]);
 
   const navigateToOnboarding = useCallback(() => {
-    router.push("/(onboarding)/connect-twitter");
+    hasRedirected.current = true;
+    router.replace("/(onboarding)/connect-twitter");
   }, [router]);
 
   const handleGetStarted = useCallback(() => {

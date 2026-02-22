@@ -10,7 +10,7 @@ type CompleteRequest = FastifyRequest<{
   Body: {
     privyId: string;
     email?: string;
-    username: string;
+    username?: string;
     twitterId?: string;
     twitterUsername?: string;
     profileImageUrl?: string;
@@ -34,16 +34,18 @@ export async function completeOnboarding(
   const { privyId, email, username, twitterId, twitterUsername, profileImageUrl, name } =
     result.data;
 
-  // Check username uniqueness
-  const existingUsername = await prisma.user.findUnique({
-    where: { username },
-  });
+  // Check username uniqueness (skip for guest users without username)
+  if (username) {
+    const existingUsername = await prisma.user.findUnique({
+      where: { username },
+    });
 
-  if (existingUsername && existingUsername.privyId !== privyId) {
-    return reply.status(409).send({
-      success: false,
-      error: "Username is already taken",
-    } satisfies ApiResponse<never>);
+    if (existingUsername && existingUsername.privyId !== privyId) {
+      return reply.status(409).send({
+        success: false,
+        error: "Username is already taken",
+      } satisfies ApiResponse<never>);
+    }
   }
 
   const user = await prisma.user.upsert({
@@ -51,7 +53,7 @@ export async function completeOnboarding(
     create: {
       privyId,
       email: email ?? null,
-      username,
+      username: username ?? null,
       name: name ?? null,
       twitterId: twitterId ?? null,
       twitterUsername: twitterUsername ?? null,
@@ -60,7 +62,7 @@ export async function completeOnboarding(
     },
     update: {
       email: email ?? null,
-      username,
+      username: username ?? null,
       name: name ?? null,
       twitterId: twitterId ?? null,
       twitterUsername: twitterUsername ?? null,

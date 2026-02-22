@@ -14,6 +14,8 @@ export async function buildApp() {
     origin: true,
   });
 
+  app.decorateRequest("privyUserId", "");
+
   app.get("/health", async () => {
     return { status: "ok", timestamp: new Date().toISOString() };
   });
