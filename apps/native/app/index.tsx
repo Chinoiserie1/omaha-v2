@@ -1,101 +1,124 @@
-import { useEffect, useRef, useState } from "react";
-import { View, ActivityIndicator, Text } from "react-native";
+import { useEffect, useCallback } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withTiming,
+  Easing,
+  runOnJS,
+} from "react-native-reanimated";
+import { AnimatedLogo } from "../components/landing/AnimatedLogo";
 
-export default function IndexScreen() {
+const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
+
+export default function LandingScreen() {
   const { isReady, user } = usePrivy();
   const router = useRouter();
-  const mountTime = useRef(Date.now());
-  const [waitSeconds, setWaitSeconds] = useState(0);
 
-  // Log on mount and track wait time
-  useEffect(() => {
-    console.log("[index] ========== INDEX SCREEN MOUNTED ==========");
-    console.log("[index] Mount time:", new Date().toISOString());
-    console.log("[index] Initial isReady:", isReady);
-    console.log("[index] Initial user:", user ? "present" : "null");
+  const contentOpacity = useSharedValue(1);
+  const contentTranslateY = useSharedValue(0);
 
-    // Update wait counter every second
-    const interval = setInterval(() => {
-      const elapsed = Math.round((Date.now() - mountTime.current) / 1000);
-      setWaitSeconds(elapsed);
+  const checkOnboardingStatus = useCallback(async () => {
+    if (!user) return;
 
-      // Log every 3 seconds
-      if (elapsed % 3 === 0) {
-        console.log(`[index] Still waiting... (${elapsed}s elapsed)`);
-        console.log("[index] Current isReady:", isReady);
-        console.log("[index] Current user:", user ? "present" : "null");
+    try {
+      const privyId = user.id;
+      const response = await fetch(
+        `${API_URL}/api/users?privyId=${privyId}`
+      );
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.data?.onboardingCompleted) {
+          router.replace("/(app)");
+          return;
+        }
       }
-    }, 1000);
-
-    return () => {
-      clearInterval(interval);
-      console.log("[index] IndexScreen unmounted");
-    };
-  }, []);
-
-  // Log state changes and navigate
-  useEffect(() => {
-    const elapsed = Date.now() - mountTime.current;
-    console.log("[index] ========== STATE CHANGE ==========");
-    console.log("[index] Time since mount:", elapsed, "ms");
-    console.log("[index] isReady changed to:", isReady);
-    console.log("[index] user:", user ? JSON.stringify({ id: user.id, email: user.email?.address }) : "null");
-
-    if (!isReady) {
-      console.log("[index] Privy not ready yet, showing loading spinner...");
-      return;
+    } catch {
+      // If backend unavailable, continue to onboarding
     }
 
-    console.log("[index] Privy is READY! Navigating...");
+    // Authenticated but not onboarded
+    router.replace("/(onboarding)/connect-twitter");
+  }, [user, router]);
+
+  // Check auth state and redirect
+  useEffect(() => {
+    if (!isReady) return;
 
     if (user) {
-      console.log("[index] User exists, navigating to /(app)");
-      router.replace("/(app)");
-    } else {
-      console.log("[index] No user, navigating to /sign-in");
-      router.replace("/sign-in");
+      checkOnboardingStatus();
     }
-  }, [isReady, user, router]);
+  }, [isReady, user, checkOnboardingStatus]);
+
+  const navigateToOnboarding = useCallback(() => {
+    router.push("/(onboarding)/connect-twitter");
+  }, [router]);
+
+  const handleGetStarted = useCallback(() => {
+    contentOpacity.value = withTiming(0, {
+      duration: 250,
+      easing: Easing.out(Easing.ease),
+    });
+    contentTranslateY.value = withTiming(
+      -20,
+      {
+        duration: 250,
+        easing: Easing.out(Easing.ease),
+      },
+      () => {
+        runOnJS(navigateToOnboarding)();
+      }
+    );
+  }, [contentOpacity, contentTranslateY, navigateToOnboarding]);
+
+  const contentStyle = useAnimatedStyle(() => ({
+    opacity: contentOpacity.value,
+    transform: [{ translateY: contentTranslateY.value }],
+  }));
+
+  // Show loading while Privy initializes
+  if (!isReady) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#18181B" />
+      </SafeAreaView>
+    );
+  }
+
+  // Show loading while checking auth state for logged-in users
+  if (user) {
+    return (
+      <SafeAreaView className="flex-1 bg-white items-center justify-center">
+        <ActivityIndicator size="large" color="#18181B" />
+        <Text className="mt-4 text-zinc-500 text-sm">Loading...</Text>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <View className="flex-1 bg-white items-center justify-center px-6">
-      <ActivityIndicator size="large" color="#18181B" />
-      <Text className="mt-4 text-gray-500 text-sm">
-        {isReady ? "Redirecting..." : "Initializing..."}
-      </Text>
+    <SafeAreaView className="flex-1 bg-white">
+      <Animated.View
+        style={contentStyle}
+        className="flex-1 justify-center items-center px-6"
+      >
+        <AnimatedLogo />
 
-      {/* Dev debug info */}
-      {__DEV__ && (
-        <View className="mt-4 p-3 bg-gray-100 rounded-lg w-full">
-          <Text className="text-gray-600 text-xs font-mono">
-            isReady: {String(isReady)}
-          </Text>
-          <Text className="text-gray-600 text-xs font-mono">
-            user: {user ? "authenticated" : "null"}
-          </Text>
-          <Text className="text-gray-600 text-xs font-mono">
-            waiting: {waitSeconds}s
-          </Text>
+        <View className="w-full mt-16">
+          <TouchableOpacity
+            className="bg-zinc-900 py-4 rounded-xl"
+            onPress={handleGetStarted}
+            activeOpacity={0.8}
+          >
+            <Text className="text-white text-center font-semibold text-lg">
+              Get Started
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
-
-      {/* Timeout warning */}
-      {waitSeconds >= 10 && !isReady && (
-        <View className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg w-full">
-          <Text className="text-amber-800 text-sm font-semibold">
-            Taking longer than expected...
-          </Text>
-          <Text className="text-amber-700 text-xs mt-1">
-            Check console logs for Privy initialization status.
-            {"\n"}Possible issues:
-            {"\n"}• Missing EXPO_PUBLIC_PRIVY_APP_ID
-            {"\n"}• Missing EXPO_PUBLIC_PRIVY_CLIENT_ID
-            {"\n"}• Network connectivity issue
-          </Text>
-        </View>
-      )}
-    </View>
+      </Animated.View>
+    </SafeAreaView>
   );
 }

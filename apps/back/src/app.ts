@@ -1,6 +1,7 @@
 import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { userRoutes } from "./routes/users/index.js";
+import { onboardingRoutes } from "./routes/onboarding/index.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -18,6 +19,7 @@ export async function buildApp() {
   });
 
   await app.register(userRoutes, { prefix: "/api/users" });
+  await app.register(onboardingRoutes, { prefix: "/api/onboarding" });
 
   return app;
 }

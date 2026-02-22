@@ -1,19 +1,32 @@
 import { z } from "zod";
 
 export const createUserSchema = z.object({
-  email: z.string().email("Invalid email address"),
+  privyId: z.string().min(1, "Privy ID is required"),
+  email: z.string().email("Invalid email address").optional(),
   name: z.string().min(1, "Name is required").optional(),
 });
 
 export const updateUserSchema = z.object({
   email: z.string().email("Invalid email address").optional(),
   name: z.string().min(1, "Name must not be empty").optional(),
+  username: z
+    .string()
+    .min(1, "Username is required")
+    .max(15, "Username must be 15 characters or less")
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed")
+    .optional(),
 });
 
 export const userResponseSchema = z.object({
   id: z.string(),
-  email: z.string().email(),
+  privyId: z.string(),
+  email: z.string().email().nullable(),
+  username: z.string().nullable(),
   name: z.string().nullable(),
+  twitterId: z.string().nullable(),
+  twitterUsername: z.string().nullable(),
+  profileImageUrl: z.string().nullable(),
+  onboardingCompleted: z.boolean(),
   createdAt: z.coerce.date(),
   updatedAt: z.coerce.date(),
 });
@@ -26,3 +39,5 @@ export const paginationSchema = z.object({
 export const idParamSchema = z.object({
   id: z.string().min(1, "ID is required"),
 });
+
+export * from "./onboarding.js";

@@ -9,6 +9,9 @@ export function WalletInfo() {
   const email = user?.linked_accounts?.find(
     (account) => account.type === "email"
   );
+  const twitter = user?.linked_accounts?.find(
+    (account) => account.type === "twitter_oauth"
+  );
 
   const handleLogout = async () => {
     await logout();
@@ -24,18 +27,27 @@ export function WalletInfo() {
 
   return (
     <View className="w-full">
-      <View className="bg-gray-50 rounded-lg p-4 mb-4">
-        <Text className="text-sm text-gray-500 mb-1">Signed in as</Text>
-        <Text className="text-base font-medium text-gray-900">
+      {twitter && "username" in twitter && (
+        <View className="bg-zinc-50 rounded-lg p-4 mb-4 border border-zinc-200">
+          <Text className="text-sm text-zinc-500 mb-1">Username</Text>
+          <Text className="text-base font-medium text-zinc-900">
+            @{String(twitter.username)}
+          </Text>
+        </View>
+      )}
+
+      <View className="bg-zinc-50 rounded-lg p-4 mb-4 border border-zinc-200">
+        <Text className="text-sm text-zinc-500 mb-1">Signed in as</Text>
+        <Text className="text-base font-medium text-zinc-900">
           {email?.address ?? "Unknown"}
         </Text>
       </View>
 
       {solanaWallet && (
-        <View className="bg-gray-100 rounded-lg p-4 mb-4 border border-gray-200">
-          <Text className="text-sm text-gray-600 mb-1">Solana Wallet</Text>
+        <View className="bg-zinc-100 rounded-lg p-4 mb-4 border border-zinc-200">
+          <Text className="text-sm text-zinc-600 mb-1">Solana Wallet</Text>
           <Text
-            className="text-sm font-mono text-gray-800"
+            className="text-sm font-mono text-zinc-800"
             numberOfLines={1}
             ellipsizeMode="middle"
           >
@@ -45,8 +57,8 @@ export function WalletInfo() {
       )}
 
       {!solanaWallet && (
-        <View className="bg-gray-100 rounded-lg p-4 mb-4 border border-gray-200">
-          <Text className="text-sm text-gray-600">
+        <View className="bg-zinc-100 rounded-lg p-4 mb-4 border border-zinc-200">
+          <Text className="text-sm text-zinc-600">
             Creating your Solana wallet...
           </Text>
           <ActivityIndicator size="small" color="#71717A" className="mt-2" />
@@ -54,10 +66,10 @@ export function WalletInfo() {
       )}
 
       <TouchableOpacity
-        className="mt-4 py-3 rounded-lg bg-gray-200"
+        className="mt-4 py-3 rounded-lg bg-zinc-200"
         onPress={handleLogout}
       >
-        <Text className="text-gray-700 text-center font-semibold text-base">
+        <Text className="text-zinc-700 text-center font-semibold text-base">
           Sign Out
         </Text>
       </TouchableOpacity>

@@ -9,11 +9,17 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id                  String   @id @default(cuid())
+  privyId             String   @unique @map("privy_id")
+  email               String?  @unique
+  username            String?  @unique
+  name                String?
+  twitterId           String?  @unique @map("twitter_id")
+  twitterUsername      String?  @map("twitter_username")
+  profileImageUrl     String?  @map("profile_image_url")
+  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
 
   @@map("users")
 }

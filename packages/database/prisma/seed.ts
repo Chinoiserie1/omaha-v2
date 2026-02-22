@@ -4,11 +4,14 @@ async function main() {
   console.info("Seeding database...");
 
   const user = await prisma.user.upsert({
-    where: { email: "demo@example.com" },
+    where: { privyId: "demo-privy-id" },
     update: {},
     create: {
+      privyId: "demo-privy-id",
       email: "demo@example.com",
       name: "Demo User",
+      username: "demo",
+      onboardingCompleted: true,
     },
   });
 

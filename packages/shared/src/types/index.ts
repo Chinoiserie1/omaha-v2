@@ -1,7 +1,13 @@
 export interface User {
   id: string;
-  email: string;
+  privyId: string;
+  email: string | null;
+  username: string | null;
   name: string | null;
+  twitterId: string | null;
+  twitterUsername: string | null;
+  profileImageUrl: string | null;
+  onboardingCompleted: boolean;
   createdAt: Date;
   updatedAt: Date;
 }

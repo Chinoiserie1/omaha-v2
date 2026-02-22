@@ -9,7 +9,7 @@ import {
 
 type UpdateRequest = FastifyRequest<{
   Params: { id: string };
-  Body: { email?: string; name?: string };
+  Body: { email?: string; name?: string; username?: string };
 }>;
 
 export async function updateUser(
@@ -45,12 +45,29 @@ export async function updateUser(
     } satisfies ApiResponse<never>);
   }
 
-  const updateData: { email?: string; name?: string | null } = {};
+  // Check username uniqueness if being updated
+  if (bodyResult.data.username !== undefined) {
+    const usernameOwner = await prisma.user.findUnique({
+      where: { username: bodyResult.data.username },
+    });
+
+    if (usernameOwner && usernameOwner.id !== paramsResult.data.id) {
+      return reply.status(409).send({
+        success: false,
+        error: "Username is already taken",
+      } satisfies ApiResponse<never>);
+    }
+  }
+
+  const updateData: { email?: string; name?: string | null; username?: string } = {};
   if (bodyResult.data.email !== undefined) {
     updateData.email = bodyResult.data.email;
   }
   if (bodyResult.data.name !== undefined) {
     updateData.name = bodyResult.data.name;
+  }
+  if (bodyResult.data.username !== undefined) {
+    updateData.username = bodyResult.data.username;
   }
 
   const user = await prisma.user.update({

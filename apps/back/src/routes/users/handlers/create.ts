@@ -3,7 +3,7 @@ import { prisma } from "@repo/database";
 import { createUserSchema, type ApiResponse, type User } from "@repo/shared";
 
 type CreateRequest = FastifyRequest<{
-  Body: { email: string; name?: string };
+  Body: { privyId: string; email?: string; name?: string };
 }>;
 
 export async function createUser(
@@ -20,19 +20,20 @@ export async function createUser(
   }
 
   const existingUser = await prisma.user.findUnique({
-    where: { email: bodyResult.data.email },
+    where: { privyId: bodyResult.data.privyId },
   });
 
   if (existingUser) {
     return reply.status(409).send({
       success: false,
-      error: "User with this email already exists",
+      error: "User with this Privy ID already exists",
     } satisfies ApiResponse<never>);
   }
 
   const user = await prisma.user.create({
     data: {
-      email: bodyResult.data.email,
+      privyId: bodyResult.data.privyId,
+      email: bodyResult.data.email ?? null,
       name: bodyResult.data.name ?? null,
     },
   });
