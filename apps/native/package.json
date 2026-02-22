@@ -25,6 +25,7 @@
   "dependencies": {
     "@babel/runtime": "^7.28.4",
     "@ethersproject/shims": "^5.8.0",
+    "@expo/vector-icons": "^15.0.3",
     "@privy-io/expo": "^0.63.0",
     "@privy-io/expo-native-extensions": "^0.0.6",
     "@repo/shared": "workspace:*",

@@ -41,3 +41,7 @@ export const idParamSchema = z.object({
 });
 
 export * from "./onboarding.js";
+export * from "./kol.schema.js";
+export * from "./tweet.schema.js";
+export * from "./portfolio.schema.js";
+export * from "./classification.schema.js";

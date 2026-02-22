@@ -42,6 +42,22 @@
     "db:studio": {
       "cache": false,
       "persistent": true
+    },
+    "seed:kols": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
+    },
+    "create-vault": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
+    },
+    "sync-tokens": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
+    },
+    "seed-vaults": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
     }
   },
   "globalEnv": [
@@ -49,7 +65,23 @@
     "DATABASE_URL",
     "EXPO_PUBLIC_PRIVY_APP_ID",
     "EXPO_PUBLIC_PRIVY_CLIENT_ID",
-    "PRIVY_APP_SECRET"
+    "PRIVY_APP_SECRET",
+    "RAPIDAPI_KEY",
+    "RAPIDAPI_HOST",
+    "FETCH_DELAY_MS",
+    "ANTHROPIC_API_KEY",
+    "SOLANA_RPC_URL",
+    "KEEPER_PRIVATE_KEY",
+    "GLAM_PROGRAM_ID",
+    "JUPITER_API_KEY",
+    "REBALANCE_DRY_RUN",
+    "MAX_PRICE_IMPACT_BPS",
+    "MIN_SWAP_USD",
+    "MAX_SWAP_EQUITY_PCT",
+    "SNAPSHOT_STALENESS_H",
+    "CRON_FETCH_TWEETS",
+    "CRON_RUN_ALGO",
+    "CRON_REBALANCE_VAULTS"
   ],
   "globalPassThroughEnv": ["CI"]
 }

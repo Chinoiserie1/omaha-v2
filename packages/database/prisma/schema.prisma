@@ -23,3 +23,133 @@ model User {
 
   @@map("users")
 }
+
+// ── KOL Pipeline Models ─────────────────────────────────────────
+
+model Kol {
+  id             String              @id @default(cuid())
+  username       String              @unique
+  displayName    String?
+  restId         String?             @unique
+  followersCount Int?
+  avatarUrl      String?
+  bio            String?
+  isActive       Boolean             @default(true)
+  lastFetchedAt  DateTime?
+  tweets         Tweet[]
+  portfolios     PortfolioSnapshot[]
+  vault          KolVault?
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+
+  @@map("kols")
+}
+
+model Tweet {
+  id             String           @id @default(cuid())
+  tweetId        String           @unique
+  kolId          String
+  kol            Kol              @relation(fields: [kolId], references: [id])
+  fullText       String
+  postedAt       DateTime
+  favoriteCount  Int              @default(0)
+  retweetCount   Int              @default(0)
+  replyCount     Int              @default(0)
+  bookmarkCount  Int              @default(0)
+  viewsCount     Int              @default(0)
+  isRetweet      Boolean          @default(false)
+  isReply        Boolean          @default(false)
+  isThread       Boolean          @default(false)
+  conversationId String?
+  rawJson        Json?
+  classification ClassifiedTweet?
+  createdAt      DateTime         @default(now())
+  fetchedAt      DateTime         @default(now())
+
+  @@index([kolId, postedAt])
+  @@index([kolId, tweetId])
+  @@index([conversationId])
+  @@map("tweets")
+}
+
+model ClassifiedTweet {
+  id             String   @id @default(cuid())
+  tweetId        String   @unique
+  tweet          Tweet    @relation(fields: [tweetId], references: [id])
+  category       String
+  assets         String[]
+  sentiment      String?
+  conviction     String?
+  rawLlmResponse Json?
+  classifiedAt   DateTime @default(now())
+
+  @@index([tweetId])
+  @@map("classified_tweets")
+}
+
+model PortfolioSnapshot {
+  id             String   @id @default(cuid())
+  kolId          String
+  kol            Kol      @relation(fields: [kolId], references: [id])
+  thesisSummary  String
+  allocations    Json
+  changes        String[]
+  sourceTweetIds String[]
+  createdAt      DateTime @default(now())
+
+  @@index([kolId, createdAt])
+  @@map("portfolio_snapshots")
+}
+
+model KolVault {
+  id               String           @id @default(cuid())
+  kolId            String           @unique
+  kol              Kol              @relation(fields: [kolId], references: [id])
+  kolUsername       String           @default("")
+  name             String           @default("")
+  description      String           @default("")
+  glamVaultPda     String?          @unique @map("glam_vault_pda")
+  statePda         String           @unique
+  vaultName        String
+  vaultSymbol      String
+  isActive         Boolean          @default(true)
+  jupiterEnabled   Boolean          @default(false)
+  lastRebalancedAt DateTime?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  rebalanceEvents  RebalanceEvent[]
+
+  @@index([kolId])
+  @@map("kol_vaults")
+}
+
+model RebalanceEvent {
+  id             String    @id @default(cuid())
+  kolVaultId     String
+  kolVault       KolVault  @relation(fields: [kolVaultId], references: [id])
+  snapshotId     String
+  status         String
+  sellCount      Int       @default(0)
+  buyCount       Int       @default(0)
+  totalSwaps     Int       @default(0)
+  swapDetails    Json?
+  vaultEquityUsd Float?
+  errorMessage   String?
+  startedAt      DateTime  @default(now())
+  completedAt    DateTime?
+
+  @@index([kolVaultId, startedAt])
+  @@index([snapshotId])
+  @@map("rebalance_events")
+}
+
+model TradeableAsset {
+  id       String  @id @default(cuid())
+  symbol   String  @unique
+  name     String
+  mint     String
+  decimals Int
+  isActive Boolean @default(true)
+
+  @@map("tradeable_assets")
+}

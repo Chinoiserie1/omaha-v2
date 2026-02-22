@@ -1,6 +1,6 @@
 import { Text, View, ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { WalletInfo } from "../../components/auth/WalletInfo";
+import { WalletInfo } from "../../../components/auth/WalletInfo";
 
 export default function HomeScreen() {
   return (

@@ -1,5 +1,5 @@
-import { useEffect, useState, useRef } from "react";
-import { Stack, useRouter } from "expo-router";
+import { useEffect, useState } from "react";
+import { Redirect, Stack } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 
@@ -7,10 +7,8 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { user } = usePrivy();
-  const router = useRouter();
   const [checked, setChecked] = useState(false);
   const [onboarded, setOnboarded] = useState(true);
-  const hasRedirected = useRef(false);
 
   useEffect(() => {
     if (!user) return;
@@ -35,15 +33,12 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
     checkOnboarding();
   }, [user]);
 
-  useEffect(() => {
-    if (checked && !onboarded && !hasRedirected.current) {
-      hasRedirected.current = true;
-      router.replace("/(onboarding)/connect-twitter");
-    }
-  }, [checked, onboarded, router]);
-
-  if (!checked || (!onboarded && !hasRedirected.current)) {
+  if (!checked) {
     return <FullScreenLoader />;
+  }
+
+  if (!onboarded) {
+    return <Redirect href="/(onboarding)/connect-twitter" />;
   }
 
   return <>{children}</>;
@@ -51,30 +46,13 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isReady, user } = usePrivy();
-  const router = useRouter();
-  const hasRedirected = useRef(false);
 
-  useEffect(() => {
-    if (!isReady) return;
-
-    if (!user && !hasRedirected.current) {
-      hasRedirected.current = true;
-      router.replace("/");
-    }
-  }, [isReady, user, router]);
-
-  useEffect(() => {
-    if (user) {
-      hasRedirected.current = false;
-    }
-  }, [user]);
-
-  if (!isReady || (!user && !hasRedirected.current)) {
+  if (!isReady) {
     return <FullScreenLoader />;
   }
 
   if (!user) {
-    return <FullScreenLoader />;
+    return <Redirect href="/" />;
   }
 
   return <>{children}</>;
@@ -85,7 +63,7 @@ export default function AppLayout() {
     <AuthGate>
       <OnboardingGate>
         <Stack>
-          <Stack.Screen name="index" options={{ title: "Home", headerShown: false }} />
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         </Stack>
       </OnboardingGate>
     </AuthGate>

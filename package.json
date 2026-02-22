@@ -28,7 +28,11 @@
     "db:push": "pnpm --filter @repo/database db:push",
     "db:studio": "pnpm --filter @repo/database db:studio",
     "db:up": "docker compose up -d",
-    "db:down": "docker compose down"
+    "db:down": "docker compose down",
+    "seed:kols": "turbo run seed:kols",
+    "create-vault": "turbo run create-vault",
+    "sync-tokens": "turbo run sync-tokens",
+    "seed-vaults": "turbo run seed-vaults"
   },
   "devDependencies": {
     "turbo": "^2.7.1",

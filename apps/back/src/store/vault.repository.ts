@@ -1,0 +1,44 @@
+import { prisma } from "@repo/database";
+
+export async function findAllActiveVaults() {
+  return prisma.kolVault.findMany({
+    where: { isActive: true },
+    include: { kol: true },
+  });
+}
+
+export async function findVaultById(id: string) {
+  return prisma.kolVault.findUnique({
+    where: { id },
+    include: { kol: true },
+  });
+}
+
+export async function findVaultByKolId(kolId: string) {
+  return prisma.kolVault.findUnique({
+    where: { kolId },
+    include: { kol: true },
+  });
+}
+
+export async function upsertVault(data: {
+  kolId: string;
+  kolUsername: string;
+  name: string;
+  description: string;
+  statePda: string;
+  glamVaultPda?: string;
+  vaultName: string;
+  vaultSymbol: string;
+}) {
+  return prisma.kolVault.upsert({
+    where: { kolId: data.kolId },
+    update: {
+      kolUsername: data.kolUsername,
+      name: data.name,
+      description: data.description,
+      glamVaultPda: data.glamVaultPda ?? null,
+    },
+    create: data,
+  });
+}
