@@ -46,7 +46,7 @@ model Tweet {
   id             String           @id @default(cuid())
   tweetId        String           @unique
   kolId          String
-  kol            Kol              @relation(fields: [kolId], references: [id])
+  kol            Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
   fullText       String
   postedAt       DateTime
   favoriteCount  Int              @default(0)
@@ -71,7 +71,7 @@ model Tweet {
 model ClassifiedTweet {
   id             String   @id @default(cuid())
   tweetId        String   @unique
-  tweet          Tweet    @relation(fields: [tweetId], references: [id])
+  tweet          Tweet    @relation(fields: [tweetId], references: [id], onDelete: Cascade)
   category       String
   assets         String[]
   sentiment      String?
@@ -85,12 +85,13 @@ model ClassifiedTweet {
 model PortfolioSnapshot {
   id             String   @id @default(cuid())
   kolId          String
-  kol            Kol      @relation(fields: [kolId], references: [id])
+  kol            Kol      @relation(fields: [kolId], references: [id], onDelete: Cascade)
   thesisSummary  String
   allocations    Json
   changes        String[]
   sourceTweetIds String[]
-  createdAt      DateTime @default(now())
+  createdAt       DateTime         @default(now())
+  rebalanceEvents RebalanceEvent[]
 
   @@index([kolId, createdAt])
 }
@@ -98,7 +99,7 @@ model PortfolioSnapshot {
 model KolVault {
   id               String           @id @default(cuid())
   kolId            String           @unique
-  kol              Kol              @relation(fields: [kolId], references: [id])
+  kol              Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
   kolUsername       String           @default("")
   name             String           @default("")
   description      String           @default("")
@@ -119,8 +120,9 @@ model KolVault {
 model RebalanceEvent {
   id             String    @id @default(cuid())
   kolVaultId     String
-  kolVault       KolVault  @relation(fields: [kolVaultId], references: [id])
+  kolVault       KolVault          @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
   snapshotId     String
+  snapshot       PortfolioSnapshot @relation(fields: [snapshotId], references: [id])
   status         String
   sellCount      Int       @default(0)
   buyCount       Int       @default(0)
