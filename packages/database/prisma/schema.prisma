@@ -10,18 +10,16 @@ datasource db {
 
 model User {
   id                  String   @id @default(cuid())
-  privyId             String   @unique @map("privy_id")
+  privyId             String   @unique
   email               String?  @unique
   username            String?  @unique
   name                String?
-  twitterId           String?  @unique @map("twitter_id")
-  twitterUsername      String?  @map("twitter_username")
-  profileImageUrl     String?  @map("profile_image_url")
-  onboardingCompleted Boolean  @default(false) @map("onboarding_completed")
-  createdAt           DateTime @default(now()) @map("created_at")
-  updatedAt           DateTime @updatedAt @map("updated_at")
-
-  @@map("users")
+  twitterId           String?  @unique
+  twitterUsername      String?
+  profileImageUrl     String?
+  onboardingCompleted Boolean  @default(false)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
 }
 
 // ── KOL Pipeline Models ─────────────────────────────────────────
@@ -42,7 +40,6 @@ model Kol {
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 
-  @@map("kols")
 }
 
 model Tweet {
@@ -69,7 +66,6 @@ model Tweet {
   @@index([kolId, postedAt])
   @@index([kolId, tweetId])
   @@index([conversationId])
-  @@map("tweets")
 }
 
 model ClassifiedTweet {
@@ -84,7 +80,6 @@ model ClassifiedTweet {
   classifiedAt   DateTime @default(now())
 
   @@index([tweetId])
-  @@map("classified_tweets")
 }
 
 model PortfolioSnapshot {
@@ -98,7 +93,6 @@ model PortfolioSnapshot {
   createdAt      DateTime @default(now())
 
   @@index([kolId, createdAt])
-  @@map("portfolio_snapshots")
 }
 
 model KolVault {
@@ -108,7 +102,7 @@ model KolVault {
   kolUsername       String           @default("")
   name             String           @default("")
   description      String           @default("")
-  glamVaultPda     String?          @unique @map("glam_vault_pda")
+  glamVaultPda     String?          @unique
   statePda         String           @unique
   vaultName        String
   vaultSymbol      String
@@ -120,7 +114,6 @@ model KolVault {
   rebalanceEvents  RebalanceEvent[]
 
   @@index([kolId])
-  @@map("kol_vaults")
 }
 
 model RebalanceEvent {
@@ -140,7 +133,6 @@ model RebalanceEvent {
 
   @@index([kolVaultId, startedAt])
   @@index([snapshotId])
-  @@map("rebalance_events")
 }
 
 model TradeableAsset {
@@ -151,5 +143,4 @@ model TradeableAsset {
   decimals Int
   isActive Boolean @default(true)
 
-  @@map("tradeable_assets")
 }
