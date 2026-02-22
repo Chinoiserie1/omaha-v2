@@ -4,7 +4,7 @@ import { WalletInfo } from "../../components/auth/WalletInfo";
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-white" edges={["bottom"]}>
+    <SafeAreaView className="flex-1 bg-white">
       <ScrollView contentContainerClassName="p-5">
         <Text className="text-2xl font-bold text-gray-900 mb-5">
           Welcome to Autopilot
