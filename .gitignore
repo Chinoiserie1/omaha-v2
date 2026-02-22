@@ -52,3 +52,7 @@ packages/database/generated
 
 # Misc
 .cache
+
+.claude
+
+tasks/*
