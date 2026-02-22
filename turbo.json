@@ -7,6 +7,10 @@
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"],
       "inputs": ["$TURBO_DEFAULT$", "!**/*.test.ts", "!**/*.spec.ts"]
     },
+    "@repo/database#build": {
+      "dependsOn": ["db:generate"],
+      "outputs": ["dist/**"]
+    },
     "dev": {
       "cache": false,
       "persistent": true,
