@@ -32,7 +32,8 @@
     "seed:kols": "turbo run seed:kols",
     "create-vault": "turbo run create-vault",
     "sync-tokens": "turbo run sync-tokens",
-    "seed-vaults": "turbo run seed-vaults"
+    "seed-vaults": "turbo run seed-vaults",
+    "start:back": "pnpm --filter @repo/back start"
   },
   "devDependencies": {
     "turbo": "^2.7.1",
