@@ -7,12 +7,9 @@ import { tweetRoutes, kolTweetRoutes } from "./routes/tweets/index.js";
 import { portfolioRoutes } from "./routes/portfolio/index.js";
 import { vaultRoutes } from "./routes/vaults/index.js";
 import { cronPlugin } from "./cron/index.js";
-
 export async function buildApp() {
   const app = Fastify({
-    logger: {
-      level: process.env["NODE_ENV"] === "development" ? "debug" : "info",
-    },
+    logger: { level: "info" },
   });
 
   await app.register(cors, {

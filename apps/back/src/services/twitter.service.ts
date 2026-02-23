@@ -1,6 +1,7 @@
 import axios from "axios";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
+import { RateLimitError } from "../utils/errors.js";
 import {
   UserDetailsResponseSchema,
   TweetResultSchema,
@@ -36,9 +37,24 @@ export async function fetchUserDetails(
 
     return parsed.data.result.data.user.result;
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 429) {
+      throw new RateLimitError(
+        429,
+        error.response.headers["retry-after"] ?? null,
+      );
+    }
     logger.error(
-      { username, error: error instanceof Error ? error.message : error },
-      "Failed to fetch user details"
+      {
+        username,
+        ...(axios.isAxiosError(error)
+          ? {
+              statusCode: error.response?.status,
+              url: error.config?.url,
+              method: error.config?.method,
+            }
+          : { error: error instanceof Error ? error.message : error }),
+      },
+      "Failed to fetch user details",
     );
     throw error;
   }
@@ -116,9 +132,24 @@ export async function fetchUserTweets(
 
     return extractTweetsFromResponse(response.data);
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 429) {
+      throw new RateLimitError(
+        429,
+        error.response.headers["retry-after"] ?? null,
+      );
+    }
     logger.error(
-      { restId, error: error instanceof Error ? error.message : error },
-      "Failed to fetch user tweets"
+      {
+        restId,
+        ...(axios.isAxiosError(error)
+          ? {
+              statusCode: error.response?.status,
+              url: error.config?.url,
+              method: error.config?.method,
+            }
+          : { error: error instanceof Error ? error.message : error }),
+      },
+      "Failed to fetch user tweets",
     );
     throw error;
   }
@@ -189,9 +220,24 @@ export async function fetchTweetDetail(
 
     return extractTweetsFromDetailResponse(response.data);
   } catch (error) {
+    if (axios.isAxiosError(error) && error.response?.status === 429) {
+      throw new RateLimitError(
+        429,
+        error.response.headers["retry-after"] ?? null,
+      );
+    }
     logger.error(
-      { tweetId, error: error instanceof Error ? error.message : error },
-      "Failed to fetch tweet detail"
+      {
+        tweetId,
+        ...(axios.isAxiosError(error)
+          ? {
+              statusCode: error.response?.status,
+              url: error.config?.url,
+              method: error.config?.method,
+            }
+          : { error: error instanceof Error ? error.message : error }),
+      },
+      "Failed to fetch tweet detail",
     );
     throw error;
   }

@@ -2,6 +2,7 @@ import type { Kol, Tweet } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import { env } from "../utils/env.js";
 import { delay } from "../utils/delay.js";
+import { RateLimitError } from "../utils/errors.js";
 import * as twitterService from "./twitter.service.js";
 import * as kolRepo from "../store/kol.repository.js";
 import * as tweetRepo from "../store/tweet.repository.js";
@@ -138,12 +139,13 @@ async function syncKolThreads(
         "Thread synced"
       );
     } catch (error) {
+      if (error instanceof RateLimitError) throw error;
       logger.warn(
         {
           tweetId: starter.legacy.id_str,
           error: error instanceof Error ? error.message : error,
         },
-        "Failed to fetch thread detail, skipping"
+        "Failed to fetch thread detail, skipping",
       );
     }
   }
@@ -245,6 +247,7 @@ export async function syncAllKols(): Promise<void> {
   const kols = await kolRepo.findActiveKols();
   logger.info({ count: kols.length }, "Starting sync for all active KOLs");
 
+  let synced = 0;
   for (const kol of kols) {
     if (!kol.hasTwitter) {
       logger.info({ username: kol.username }, "Skipping non-Twitter KOL");
@@ -260,17 +263,30 @@ export async function syncAllKols(): Promise<void> {
       }
 
       await syncKolTweets(kol.id);
+      synced++;
       await delay(env.FETCH_DELAY_MS);
     } catch (error) {
+      if (error instanceof RateLimitError) {
+        logger.warn(
+          {
+            username: kol.username,
+            synced,
+            remaining: kols.length - synced,
+            retryAfterMs: error.retryAfterMs,
+          },
+          "Rate limited, aborting batch",
+        );
+        return;
+      }
       logger.error(
         {
           username: kol.username,
           error: error instanceof Error ? error.message : error,
         },
-        "Failed to sync KOL, continuing with next"
+        "Failed to sync KOL, continuing with next",
       );
     }
   }
 
-  logger.info("All KOLs synced");
+  logger.info({ synced }, "All KOLs synced");
 }
