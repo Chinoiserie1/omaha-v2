@@ -6,6 +6,9 @@ import { kolRoutes } from "./routes/kols/index.js";
 import { tweetRoutes, kolTweetRoutes } from "./routes/tweets/index.js";
 import { portfolioRoutes } from "./routes/portfolio/index.js";
 import { vaultRoutes } from "./routes/vaults/index.js";
+import { profileRoutes } from "./routes/profile/index.js";
+import { followRoutes } from "./routes/follows/index.js";
+import { walletRoutes } from "./routes/wallet/index.js";
 import { cronPlugin } from "./cron/index.js";
 export async function buildApp() {
   const app = Fastify({
@@ -34,6 +37,13 @@ export async function buildApp() {
 
   // Vault routes
   await app.register(vaultRoutes, { prefix: "/api/vaults" });
+
+  // Profile & Follow routes
+  await app.register(profileRoutes, { prefix: "/api/profile" });
+  await app.register(followRoutes, { prefix: "/api/follows" });
+
+  // Wallet routes
+  await app.register(walletRoutes, { prefix: "/api/wallet" });
 
   // Cron jobs
   await app.register(cronPlugin);

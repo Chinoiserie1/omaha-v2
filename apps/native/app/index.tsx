@@ -12,8 +12,8 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { AnimatedLogo } from "../components/landing/AnimatedLogo";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
+import { useOnboardingStatus } from "../hooks/queries/use-onboarding";
+import { setTokenProvider } from "../lib/api-client";
 
 export default function LandingScreen() {
   const { isReady, user, getAccessToken, logout } = usePrivy();
@@ -25,52 +25,43 @@ export default function LandingScreen() {
   const contentOpacity = useSharedValue(1);
   const contentTranslateY = useSharedValue(0);
 
-  const checkOnboardingStatus = useCallback(async () => {
-    if (!user || hasRedirected.current) return;
+  const { data: onboardingData } = useOnboardingStatus(user?.id);
 
-    try {
-      const privyId = user.id;
-      const response = await fetch(
-        `${API_URL}/api/onboarding/status?privyId=${encodeURIComponent(privyId)}`
-      );
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success && data.data?.onboardingCompleted) {
-          hasRedirected.current = true;
-          router.replace("/(app)/(tabs)/(home)" as const);
-          return;
-        }
-      }
-    } catch {
-      // If backend unavailable, continue to onboarding
+  // Wire token provider early for any authenticated calls
+  useEffect(() => {
+    if (user) {
+      setTokenProvider(getAccessToken);
     }
-
-    // Authenticated but not onboarded
-    hasRedirected.current = true;
-    router.replace("/(onboarding)/connect-twitter");
-  }, [user, router]);
+  }, [user, getAccessToken]);
 
   // Validate session and redirect (only once)
   useEffect(() => {
-    if (!isReady || hasRedirected.current) return;
+    if (!isReady || hasRedirected.current || !user) return;
 
-    if (user) {
-      const validateAndRedirect = async () => {
-        try {
-          const token = await getAccessToken();
-          if (!token) {
-            await logout();
-            return;
-          }
-          checkOnboardingStatus();
-        } catch {
+    const validateSession = async () => {
+      try {
+        const token = await getAccessToken();
+        if (!token) {
           await logout();
         }
-      };
-      validateAndRedirect();
+      } catch {
+        await logout();
+      }
+    };
+    validateSession();
+  }, [isReady, user, getAccessToken, logout]);
+
+  // Redirect based on onboarding status
+  useEffect(() => {
+    if (!user || hasRedirected.current || onboardingData === undefined) return;
+
+    hasRedirected.current = true;
+    if (onboardingData.onboardingCompleted) {
+      router.replace("/(app)/(tabs)/(home)" as const);
+    } else {
+      router.replace("/(onboarding)/connect-twitter");
     }
-  }, [isReady, user, getAccessToken, logout, checkOnboardingStatus]);
+  }, [user, onboardingData, router]);
 
   const navigateToOnboarding = useCallback(() => {
     hasRedirected.current = true;

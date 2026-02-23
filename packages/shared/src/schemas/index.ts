@@ -45,3 +45,5 @@ export * from "./kol.schema.js";
 export * from "./tweet.schema.js";
 export * from "./portfolio.schema.js";
 export * from "./classification.schema.js";
+export * from "./follow.schema.js";
+export * from "./wallet.schema.js";

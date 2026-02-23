@@ -24,6 +24,7 @@
     "@privy-io/server-auth": "^1.32.5",
     "@repo/database": "workspace:*",
     "@repo/shared": "workspace:*",
+    "@repo/solana": "workspace:*",
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.0",
     "axios": "^1.13.2",
