@@ -70,7 +70,8 @@ pnpm db:up
 
 # 4. Run migrations and generate Prisma client
 pnpm db:generate
-pnpm db:migrate
+pnpm db:migrate dev
+pnpm db:migrate deploy
 
 # 5. Start all apps in development
 pnpm dev
