@@ -56,3 +56,6 @@ packages/database/generated
 .claude
 
 tasks/*
+
+FORNADAR.md
+autopilot.json

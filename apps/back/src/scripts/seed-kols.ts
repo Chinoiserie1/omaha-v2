@@ -1,6 +1,6 @@
 import { prisma } from "@repo/database";
 
-const KOLS = [
+const KOLS: { username: string; hasTwitter?: boolean }[] = [
   { username: "inversebrah" },
   { username: "colourgrey_" },
   { username: "blknoiz06" },
@@ -17,6 +17,7 @@ const KOLS = [
   { username: "naval" },
   { username: "mattytay" },
   { username: "PenisVentures" },
+  { username: "SBC7H7La", hasTwitter: false },
 ];
 
 async function seed(): Promise<void> {
@@ -25,8 +26,8 @@ async function seed(): Promise<void> {
   for (const kol of KOLS) {
     const result = await prisma.kol.upsert({
       where: { username: kol.username },
-      update: {},
-      create: { username: kol.username },
+      update: kol.hasTwitter !== undefined ? { hasTwitter: kol.hasTwitter } : {},
+      create: { username: kol.username, hasTwitter: kol.hasTwitter ?? true },
     });
     console.log(`  Upserted: ${result.username} (${result.id})`);
   }

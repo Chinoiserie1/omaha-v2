@@ -246,6 +246,11 @@ export async function syncAllKols(): Promise<void> {
   logger.info({ count: kols.length }, "Starting sync for all active KOLs");
 
   for (const kol of kols) {
+    if (!kol.hasTwitter) {
+      logger.info({ username: kol.username }, "Skipping non-Twitter KOL");
+      continue;
+    }
+
     try {
       logger.info({ username: kol.username }, "Syncing KOL");
 

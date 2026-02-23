@@ -191,7 +191,7 @@ export async function rebalanceKolVault(
     return null;
   }
 
-  const isDryRun = env.REBALANCE_DRY_RUN;
+  const isDryRun = env.REBALANCE_DRY_RUN || kolVault.dryRun;
   const status: RebalanceStatus = isDryRun ? "DRY_RUN" : "EXECUTING";
 
   // 8. Create RebalanceEvent

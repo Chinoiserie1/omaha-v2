@@ -1,13 +1,52 @@
 import { prisma } from "@repo/database";
 import { PublicKey } from "@solana/web3.js";
 import { createKolVault, enableJupiterIntegration } from "../solana/vault-setup.js";
+import { deriveVaultPda } from "../solana/config.js";
 
-async function main(): Promise<void> {
-  const username = process.argv[2];
+function parseArgs(args: string[]): {
+  username: string;
+  name: string | undefined;
+  description: string | undefined;
+  dryRun: boolean;
+} {
+  const positional: string[] = [];
+  let name: string | undefined;
+  let description: string | undefined;
+  let dryRun = true;
+
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+
+    if (arg === "--name" && i + 1 < args.length) {
+      name = args[++i]!;
+    } else if (arg.startsWith("--name=")) {
+      name = arg.slice("--name=".length);
+    } else if (arg === "--description" && i + 1 < args.length) {
+      description = args[++i]!;
+    } else if (arg.startsWith("--description=")) {
+      description = arg.slice("--description=".length);
+    } else if (arg === "--dry-run=false") {
+      dryRun = false;
+    } else if (arg === "--dry-run=true") {
+      dryRun = true;
+    } else if (!arg.startsWith("--")) {
+      positional.push(arg);
+    }
+  }
+
+  const username = positional[0];
   if (!username) {
-    console.error("Usage: pnpm create-vault <kol-username>");
+    console.error(
+      'Usage: pnpm create-vault <kol-username> [--name "Vault Name"] [--description "..."] [--dry-run=false]'
+    );
     process.exit(1);
   }
+
+  return { username, name, description, dryRun };
+}
+
+async function main(): Promise<void> {
+  const { username, name, description, dryRun } = parseArgs(process.argv.slice(2));
 
   // 1. Look up KOL in DB
   const kol = await prisma.kol.findUnique({ where: { username } });
@@ -36,16 +75,25 @@ async function main(): Promise<void> {
   const jupTx = await enableJupiterIntegration(new PublicKey(statePda));
   console.log(`  Jupiter enabled: ${jupTx}`);
 
-  // 5. Insert KolVault row in DB
+  // 5. Derive glamVaultPda
+  const glamVaultPda = deriveVaultPda(new PublicKey(statePda)).toBase58();
+  console.log(`  Vault PDA: ${glamVaultPda}`);
+
+  // 6. Insert KolVault row in DB
   const vaultName = `kol-${username}`;
   const vaultSymbol = `KOL-${username.slice(0, 6).toUpperCase()}`;
 
   const kolVault = await prisma.kolVault.create({
     data: {
       kolId: kol.id,
+      kolUsername: username,
+      name: name ?? `${username} Vault`,
+      description: description ?? "",
       statePda,
+      glamVaultPda,
       vaultName,
       vaultSymbol,
+      dryRun,
       jupiterEnabled: true,
     },
   });
@@ -53,6 +101,8 @@ async function main(): Promise<void> {
   console.log(`  DB record created: ${kolVault.id}`);
   console.log(`\nVault setup complete for @${username}`);
   console.log(`  State PDA: ${statePda}`);
+  console.log(`  Vault PDA: ${glamVaultPda}`);
+  console.log(`  Dry run: ${dryRun}`);
 }
 
 main()

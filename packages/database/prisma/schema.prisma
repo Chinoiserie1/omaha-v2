@@ -32,6 +32,7 @@ model Kol {
   followersCount Int?
   avatarUrl      String?
   bio            String?
+  hasTwitter     Boolean             @default(true)
   isActive       Boolean             @default(true)
   lastFetchedAt  DateTime?
   tweets         Tweet[]
@@ -107,6 +108,7 @@ model KolVault {
   statePda         String           @unique
   vaultName        String
   vaultSymbol      String
+  dryRun           Boolean          @default(true)
   isActive         Boolean          @default(true)
   jupiterEnabled   Boolean          @default(false)
   lastRebalancedAt DateTime?
