@@ -252,6 +252,11 @@ export async function synthesizeAllKols(): Promise<void> {
   let updated = 0;
 
   for (const kol of kols) {
+    if (!kol.hasTwitter) {
+      logger.info({ username: kol.username }, "Skipping non-Twitter KOL for algo");
+      continue;
+    }
+
     logger.info(
       { kolId: kol.id, username: kol.username, progress: `${processed + 1}/${kols.length}` },
       "Processing KOL"

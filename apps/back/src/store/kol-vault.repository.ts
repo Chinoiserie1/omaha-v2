@@ -40,6 +40,10 @@ export async function markJupiterEnabled(id: string): Promise<KolVault> {
   });
 }
 
+export async function setDryRun(id: string, dryRun: boolean): Promise<KolVault> {
+  return prisma.kolVault.update({ where: { id }, data: { dryRun } });
+}
+
 export async function deactivate(id: string): Promise<KolVault> {
   return prisma.kolVault.update({
     where: { id },

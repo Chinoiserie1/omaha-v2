@@ -6,8 +6,8 @@ async function seedVaults(): Promise<void> {
   // Upsert KOL
   const kol = await prisma.kol.upsert({
     where: { username: "SBC7H7La" },
-    update: {},
-    create: { username: "SBC7H7La" },
+    update: { hasTwitter: false },
+    create: { username: "SBC7H7La", hasTwitter: false },
   });
   console.log(`  Upserted KOL: ${kol.username} (${kol.id})`);
 
