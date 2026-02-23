@@ -7,6 +7,7 @@ import type {
   checkUsernameSchema,
   completeOnboardingSchema,
   updateUsernameSchema,
+  syncTwitterSchema,
 } from "../schemas/index.js";
 
 export type CreateUserDto = z.infer<typeof createUserSchema>;
@@ -16,6 +17,7 @@ export type PaginationDto = z.infer<typeof paginationSchema>;
 export type CheckUsernameDto = z.infer<typeof checkUsernameSchema>;
 export type CompleteOnboardingDto = z.infer<typeof completeOnboardingSchema>;
 export type UpdateUsernameDto = z.infer<typeof updateUsernameSchema>;
+export type SyncTwitterDto = z.infer<typeof syncTwitterSchema>;
 
 // KOL Pipeline DTOs
 import type {

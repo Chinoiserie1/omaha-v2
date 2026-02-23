@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Redirect, Stack } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
+import { useTwitterSync } from "../../hooks/useTwitterSync";
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
 
@@ -9,6 +10,8 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { user } = usePrivy();
   const [checked, setChecked] = useState(false);
   const [onboarded, setOnboarded] = useState(true);
+
+  useTwitterSync();
 
   useEffect(() => {
     if (!user) return;

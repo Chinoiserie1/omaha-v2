@@ -25,6 +25,13 @@ export const completeOnboardingSchema = z.object({
   name: z.string().optional(),
 });
 
+export const syncTwitterSchema = z.object({
+  twitterId: z.string().min(1, "Twitter ID is required"),
+  twitterUsername: z.string().optional(),
+  profileImageUrl: z.string().url().optional(),
+  name: z.string().optional(),
+});
+
 export const updateUsernameSchema = z.object({
   username: z
     .string()
