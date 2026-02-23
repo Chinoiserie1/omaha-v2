@@ -1,27 +1,16 @@
-import { Text, View, ScrollView } from "react-native";
+import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { WalletInfo } from "../../../components/auth/WalletInfo";
+import { VaultList } from "../../../components/home/VaultList";
 
 export default function HomeScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
-      <ScrollView contentContainerClassName="p-5">
-        <Text className="text-2xl font-bold text-gray-900 dark:text-white mb-5">
-          Welcome to Autopilot
+    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" edges={["top"]}>
+      <View className="px-5 pt-5 pb-3">
+        <Text className="text-2xl font-bold text-zinc-900 dark:text-white">
+          Vaults
         </Text>
-
-        <WalletInfo />
-
-        <View className="bg-gray-50 dark:bg-zinc-900 p-4 rounded-lg mt-6">
-          <Text className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            Your Solana Wallet
-          </Text>
-          <Text className="text-sm text-gray-600 dark:text-zinc-400">
-            Your embedded Solana wallet is ready. You can use it to sign
-            transactions and interact with the Solana blockchain.
-          </Text>
-        </View>
-      </ScrollView>
+      </View>
+      <VaultList />
     </SafeAreaView>
   );
 }
