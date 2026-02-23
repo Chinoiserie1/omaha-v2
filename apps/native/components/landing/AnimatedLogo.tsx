@@ -33,19 +33,19 @@ export function AnimatedLogo() {
   return (
     <View className="items-center">
       <Animated.View style={logoStyle}>
-        <View className="w-20 h-20 bg-zinc-900 rounded-2xl items-center justify-center mb-6">
-          <Text className="text-white text-3xl font-bold">A</Text>
+        <View className="w-20 h-20 bg-zinc-900 dark:bg-white rounded-2xl items-center justify-center mb-6">
+          <Text className="text-white dark:text-zinc-950 text-3xl font-bold">A</Text>
         </View>
       </Animated.View>
 
       <Animated.View style={logoStyle}>
-        <Text className="text-4xl font-bold text-zinc-900 tracking-tight">
+        <Text className="text-4xl font-bold text-zinc-900 dark:text-white tracking-tight">
           Autopilot
         </Text>
       </Animated.View>
 
       <Animated.View style={taglineStyle}>
-        <Text className="text-base text-zinc-500 mt-3 text-center">
+        <Text className="text-base text-zinc-500 dark:text-zinc-400 mt-3 text-center">
           Your crypto portfolio on autopilot
         </Text>
       </Animated.View>

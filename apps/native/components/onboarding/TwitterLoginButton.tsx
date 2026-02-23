@@ -34,7 +34,7 @@ export function TwitterLoginButton({ onSuccess, onError }: TwitterLoginButtonPro
   return (
     <View>
       <TouchableOpacity
-        className={`py-4 rounded-xl ${isLoading ? "bg-zinc-400" : "bg-zinc-900"}`}
+        className={`py-4 rounded-xl ${isLoading ? "bg-zinc-400 dark:bg-zinc-600" : "bg-zinc-900 dark:bg-white"}`}
         onPress={() => login({ provider: "twitter" })}
         disabled={isLoading}
         activeOpacity={0.8}
@@ -42,14 +42,14 @@ export function TwitterLoginButton({ onSuccess, onError }: TwitterLoginButtonPro
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white text-center font-semibold text-lg">
+          <Text className="text-white dark:text-zinc-950 text-center font-semibold text-lg">
             Continue with Twitter
           </Text>
         )}
       </TouchableOpacity>
 
       {state.status === "error" && state.error && (
-        <Text className="text-red-500 text-sm mt-3 text-center">
+        <Text className="text-red-500 dark:text-red-400 text-sm mt-3 text-center">
           {state.error.message}
         </Text>
       )}

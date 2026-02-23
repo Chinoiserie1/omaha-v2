@@ -1,5 +1,6 @@
 import { useEffect, useCallback, useRef } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -18,6 +19,8 @@ export default function LandingScreen() {
   const { isReady, user } = usePrivy();
   const router = useRouter();
   const hasRedirected = useRef(false);
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   const contentOpacity = useSharedValue(1);
   const contentTranslateY = useSharedValue(0);
@@ -87,8 +90,8 @@ export default function LandingScreen() {
   // Show loading while Privy initializes
   if (!isReady) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#18181B" />
+      <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 items-center justify-center">
+        <ActivityIndicator size="large" color={isDark ? "#FAFAFA" : "#18181B"} />
       </SafeAreaView>
     );
   }
@@ -96,15 +99,15 @@ export default function LandingScreen() {
   // Show loading while checking auth state for logged-in users
   if (user) {
     return (
-      <SafeAreaView className="flex-1 bg-white items-center justify-center">
-        <ActivityIndicator size="large" color="#18181B" />
-        <Text className="mt-4 text-zinc-500 text-sm">Loading...</Text>
+      <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 items-center justify-center">
+        <ActivityIndicator size="large" color={isDark ? "#FAFAFA" : "#18181B"} />
+        <Text className="mt-4 text-zinc-500 dark:text-zinc-400 text-sm">Loading...</Text>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
       <Animated.View
         style={contentStyle}
         className="flex-1 justify-center items-center px-6"
@@ -113,11 +116,11 @@ export default function LandingScreen() {
 
         <View className="w-full mt-16">
           <TouchableOpacity
-            className="bg-zinc-900 py-4 rounded-xl"
+            className="bg-zinc-900 dark:bg-white py-4 rounded-xl"
             onPress={handleGetStarted}
             activeOpacity={0.8}
           >
-            <Text className="text-white text-center font-semibold text-lg">
+            <Text className="text-white dark:text-zinc-950 text-center font-semibold text-lg">
               Get Started
             </Text>
           </TouchableOpacity>
