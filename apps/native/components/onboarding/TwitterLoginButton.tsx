@@ -2,24 +2,32 @@ import { Text, TouchableOpacity, ActivityIndicator, View } from "react-native";
 import { useLoginWithOAuth, useLinkWithOAuth, usePrivy } from "@privy-io/expo";
 import type { User } from "@privy-io/expo";
 
+interface TwitterData {
+  twitterUsername?: string;
+  twitterId?: string;
+  profileImageUrl?: string;
+  name?: string;
+}
+
 interface TwitterLoginButtonProps {
-  onSuccess: (user: { twitterUsername?: string; twitterId?: string }) => void;
+  onSuccess: (user: TwitterData) => void;
   onError?: (error: Error) => void;
 }
 
-function extractTwitterData(user: User): { twitterUsername?: string; twitterId?: string } {
+function extractTwitterData(user: User): TwitterData {
   const twitterAccount = user.linked_accounts?.find(
     (account) => account.type === "twitter_oauth"
   );
 
-  const twitterUsername = twitterAccount && "username" in twitterAccount
-    ? String(twitterAccount.username)
-    : undefined;
-  const twitterId = twitterAccount?.subject;
+  const result: TwitterData = {};
 
-  const result: { twitterUsername?: string; twitterId?: string } = {};
-  if (twitterUsername) result.twitterUsername = twitterUsername;
-  if (twitterId) result.twitterId = twitterId;
+  if (twitterAccount) {
+    if ("username" in twitterAccount) result.twitterUsername = String(twitterAccount.username);
+    if ("name" in twitterAccount) result.name = String(twitterAccount.name);
+    if ("profilePictureUrl" in twitterAccount) result.profileImageUrl = String(twitterAccount.profilePictureUrl);
+    result.twitterId = twitterAccount.subject;
+  }
+
   return result;
 }
 

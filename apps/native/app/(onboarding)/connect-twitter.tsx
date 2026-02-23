@@ -12,11 +12,13 @@ interface OnboardingData {
   username?: string;
   twitterId?: string;
   twitterUsername?: string;
+  profileImageUrl?: string;
+  name?: string;
 }
 
 function buildOnboardingData(
   privyId: string,
-  twitter?: { username?: string | undefined; id?: string | undefined }
+  twitter?: { username?: string | undefined; id?: string | undefined; profileImageUrl?: string | undefined; name?: string | undefined }
 ): OnboardingData {
   const data: OnboardingData = { privyId };
   if (twitter?.username) {
@@ -24,6 +26,8 @@ function buildOnboardingData(
     data.twitterUsername = twitter.username;
   }
   if (twitter?.id) data.twitterId = twitter.id;
+  if (twitter?.profileImageUrl) data.profileImageUrl = twitter.profileImageUrl;
+  if (twitter?.name) data.name = twitter.name;
   return data;
 }
 
@@ -93,7 +97,11 @@ export default function ConnectTwitterScreen() {
       const twitterUsername =
         "username" in twitterAccount ? String(twitterAccount.username) : undefined;
       const twitterId = twitterAccount.subject;
-      completeOnboarding(buildOnboardingData(user.id, { username: twitterUsername, id: twitterId }));
+      const profileImageUrl =
+        "profilePictureUrl" in twitterAccount ? String(twitterAccount.profilePictureUrl) : undefined;
+      const twitterName =
+        "name" in twitterAccount ? String(twitterAccount.name) : undefined;
+      completeOnboarding(buildOnboardingData(user.id, { username: twitterUsername, id: twitterId, profileImageUrl, name: twitterName }));
     } else {
       // Guest or other auth method — complete without Twitter
       completeOnboarding({ privyId: user.id });
@@ -103,12 +111,16 @@ export default function ConnectTwitterScreen() {
   const handleTwitterSuccess = (twitterData: {
     twitterUsername?: string;
     twitterId?: string;
+    profileImageUrl?: string;
+    name?: string;
   }) => {
     if (hasNavigated.current) return;
     completeOnboarding(
       buildOnboardingData(user?.id ?? "", {
         username: twitterData.twitterUsername,
         id: twitterData.twitterId,
+        profileImageUrl: twitterData.profileImageUrl,
+        name: twitterData.name,
       })
     );
   };

@@ -33,3 +33,23 @@ export type TweetQueryDto = z.infer<typeof tweetQuerySchema>;
 export type PortfolioHistoryQueryDto = z.infer<typeof portfolioHistoryQuerySchema>;
 export type AllocationDto = z.infer<typeof AllocationSchema>;
 export type PortfolioOutputDto = z.infer<typeof PortfolioOutputSchema>;
+
+// Follow DTOs
+import type {
+  followUserSchema,
+  unfollowUserSchema,
+  followListQuerySchema,
+  followCountsQuerySchema,
+  followStatusQuerySchema,
+} from "../schemas/index.js";
+
+export type FollowUserDto = z.infer<typeof followUserSchema>;
+export type UnfollowUserDto = z.infer<typeof unfollowUserSchema>;
+export type FollowListQueryDto = z.infer<typeof followListQuerySchema>;
+export type FollowCountsQueryDto = z.infer<typeof followCountsQuerySchema>;
+export type FollowStatusQueryDto = z.infer<typeof followStatusQuerySchema>;
+
+// Wallet DTOs
+import type { walletAddressSchema } from "../schemas/index.js";
+
+export type WalletAddressDto = z.infer<typeof walletAddressSchema>;
