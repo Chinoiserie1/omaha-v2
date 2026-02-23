@@ -101,8 +101,8 @@ export default function ConnectTwitterScreen() {
         "username" in twitterAccount ? twitterAccount.username : undefined;
       const twitterId = twitterAccount.subject;
       const rawProfileImageUrl =
-        "profilePictureUrl" in twitterAccount
-          ? twitterAccount.profilePictureUrl
+        "profile_picture_url" in twitterAccount
+          ? (twitterAccount as unknown as Record<string, string>)["profile_picture_url"]
           : undefined;
       const rawName =
         "name" in twitterAccount ? twitterAccount.name : undefined;

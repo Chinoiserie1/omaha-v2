@@ -34,8 +34,8 @@ function extractTwitterData(user: User): TwitterData {
       "username" in twitterAccount ? twitterAccount.username : undefined;
     const name = "name" in twitterAccount ? twitterAccount.name : undefined;
     const profilePic =
-      "profilePictureUrl" in twitterAccount
-        ? twitterAccount.profilePictureUrl
+      "profile_picture_url" in twitterAccount
+        ? (twitterAccount as unknown as Record<string, string>)["profile_picture_url"]
         : undefined;
 
     if (username) result.twitterUsername = String(username);
