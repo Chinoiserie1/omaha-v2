@@ -1,5 +1,5 @@
-import { View, useWindowDimensions } from "react-native";
-import { memo, useCallback, useMemo } from "react";
+import { View, type LayoutChangeEvent } from "react-native";
+import { memo, useCallback, useState } from "react";
 import { LineChart } from "react-native-wagmi-charts";
 import * as Haptics from "expo-haptics";
 import { ChartSkeleton } from "./Skeleton";
@@ -11,7 +11,6 @@ interface DataPoint {
 
 interface LineChartViewProps {
   data: DataPoint[];
-  width?: number;
   height?: number;
   color?: string;
   loading?: boolean;
@@ -21,9 +20,12 @@ interface LineChartViewProps {
   className?: string;
 }
 
+function invokeHaptic() {
+  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+}
+
 export const LineChartView = memo(function LineChartView({
   data,
-  width = 100,
   height = 100,
   color = "#10b981",
   loading = false,
@@ -32,47 +34,56 @@ export const LineChartView = memo(function LineChartView({
   showGradient = true,
   className = "",
 }: LineChartViewProps) {
-  const { width: windowWidth, height: windowHeight } = useWindowDimensions();
+  const [containerWidth, setContainerWidth] = useState(0);
+  const chartHeight = height;
 
-  const chartWidth = useMemo(
-    () => Math.round((windowWidth * Math.min(Math.max(width, 0), 100)) / 100),
-    [windowWidth, width],
-  );
-
-  const chartHeight = useMemo(
-    () => Math.round((windowHeight * Math.min(Math.max(height, 0), 100)) / 100),
-    [windowHeight, height],
-  );
-
-  const invokeHaptic = useCallback(() => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  const onLayout = useCallback((e: LayoutChangeEvent) => {
+    setContainerWidth(Math.round(e.nativeEvent.layout.width));
   }, []);
 
-  if (loading) {
+  const onCurrentIndexChange = useCallback(
+    (index: number) => {
+      invokeHaptic();
+      if (index >= 0 && index < data.length) {
+        // Price callback can be added here
+      }
+    },
+    [data],
+  );
+
+  if (loading || containerWidth === 0) {
     return (
-      <ChartSkeleton
-        width={chartWidth}
-        height={chartHeight}
-        className={className}
-      />
+      <View className={className} onLayout={onLayout} style={{ height: chartHeight }}>
+        {loading && (
+          <ChartSkeleton
+            width={containerWidth || undefined}
+            height={chartHeight}
+          />
+        )}
+      </View>
     );
   }
 
   return (
-    <View className={className} style={{ width: chartWidth, height: chartHeight }}>
-      <LineChart.Provider data={data} onCurrentIndexChange={invokeHaptic}>
-        <LineChart width={chartWidth} height={chartHeight}>
-          <LineChart.Path color={color} width={2}>
-            {showGradient && <LineChart.Gradient color={color} />}
+    <View className={className} onLayout={onLayout} style={{ height: chartHeight }}>
+      <LineChart.Provider data={data} onCurrentIndexChange={onCurrentIndexChange}>
+        <LineChart height={chartHeight} width={containerWidth}>
+          <LineChart.Path color={color}>
+            {showGradient && <LineChart.Gradient />}
           </LineChart.Path>
           {showCursor && (
-            <LineChart.CursorCrosshair
-              color={color}
-              onActivated={invokeHaptic}
-              onEnded={invokeHaptic}
-            >
-              {showTooltip && <LineChart.Tooltip />}
-            </LineChart.CursorCrosshair>
+            <>
+              <LineChart.CursorLine />
+              <LineChart.CursorCrosshair
+                color="grey"
+                minDurationMs={200}
+                snapToPoint
+                onActivated={invokeHaptic}
+                onEnded={invokeHaptic}
+              >
+                {showTooltip && <LineChart.Tooltip />}
+              </LineChart.CursorCrosshair>
+            </>
           )}
         </LineChart>
       </LineChart.Provider>

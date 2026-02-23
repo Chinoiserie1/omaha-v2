@@ -212,6 +212,12 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
         ) : (
           <View className="flex-1 ml-3" />
         )}
+        <Pressable
+          onPress={() => {}}
+          className="ml-3 bg-emerald-600 px-5 py-2 rounded-full active:bg-emerald-700"
+        >
+          <Text className="text-sm font-semibold text-white">Invest</Text>
+        </Pressable>
       </View>
 
       {loading ? (

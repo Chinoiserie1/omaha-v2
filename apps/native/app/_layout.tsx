@@ -2,6 +2,7 @@ import "../global.css";
 import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PrivyProvider } from "@privy-io/expo";
 import Constants from "expo-constants";
 import { useColorScheme } from "nativewind";
@@ -24,31 +25,33 @@ export default function RootLayout() {
   }
 
   return (
-    <PrivyProvider
-      appId={PRIVY_APP_ID}
-      clientId={PRIVY_CLIENT_ID}
-      config={{
-        embedded: {
-          solana: {
-            createOnLogin: "users-without-wallets",
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PrivyProvider
+        appId={PRIVY_APP_ID}
+        clientId={PRIVY_CLIENT_ID}
+        config={{
+          embedded: {
+            solana: {
+              createOnLogin: "users-without-wallets",
+            },
           },
-        },
-      }}
-    >
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
         }}
       >
-        <Stack.Screen name="index" options={{ animation: "none" }} />
-        <Stack.Screen
-          name="(onboarding)"
-          options={{ animation: "fade_from_bottom" }}
-        />
-        <Stack.Screen name="(app)" options={{ animation: "fade" }} />
-      </Stack>
-      <StatusBar style={isDark ? "light" : "dark"} />
-    </PrivyProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+          }}
+        >
+          <Stack.Screen name="index" options={{ animation: "none" }} />
+          <Stack.Screen
+            name="(onboarding)"
+            options={{ animation: "fade_from_bottom" }}
+          />
+          <Stack.Screen name="(app)" options={{ animation: "fade" }} />
+        </Stack>
+        <StatusBar style={isDark ? "light" : "dark"} />
+      </PrivyProvider>
+    </GestureHandlerRootView>
   );
 }

@@ -1,4 +1,4 @@
-import { View, Text, ScrollView } from "react-native";
+import { View, Text } from "react-native";
 import { memo } from "react";
 
 interface VaultStatsProps {
@@ -27,12 +27,13 @@ function StatCard({
   accent?: boolean;
 }) {
   return (
-    <View className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3 mr-3 min-w-[120px]">
+    <View className="flex-1 bg-zinc-900 border border-zinc-800 rounded-xl px-4 py-3">
       <Text className="text-[10px] font-semibold uppercase tracking-wider text-zinc-500 mb-1">
         {label}
       </Text>
       <Text
         className={`text-sm font-semibold ${accent ? "text-emerald-400" : "text-white"}`}
+        numberOfLines={1}
       >
         {value}
       </Text>
@@ -47,23 +48,22 @@ export const VaultStats = memo(function VaultStats({
   glamVaultPda,
 }: VaultStatsProps) {
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 20 }}
-      className="mb-2"
-    >
-      <StatCard label="Symbol" value={vaultSymbol} />
-      <StatCard
-        label="Jupiter"
-        value={jupiterEnabled ? "Enabled" : "Disabled"}
-        accent={jupiterEnabled}
-      />
-      <StatCard label="Last Rebalanced" value={formatDate(lastRebalancedAt)} />
-      <StatCard
-        label="Vault PDA"
-        value={glamVaultPda ? `${glamVaultPda.slice(0, 6)}...` : "Pending"}
-      />
-    </ScrollView>
+    <View className="px-5 mb-2 gap-3">
+      <View className="flex-row gap-3">
+        <StatCard label="Symbol" value={vaultSymbol} />
+        <StatCard
+          label="Jupiter"
+          value={jupiterEnabled ? "Enabled" : "Disabled"}
+          accent={jupiterEnabled}
+        />
+      </View>
+      <View className="flex-row gap-3">
+        <StatCard label="Last Rebalanced" value={formatDate(lastRebalancedAt)} />
+        <StatCard
+          label="Vault PDA"
+          value={glamVaultPda ? `${glamVaultPda.slice(0, 6)}...` : "Pending"}
+        />
+      </View>
+    </View>
   );
 });
