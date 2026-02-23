@@ -53,7 +53,8 @@ packages/database/generated
 # Misc
 .cache
 
-.claude
+.claude/*
+!.claude/MVP.md
 
 tasks/*
 
