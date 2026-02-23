@@ -19,6 +19,7 @@
     "eas:ios:build": "eas build -p ios --profile production",
     "eas:ios:submit": "eas submit -p ios --profile production",
     "eas:android:build": "eas build -p android --profile production",
+    "eas:android:build:preview": "eas build -p android --profile preview",
     "eas:android:submit": "eas submit -p android --profile production",
     "eas-build-post-install": "cd ../.. && pnpm db:generate && pnpm build"
   },
