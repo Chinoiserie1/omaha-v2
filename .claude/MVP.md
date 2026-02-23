@@ -87,6 +87,8 @@ If the answer is no or "kind of" — don't build it.
 
 When all 3 work end-to-end on a real device with a real account — **the MVP is done**. Everything else is a distraction until then.
 
+add "keep in mind we are a lean startup, keep things simple" in all your prompts.
+
 ---
 
 *This file exists to protect the MVP from scope creep. When in doubt, re-read it.*
