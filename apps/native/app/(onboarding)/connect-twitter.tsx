@@ -70,7 +70,7 @@ export default function ConnectTwitterScreen() {
         // Network error — navigate anyway (graceful degradation)
       }
 
-      router.replace("/(app)/(tabs)" as const);
+      router.replace("/(app)/(tabs)/(home)" as const);
     },
     [router, getAccessToken]
   );

@@ -1,6 +1,6 @@
 import { View, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { VaultList } from "../../../components/home/VaultList";
+import { VaultList } from "../../../../components/home/VaultList";
 
 export default function HomeScreen() {
   return (

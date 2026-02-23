@@ -38,7 +38,7 @@ export default function LandingScreen() {
         const data = await response.json();
         if (data.success && data.data?.onboardingCompleted) {
           hasRedirected.current = true;
-          router.replace("/(app)/(tabs)" as const);
+          router.replace("/(app)/(tabs)/(home)" as const);
           return;
         }
       }

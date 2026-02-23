@@ -2,6 +2,7 @@ import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useColorScheme } from "nativewind";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "expo-router";
 import { VaultCard } from "../ui/VaultCard";
 
 interface Allocation {
@@ -24,6 +25,7 @@ const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
 export function VaultList() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+  const router = useRouter();
   const [vaults, setVaults] = useState<VaultSummary[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -61,9 +63,10 @@ export function VaultList() {
         allocations={
           (item.portfolio?.allocations as Allocation[] | undefined) ?? []
         }
+        onPress={() => router.push(`/(app)/(tabs)/(home)/vault/${item.id}`)}
       />
     ),
-    []
+    [router]
   );
 
   const keyExtractor = useCallback((item: VaultSummary) => item.id, []);
