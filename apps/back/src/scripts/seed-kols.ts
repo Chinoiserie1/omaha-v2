@@ -17,6 +17,7 @@ const KOLS: { username: string; hasTwitter?: boolean }[] = [
   { username: "naval" },
   { username: "mattytay" },
   { username: "PenisVentures" },
+  { username: "LynAldenContact" },
   { username: "SBC7H7La", hasTwitter: false },
 ];
 
