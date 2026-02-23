@@ -1,11 +1,23 @@
+import { useRef } from "react";
 import { Text, TouchableOpacity } from "react-native";
+import { useRouter } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
 
 export function SettingsButton() {
   const { logout } = usePrivy();
+  const router = useRouter();
+  const loggingOut = useRef(false);
 
   const handleLogout = async () => {
-    await logout();
+    if (loggingOut.current) return;
+    loggingOut.current = true;
+
+    try {
+      await logout();
+      router.replace("/");
+    } catch {
+      loggingOut.current = false;
+    }
   };
 
   return (

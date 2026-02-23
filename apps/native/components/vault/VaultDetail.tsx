@@ -2,15 +2,14 @@ import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { VaultHeader } from "./VaultHeader";
 import { VaultStats } from "./VaultStats";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
 import { VaultChanges } from "./VaultChanges";
 import { VaultInfo } from "./VaultInfo";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
+import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
   asset: string;
@@ -104,30 +103,10 @@ function SectionHeader({ title }: { title: string }) {
 }
 
 export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
-  const [vault, setVault] = useState<VaultData | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const fetchVault = useCallback(async () => {
-    try {
-      setError(null);
-      const response = await fetch(`${API_URL}/api/vaults/${vaultId}`);
-      if (!response.ok) throw new Error("Failed to load vault");
-      const data = await response.json();
-      setVault(data);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Something went wrong");
-    } finally {
-      setLoading(false);
-    }
-  }, [vaultId]);
-
-  useEffect(() => {
-    fetchVault();
-  }, [fetchVault]);
+  const { data: vault, isLoading, error, refetch } = useVault(vaultId);
 
   const sections = useMemo(
-    () => (vault ? buildSections(vault) : []),
+    () => (vault ? buildSections(vault as VaultData) : []),
     [vault],
   );
 
@@ -220,21 +199,18 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
         </Pressable>
       </View>
 
-      {loading ? (
+      {isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator size="large" color="#FAFAFA" />
         </View>
       ) : error ? (
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-base text-zinc-400 text-center mb-4">
-            {error}
+            {error.message}
           </Text>
           <Pressable
             className="bg-white py-3 px-6 rounded-lg active:opacity-80"
-            onPress={() => {
-              setLoading(true);
-              fetchVault();
-            }}
+            onPress={() => refetch()}
           >
             <Text className="text-zinc-950 font-semibold">Try Again</Text>
           </Pressable>

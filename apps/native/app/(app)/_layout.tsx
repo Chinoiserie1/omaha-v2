@@ -1,46 +1,23 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef } from "react";
 import { Redirect, Stack } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 import { useTwitterSync } from "../../hooks/useTwitterSync";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
+import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
+import { setTokenProvider } from "../../lib/api-client";
 
 function OnboardingGate({ children }: { children: React.ReactNode }) {
   const { user } = usePrivy();
-  const [checked, setChecked] = useState(false);
-  const [onboarded, setOnboarded] = useState(true);
 
   useTwitterSync();
 
-  useEffect(() => {
-    if (!user) return;
+  const { data, isLoading } = useOnboardingStatus(user?.id);
 
-    const checkOnboarding = async () => {
-      try {
-        const response = await fetch(
-          `${API_URL}/api/onboarding/status?privyId=${encodeURIComponent(user.id)}`
-        );
-
-        if (response.ok) {
-          const data = await response.json();
-          setOnboarded(data.success && data.data?.onboardingCompleted);
-        }
-      } catch {
-        setOnboarded(true);
-      } finally {
-        setChecked(true);
-      }
-    };
-
-    checkOnboarding();
-  }, [user]);
-
-  if (!checked) {
+  if (isLoading) {
     return <FullScreenLoader />;
   }
 
-  if (!onboarded) {
+  if (!data?.onboardingCompleted) {
     return <Redirect href="/(onboarding)/connect-twitter" />;
   }
 
@@ -48,14 +25,29 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 }
 
 function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isReady, user } = usePrivy();
+  const { isReady, user, getAccessToken } = usePrivy();
+  const wasAuthenticated = useRef(false);
+
+  useEffect(() => {
+    setTokenProvider(getAccessToken);
+  }, [getAccessToken]);
+
+  if (user) {
+    wasAuthenticated.current = true;
+  }
 
   if (!isReady) {
     return <FullScreenLoader />;
   }
 
-  if (!user) {
+  // Never had a user (deep link without auth) — redirect once
+  if (!user && !wasAuthenticated.current) {
     return <Redirect href="/" />;
+  }
+
+  // User logged out — show loader while SettingsButton navigates away
+  if (!user) {
+    return <FullScreenLoader />;
   }
 
   return <>{children}</>;

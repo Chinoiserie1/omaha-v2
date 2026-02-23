@@ -1,54 +1,18 @@
-import { useEffect, useState, useCallback } from "react";
 import { ScrollView, ActivityIndicator, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { usePrivy } from "@privy-io/expo";
 import { ProfileHeader } from "../../../../components/profile/ProfileHeader";
 import { WalletOverview } from "../../../../components/profile/WalletOverview";
 import { SettingsButton } from "../../../../components/profile/SettingsButton";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
-
-interface ProfileData {
-  id: string;
-  username: string | null;
-  name: string | null;
-  twitterUsername: string | null;
-  profileImageUrl: string | null;
-  followersCount: number;
-  followingCount: number;
-}
+import { useMyProfile } from "../../../../hooks/queries/use-profile";
 
 export default function ProfileScreen() {
-  const { getAccessToken } = usePrivy();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: profile, isLoading } = useMyProfile();
 
-  const fetchProfile = useCallback(async () => {
-    try {
-      const token = await getAccessToken();
-      const headers: Record<string, string> = {};
-      if (token) headers["Authorization"] = `Bearer ${token}`;
+  console.log("[ProfileScreen] Profile:", JSON.stringify(profile, null, 2));
 
-      const response = await fetch(`${API_URL}/api/profile/me`, { headers });
-
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) setProfile(data.data);
-      }
-    } catch {
-      // Graceful degradation
-    } finally {
-      setLoading(false);
-    }
-  }, [getAccessToken]);
-
-  useEffect(() => {
-    fetchProfile();
-  }, [fetchProfile]);
-
-  if (loading) {
+  if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 items-center justify-center">
+      <SafeAreaView className="flex-1 justify-center items-center bg-white dark:bg-zinc-950">
         <ActivityIndicator size="large" color="#71717A" />
       </SafeAreaView>
     );

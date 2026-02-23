@@ -1,7 +1,6 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, TextInput, ActivityIndicator } from "react-native";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
+import { useCheckUsername } from "../../hooks/queries/use-onboarding";
 
 interface UsernameInputProps {
   value: string;
@@ -14,84 +13,60 @@ export function UsernameInput({
   onChangeText,
   onAvailabilityChange,
 }: UsernameInputProps) {
-  const [checking, setChecking] = useState(false);
-  const [available, setAvailable] = useState<boolean | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [debouncedValue, setDebouncedValue] = useState("");
+  const [localError, setLocalError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  const checkAvailability = useCallback(
-    async (username: string) => {
-      if (!username || username.length < 1) {
-        setAvailable(null);
-        onAvailabilityChange(false);
-        return;
-      }
-
-      // Validate format locally first
-      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
-        setError("Only letters, numbers, and underscores");
-        setAvailable(false);
-        onAvailabilityChange(false);
-        return;
-      }
-
-      if (username.length > 15) {
-        setError("Max 15 characters");
-        setAvailable(false);
-        onAvailabilityChange(false);
-        return;
-      }
-
-      setChecking(true);
-      setError(null);
-
-      try {
-        const response = await fetch(`${API_URL}/api/onboarding/check-username`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ username }),
-        });
-
-        const data = await response.json();
-
-        if (data.success) {
-          setAvailable(data.data.available);
-          onAvailabilityChange(data.data.available);
-          if (!data.data.available) {
-            setError("Username is taken");
-          }
-        }
-      } catch {
-        setError("Could not check availability");
-        onAvailabilityChange(false);
-      } finally {
-        setChecking(false);
-      }
-    },
-    [onAvailabilityChange]
-  );
-
+  // Local validation + debounce
   useEffect(() => {
-    if (debounceRef.current) {
-      clearTimeout(debounceRef.current);
-    }
+    if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!value) {
-      setAvailable(null);
-      setError(null);
+      setDebouncedValue("");
+      setLocalError(null);
+      onAvailabilityChange(false);
       return;
     }
 
+    if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+      setLocalError("Only letters, numbers, and underscores");
+      setDebouncedValue("");
+      onAvailabilityChange(false);
+      return;
+    }
+
+    if (value.length > 15) {
+      setLocalError("Max 15 characters");
+      setDebouncedValue("");
+      onAvailabilityChange(false);
+      return;
+    }
+
+    setLocalError(null);
+
     debounceRef.current = setTimeout(() => {
-      checkAvailability(value);
+      setDebouncedValue(value);
     }, 400);
 
     return () => {
-      if (debounceRef.current) {
-        clearTimeout(debounceRef.current);
-      }
+      if (debounceRef.current) clearTimeout(debounceRef.current);
     };
-  }, [value, checkAvailability]);
+  }, [value, onAvailabilityChange]);
+
+  const { data, isFetching, error: queryError } = useCheckUsername(debouncedValue);
+
+  const available = data?.available ?? null;
+  const checking = isFetching;
+
+  // Sync availability to parent
+  useEffect(() => {
+    onAvailabilityChange(available === true);
+  }, [available, onAvailabilityChange]);
+
+  const displayError =
+    localError ??
+    (queryError ? "Could not check availability" : null) ??
+    (available === false ? "Username is taken" : null);
 
   return (
     <View className="w-full">
@@ -116,11 +91,11 @@ export function UsernameInput({
         )}
       </View>
 
-      {error && (
-        <Text className="text-red-500 text-sm mt-2 ml-1">{error}</Text>
+      {displayError && (
+        <Text className="text-red-500 text-sm mt-2 ml-1">{displayError}</Text>
       )}
 
-      {available === true && !error && (
+      {available === true && !displayError && (
         <Text className="text-green-600 text-sm mt-2 ml-1">
           Username is available
         </Text>

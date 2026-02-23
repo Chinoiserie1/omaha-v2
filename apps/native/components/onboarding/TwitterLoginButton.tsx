@@ -3,6 +3,7 @@ import { useLoginWithOAuth, useLinkWithOAuth, usePrivy } from "@privy-io/expo";
 import type { User } from "@privy-io/expo";
 
 interface TwitterData {
+  privyId: string;
   twitterUsername?: string;
   twitterId?: string;
   profileImageUrl?: string;
@@ -16,22 +17,40 @@ interface TwitterLoginButtonProps {
 
 function extractTwitterData(user: User): TwitterData {
   const twitterAccount = user.linked_accounts?.find(
-    (account) => account.type === "twitter_oauth"
+    (account) => account.type === "twitter_oauth",
   );
 
-  const result: TwitterData = {};
+  console.log("[TwitterLoginButton] User:", JSON.stringify(user, null, 2));
+
+  console.log(
+    "[TwitterLoginButton] Twitter Account:",
+    JSON.stringify(twitterAccount, null, 2),
+  );
+
+  const result: TwitterData = { privyId: user.id };
 
   if (twitterAccount) {
-    if ("username" in twitterAccount) result.twitterUsername = String(twitterAccount.username);
-    if ("name" in twitterAccount) result.name = String(twitterAccount.name);
-    if ("profilePictureUrl" in twitterAccount) result.profileImageUrl = String(twitterAccount.profilePictureUrl);
-    result.twitterId = twitterAccount.subject;
+    const username =
+      "username" in twitterAccount ? twitterAccount.username : undefined;
+    const name = "name" in twitterAccount ? twitterAccount.name : undefined;
+    const profilePic =
+      "profilePictureUrl" in twitterAccount
+        ? twitterAccount.profilePictureUrl
+        : undefined;
+
+    if (username) result.twitterUsername = String(username);
+    if (name) result.name = String(name);
+    if (profilePic) result.profileImageUrl = String(profilePic);
+    if (twitterAccount.subject) result.twitterId = twitterAccount.subject;
   }
 
   return result;
 }
 
-export function TwitterLoginButton({ onSuccess, onError }: TwitterLoginButtonProps) {
+export function TwitterLoginButton({
+  onSuccess,
+  onError,
+}: TwitterLoginButtonProps) {
   const { user } = usePrivy();
   const isAuthenticated = !!user;
 
@@ -67,14 +86,14 @@ export function TwitterLoginButton({ onSuccess, onError }: TwitterLoginButtonPro
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white dark:text-zinc-950 text-center font-semibold text-lg">
+          <Text className="text-lg font-semibold text-center text-white dark:text-zinc-950">
             Continue with Twitter
           </Text>
         )}
       </TouchableOpacity>
 
       {activeState.status === "error" && activeState.error && (
-        <Text className="text-red-500 dark:text-red-400 text-sm mt-3 text-center">
+        <Text className="mt-3 text-sm text-center text-red-500 dark:text-red-400">
           {activeState.error.message}
         </Text>
       )}

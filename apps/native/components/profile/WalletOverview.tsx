@@ -37,8 +37,6 @@ export function WalletOverview() {
     fetchBalances();
   }, [fetchBalances]);
 
-  console.log("[WalletOverview] Balances:", JSON.stringify(balances, null, 2));
-
   if (!wallet) {
     return (
       <View className="p-5 mb-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900">

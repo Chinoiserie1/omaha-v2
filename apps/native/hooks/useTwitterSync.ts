@@ -1,11 +1,11 @@
 import { useEffect, useRef } from "react";
 import { usePrivy } from "@privy-io/expo";
-
-const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
+import { useSyncTwitter } from "./queries/use-profile";
 
 export function useTwitterSync() {
-  const { user, getAccessToken } = usePrivy();
+  const { user } = usePrivy();
   const hasSynced = useRef(false);
+  const syncTwitter = useSyncTwitter();
 
   useEffect(() => {
     if (!user || hasSynced.current) return;
@@ -19,36 +19,23 @@ export function useTwitterSync() {
     hasSynced.current = true;
 
     const twitterId = twitterAccount.subject;
-    const twitterUsername =
-      "username" in twitterAccount ? String(twitterAccount.username) : undefined;
-    const profileImageUrl =
+    const rawUsername =
+      "username" in twitterAccount ? twitterAccount.username : undefined;
+    const rawProfileImageUrl =
       "profilePictureUrl" in twitterAccount
-        ? String(twitterAccount.profilePictureUrl)
+        ? twitterAccount.profilePictureUrl
         : undefined;
-    const name =
-      "name" in twitterAccount ? String(twitterAccount.name) : undefined;
+    const rawName =
+      "name" in twitterAccount ? twitterAccount.name : undefined;
 
-    (async () => {
-      try {
-        const token = await getAccessToken();
-        if (!token) return;
-
-        await fetch(`${API_URL}/api/profile/sync-twitter`, {
-          method: "PATCH",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify({
-            twitterId,
-            twitterUsername,
-            profileImageUrl,
-            name,
-          }),
-        });
-      } catch {
-        // Fire-and-forget — will retry next session
-      }
-    })();
-  }, [user, getAccessToken]);
+    syncTwitter.mutate({
+      twitterId,
+      twitterUsername: rawUsername ? String(rawUsername) : undefined,
+      profileImageUrl: rawProfileImageUrl
+        ? String(rawProfileImageUrl)
+        : undefined,
+      name: rawName ? String(rawName) : undefined,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
 }
