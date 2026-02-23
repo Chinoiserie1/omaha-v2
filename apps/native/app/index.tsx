@@ -16,7 +16,7 @@ import { AnimatedLogo } from "../components/landing/AnimatedLogo";
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001";
 
 export default function LandingScreen() {
-  const { isReady, user } = usePrivy();
+  const { isReady, user, getAccessToken, logout } = usePrivy();
   const router = useRouter();
   const hasRedirected = useRef(false);
   const { colorScheme } = useColorScheme();
@@ -51,14 +51,26 @@ export default function LandingScreen() {
     router.replace("/(onboarding)/connect-twitter");
   }, [user, router]);
 
-  // Check auth state and redirect (only once)
+  // Validate session and redirect (only once)
   useEffect(() => {
     if (!isReady || hasRedirected.current) return;
 
     if (user) {
-      checkOnboardingStatus();
+      const validateAndRedirect = async () => {
+        try {
+          const token = await getAccessToken();
+          if (!token) {
+            await logout();
+            return;
+          }
+          checkOnboardingStatus();
+        } catch {
+          await logout();
+        }
+      };
+      validateAndRedirect();
     }
-  }, [isReady, user, checkOnboardingStatus]);
+  }, [isReady, user, getAccessToken, logout, checkOnboardingStatus]);
 
   const navigateToOnboarding = useCallback(() => {
     hasRedirected.current = true;

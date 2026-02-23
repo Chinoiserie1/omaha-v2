@@ -81,7 +81,7 @@ export default function ConnectTwitterScreen() {
     }
   }, [completeOnboarding]);
 
-  // If already logged in with Twitter, auto-complete onboarding
+  // If already authenticated, auto-complete onboarding (guest, Twitter, etc.)
   useEffect(() => {
     if (!user || hasNavigated.current) return;
 
@@ -93,8 +93,10 @@ export default function ConnectTwitterScreen() {
       const twitterUsername =
         "username" in twitterAccount ? String(twitterAccount.username) : undefined;
       const twitterId = twitterAccount.subject;
-
       completeOnboarding(buildOnboardingData(user.id, { username: twitterUsername, id: twitterId }));
+    } else {
+      // Guest or other auth method — complete without Twitter
+      completeOnboarding({ privyId: user.id });
     }
   }, [user, completeOnboarding]);
 
