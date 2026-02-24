@@ -1,0 +1,51 @@
+import { prisma } from "@repo/database";
+import type { Token, TokenPrice } from "@repo/database";
+
+export async function upsertToken(data: {
+  name: string;
+  symbol: string;
+  decimals: number;
+  mint: string;
+}): Promise<Token> {
+  return prisma.token.upsert({
+    where: { mint: data.mint },
+    update: {
+      name: data.name,
+      symbol: data.symbol,
+      decimals: data.decimals,
+    },
+    create: data,
+  });
+}
+
+export async function insertPrice(
+  tokenId: string,
+  usdPrice: number,
+): Promise<TokenPrice> {
+  return prisma.tokenPrice.create({
+    data: { tokenId, usdPrice },
+  });
+}
+
+export async function getLatestPriceMap(): Promise<Map<string, number>> {
+  const tokens = await prisma.token.findMany({
+    include: {
+      prices: {
+        orderBy: { date: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  const map = new Map<string, number>();
+  for (const token of tokens) {
+    if (token.prices.length > 0) {
+      map.set(token.mint, token.prices[0]!.usdPrice);
+    }
+  }
+  return map;
+}
+
+export async function findTokenByMint(mint: string): Promise<Token | null> {
+  return prisma.token.findUnique({ where: { mint } });
+}

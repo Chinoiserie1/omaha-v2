@@ -15,7 +15,7 @@ model User {
   username            String?  @unique
   name                String?
   twitterId           String?  @unique
-  twitterUsername      String?
+  twitterUsername     String?
   profileImageUrl     String?
   onboardingCompleted Boolean  @default(false)
   createdAt           DateTime @default(now())
@@ -55,7 +55,6 @@ model Kol {
   vault          KolVault?
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
-
 }
 
 model Tweet {
@@ -99,13 +98,13 @@ model ClassifiedTweet {
 }
 
 model PortfolioSnapshot {
-  id             String   @id @default(cuid())
-  kolId          String
-  kol            Kol      @relation(fields: [kolId], references: [id], onDelete: Cascade)
-  thesisSummary  String
-  allocations    Json
-  changes        String[]
-  sourceTweetIds String[]
+  id              String           @id @default(cuid())
+  kolId           String
+  kol             Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
+  thesisSummary   String
+  allocations     Json
+  changes         String[]
+  sourceTweetIds  String[]
   createdAt       DateTime         @default(now())
   rebalanceEvents RebalanceEvent[]
 
@@ -121,7 +120,7 @@ model KolVault {
   id               String           @id @default(cuid())
   kolId            String           @unique
   kol              Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
-  kolUsername       String           @default("")
+  kolUsername      String           @default("")
   name             String           @default("")
   description      String           @default("")
   glamVaultPda     String?          @unique
@@ -141,19 +140,19 @@ model KolVault {
 }
 
 model RebalanceEvent {
-  id             String    @id @default(cuid())
+  id             String            @id @default(cuid())
   kolVaultId     String
   kolVault       KolVault          @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
   snapshotId     String
   snapshot       PortfolioSnapshot @relation(fields: [snapshotId], references: [id])
   status         String
-  sellCount      Int       @default(0)
-  buyCount       Int       @default(0)
-  totalSwaps     Int       @default(0)
+  sellCount      Int               @default(0)
+  buyCount       Int               @default(0)
+  totalSwaps     Int               @default(0)
   swapDetails    Json?
   vaultEquityUsd Float?
   errorMessage   String?
-  startedAt      DateTime  @default(now())
+  startedAt      DateTime          @default(now())
   completedAt    DateTime?
 
   @@index([kolVaultId, startedAt])
@@ -195,7 +194,30 @@ model SnapshotPerformance {
   periodDays      Int
   details         Json?
   computedAt      DateTime          @default(now())
+  @@index([kolId, computedAt])}
+
+  // ── Token Price Models ────────────────────────────────────────
+
+  model Token {
+  id        String       @id @default(cuid())
+  name      String
+  symbol    String
+  decimals  Int
+  mint      String       @unique
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  prices    TokenPrice[]
 
   @@unique([fromSnapshotId, toSnapshotId])
-  @@index([kolId, computedAt])
+  @@index([symbol])
+}
+
+model TokenPrice {
+  id       String   @id @default(cuid())
+  tokenId  String
+  token    Token    @relation(fields: [tokenId], references: [id], onDelete: Cascade)
+  usdPrice Float
+  date     DateTime @default(now())
+
+  @@index([tokenId, date])
 }

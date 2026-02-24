@@ -14,4 +14,8 @@ export const queryKeys = {
   username: {
     check: (username: string) => ["username", "check", username] as const,
   },
+  wallet: {
+    portfolio: (address: string) =>
+      ["wallet", "portfolio", address] as const,
+  },
 };
