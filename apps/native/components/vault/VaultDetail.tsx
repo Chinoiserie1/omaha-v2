@@ -12,6 +12,7 @@ import { VaultInfo } from "./VaultInfo";
 import { InvestModal } from "./InvestModal";
 import { WithdrawModal } from "./WithdrawModal";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
+import { InvestHeaderButton } from "./InvestHeaderButton";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -204,6 +205,9 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
         >
           {vault?.name ?? ""}
         </Text>
+        {vault && (
+          <InvestHeaderButton onPress={() => setInvestVisible(true)} />
+        )}
       </View>
 
       {isLoading ? (
