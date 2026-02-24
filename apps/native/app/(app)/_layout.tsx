@@ -11,10 +11,16 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
   useTwitterSync();
 
-  const { data, isLoading } = useOnboardingStatus(user?.id);
+  const { data, isLoading, isError } = useOnboardingStatus(user?.id);
 
   if (isLoading) {
     return <FullScreenLoader />;
+  }
+
+  // If the query errored, optimistically render children
+  // (user already passed AuthGate, so they're authenticated)
+  if (isError) {
+    return <>{children}</>;
   }
 
   if (!data?.onboardingCompleted) {

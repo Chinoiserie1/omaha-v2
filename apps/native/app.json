@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Autopilot",
+    "name": "Omaha",
     "slug": "omaha",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -22,18 +22,15 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"
       },
-      "package": "com.omaha.app"
+      "package": "com.omaha.app",
+      "usesCleartextTraffic": true
     },
     "web": {
       "bundler": "metro",
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": [
-      "expo-router",
-      "expo-font",
-      "expo-asset"
-    ],
+    "plugins": ["expo-router", "expo-font", "expo-asset"],
     "experiments": {
       "typedRoutes": true
     },
