@@ -53,9 +53,6 @@ packages/database/generated
 # Misc
 .cache
 
-.claude/*
-!.claude/MVP.md
-
 tasks/*
 
 FORNADAR.md

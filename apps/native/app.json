@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.autopilot.native"
+      "bundleIdentifier": "com.omaha.app"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"
       },
-      "package": "com.autopilot.native"
+      "package": "com.omaha.app"
     },
     "web": {
       "bundler": "metro",
@@ -30,7 +30,9 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-font",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

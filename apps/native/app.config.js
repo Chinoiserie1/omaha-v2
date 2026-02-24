@@ -37,8 +37,8 @@ function loadEnv() {
 const env = loadEnv();
 
 module.exports = ({ config }) => {
-  const privyAppId = env.EXPO_PUBLIC_PRIVY_APP_ID || "";
-  const privyClientId = env.EXPO_PUBLIC_PRIVY_CLIENT_ID || "";
+  const privyAppId = process.env.EXPO_PUBLIC_PRIVY_APP_ID || env.EXPO_PUBLIC_PRIVY_APP_ID || "";
+  const privyClientId = process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID || env.EXPO_PUBLIC_PRIVY_CLIENT_ID || "";
 
   console.log("[app.config.js] PRIVY_APP_ID:", privyAppId ? `${privyAppId.slice(0, 8)}...` : "MISSING");
   console.log("[app.config.js] PRIVY_CLIENT_ID:", privyClientId ? `${privyClientId.slice(0, 8)}...` : "MISSING");
