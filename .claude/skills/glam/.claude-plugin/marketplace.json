@@ -1,0 +1,25 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "glam-marketplace",
+  "owner": {
+    "name": "GLAM",
+    "email": "dev@glam.systems"
+  },
+  "metadata": {
+    "description": "GLAM — Solana asset management skills and tools for Claude Code",
+    "version": "1.0.0"
+  },
+  "plugins": [
+    {
+      "name": "glam-skill",
+      "description": "Skills for building and managing tokenized vaults on Solana using GLAM. Covers vault creation, policy configuration, DeFi integrations (Drift, Jupiter, Kamino), staking, and SDK usage.",
+      "source": "./",
+      "category": "development",
+      "tags": ["solana", "defi", "asset-management"],
+      "strict": false,
+      "skills": [
+        "./"
+      ]
+    }
+  ]
+}

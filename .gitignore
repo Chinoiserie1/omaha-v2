@@ -55,5 +55,8 @@ packages/database/generated
 
 tasks/*
 
+android/*
+ios/*
+
 FORNADAR.md
 autopilot.json
