@@ -25,7 +25,8 @@ export default function LandingScreen() {
   const contentOpacity = useSharedValue(1);
   const contentTranslateY = useSharedValue(0);
 
-  const { data: onboardingData } = useOnboardingStatus(user?.id);
+  const { data: onboardingData, isError: onboardingError } =
+    useOnboardingStatus(user?.id);
 
   // Wire token provider early for any authenticated calls
   useEffect(() => {
@@ -53,7 +54,16 @@ export default function LandingScreen() {
 
   // Redirect based on onboarding status
   useEffect(() => {
-    if (!user || hasRedirected.current || onboardingData === undefined) return;
+    if (!user || hasRedirected.current) return;
+
+    // If query errored, optimistically redirect to app
+    if (onboardingError) {
+      hasRedirected.current = true;
+      router.replace("/(app)/(tabs)/(home)" as const);
+      return;
+    }
+
+    if (onboardingData === undefined) return;
 
     hasRedirected.current = true;
     if (onboardingData.onboardingCompleted) {
@@ -61,7 +71,7 @@ export default function LandingScreen() {
     } else {
       router.replace("/(onboarding)/connect-twitter");
     }
-  }, [user, onboardingData, router]);
+  }, [user, onboardingData, onboardingError, router]);
 
   const navigateToOnboarding = useCallback(() => {
     hasRedirected.current = true;

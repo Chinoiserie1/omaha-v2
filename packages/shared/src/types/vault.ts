@@ -6,6 +6,7 @@ export interface KolVault {
   description: string;
   glamVaultPda: string | null;
   statePda: string;
+  mintAddress: string | null;
   vaultName: string;
   vaultSymbol: string;
   isActive: boolean;

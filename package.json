@@ -10,6 +10,7 @@
     "dev:web": "pnpm --filter @repo/web dev",
     "dev:back": "pnpm --filter @repo/back dev",
     "dev:native": "pnpm --filter @repo/native dev",
+    "dev:native:android": "pnpm --filter @repo/native android",
     "build": "turbo run build",
     "build:web": "pnpm --filter @repo/web build",
     "build:back": "pnpm --filter @repo/back build",
@@ -33,10 +34,18 @@
     "create-vault": "turbo run create-vault",
     "sync-tokens": "turbo run sync-tokens",
     "seed-vaults": "turbo run seed-vaults",
-    "start:back": "pnpm --filter @repo/back start"
+    "start:back": "pnpm --filter @repo/back start",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
   },
   "devDependencies": {
     "turbo": "^2.7.1",
     "typescript": "^5.7.2"
+  },
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "~52.0.49",
+    "react": "18.3.1",
+    "react-native": "0.76.9"
   }
 }

@@ -33,6 +33,8 @@ export function WalletOverview() {
     }
   }, [wallet?.address]);
 
+  console.log("[WalletOverview] Balances:", JSON.stringify(balances, null, 2));
+
   useEffect(() => {
     fetchBalances();
   }, [fetchBalances]);
