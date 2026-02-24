@@ -22,6 +22,7 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     kolId: vault.kolId,
     glamStatePda: vault.statePda,
     glamVaultPda: vault.glamVaultPda,
+    mintAddress: vault.mintAddress,
     isActive: vault.isActive,
     kol: {
       id: vault.kol.id,

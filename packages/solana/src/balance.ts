@@ -4,6 +4,10 @@ const TOKEN_PROGRAM_ID = new PublicKey(
   "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
 );
 
+const TOKEN_2022_PROGRAM_ID = new PublicKey(
+  "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
+);
+
 export interface TokenBalance {
   mint: string;
   decimals: number;
@@ -30,11 +34,19 @@ export async function getTokenBalances(
   address: string,
 ): Promise<TokenBalance[]> {
   const pubkey = new PublicKey(address);
-  const tokenAccounts = await connection.getParsedTokenAccountsByOwner(pubkey, {
-    programId: TOKEN_PROGRAM_ID,
-  });
 
-  return tokenAccounts.value
+  const [splAccounts, token2022Accounts] = await Promise.all([
+    connection.getParsedTokenAccountsByOwner(pubkey, {
+      programId: TOKEN_PROGRAM_ID,
+    }),
+    connection.getParsedTokenAccountsByOwner(pubkey, {
+      programId: TOKEN_2022_PROGRAM_ID,
+    }),
+  ]);
+
+  const allAccounts = [...splAccounts.value, ...token2022Accounts.value];
+
+  return allAccounts
     .map((account) => {
       const info = account.account.data.parsed as {
         info: {

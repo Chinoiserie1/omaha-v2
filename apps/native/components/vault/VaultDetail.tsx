@@ -2,13 +2,17 @@ import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { VaultHeader } from "./VaultHeader";
 import { VaultStats } from "./VaultStats";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
 import { VaultChanges } from "./VaultChanges";
 import { VaultInfo } from "./VaultInfo";
+import { InvestModal } from "./InvestModal";
+import { WithdrawModal } from "./WithdrawModal";
+import { VaultPosition } from "./VaultPosition";
+import { VaultActions } from "./VaultActions";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -29,6 +33,7 @@ interface VaultData {
   kolId: string;
   glamStatePda: string;
   glamVaultPda: string | null;
+  mintAddress: string | null;
   isActive: boolean;
   kol: {
     id: string;
@@ -48,6 +53,8 @@ interface VaultData {
 type VaultSection =
   | { type: "header"; data: VaultData }
   | { type: "stats"; data: VaultData }
+  | { type: "actions"; data: VaultData }
+  | { type: "position"; data: { mintAddress: string } }
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
   | { type: "allocations-header" }
   | { type: "allocation"; data: Allocation }
@@ -63,7 +70,12 @@ function buildSections(vault: VaultData): VaultSection[] {
   const sections: VaultSection[] = [
     { type: "header", data: vault },
     { type: "stats", data: vault },
+    { type: "actions", data: vault },
   ];
+
+  if (vault.mintAddress) {
+    sections.push({ type: "position", data: { mintAddress: vault.mintAddress } });
+  }
 
   if (vault.portfolio?.thesisSummary) {
     sections.push({
@@ -104,6 +116,8 @@ function SectionHeader({ title }: { title: string }) {
 
 export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
+  const [investVisible, setInvestVisible] = useState(false);
+  const [withdrawVisible, setWithdrawVisible] = useState(false);
 
   const sections = useMemo(
     () => (vault ? buildSections(vault as VaultData) : []),
@@ -130,6 +144,15 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
               glamVaultPda={item.data.glamVaultPda}
             />
           );
+        case "actions":
+          return (
+            <VaultActions
+              hasMintAddress={!!item.data.mintAddress}
+              onWithdraw={() => setWithdrawVisible(true)}
+            />
+          );
+        case "position":
+          return <VaultPosition mintAddress={item.data.mintAddress} />;
         case "thesis":
           return (
             <VaultThesis
@@ -192,8 +215,13 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
           <View className="flex-1 ml-3" />
         )}
         <Pressable
-          onPress={() => {}}
-          className="ml-3 bg-emerald-600 px-5 py-2 rounded-full active:bg-emerald-700"
+          onPress={() => setInvestVisible(true)}
+          disabled={!vault?.glamVaultPda}
+          className={`ml-3 px-5 py-2 rounded-full ${
+            vault?.glamVaultPda
+              ? "bg-emerald-600 active:bg-emerald-700"
+              : "bg-zinc-700"
+          }`}
         >
           <Text className="text-sm font-semibold text-white">Invest</Text>
         </Pressable>
@@ -224,6 +252,26 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
         />
+      )}
+
+      {vault && (
+        <>
+          <InvestModal
+            visible={investVisible}
+            onClose={() => setInvestVisible(false)}
+            vaultId={vault.id}
+            vaultName={vault.name}
+          />
+          {vault.mintAddress && (
+            <WithdrawModal
+              visible={withdrawVisible}
+              onClose={() => setWithdrawVisible(false)}
+              vaultId={vault.id}
+              vaultName={vault.name}
+              mintAddress={vault.mintAddress}
+            />
+          )}
+        </>
       )}
     </SafeAreaView>
   );

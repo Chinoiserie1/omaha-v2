@@ -7,6 +7,7 @@ import { PrivyProvider } from "@privy-io/expo";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import Constants from "expo-constants";
 import { useColorScheme } from "nativewind";
+import Toast from "react-native-toast-message";
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ?? process.env.EXPO_PUBLIC_PRIVY_APP_ID ?? "";
@@ -64,6 +65,7 @@ export default function RootLayout() {
             <Stack.Screen name="(app)" options={{ animation: "fade" }} />
           </Stack>
           <StatusBar style={isDark ? "light" : "dark"} />
+          <Toast />
         </PrivyProvider>
       </QueryClientProvider>
     </GestureHandlerRootView>

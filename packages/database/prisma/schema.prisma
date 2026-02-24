@@ -121,6 +121,7 @@ model KolVault {
   description      String           @default("")
   glamVaultPda     String?          @unique
   statePda         String           @unique
+  mintAddress      String?          @unique
   vaultName        String
   vaultSymbol      String
   dryRun           Boolean          @default(true)

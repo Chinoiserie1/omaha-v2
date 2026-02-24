@@ -10,6 +10,7 @@
     "dev:web": "pnpm --filter @repo/web dev",
     "dev:back": "pnpm --filter @repo/back dev",
     "dev:native": "pnpm --filter @repo/native dev",
+    "dev:native:android": "pnpm --filter @repo/native android",
     "build": "turbo run build",
     "build:web": "pnpm --filter @repo/web build",
     "build:back": "pnpm --filter @repo/back build",

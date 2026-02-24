@@ -12,6 +12,7 @@ function formatVaultSummary(
     kolId: string;
     statePda: string;
     glamVaultPda: string | null;
+    mintAddress: string | null;
     isActive: boolean;
   },
   portfolio: PortfolioSnapshot | null
@@ -24,6 +25,7 @@ function formatVaultSummary(
     kolId: vault.kolId,
     glamStatePda: vault.statePda,
     glamVaultPda: vault.glamVaultPda,
+    mintAddress: vault.mintAddress,
     isActive: vault.isActive,
     portfolio: portfolio
       ? {

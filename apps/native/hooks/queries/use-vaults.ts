@@ -35,6 +35,7 @@ interface VaultData {
   kolId: string;
   glamStatePda: string;
   glamVaultPda: string | null;
+  mintAddress: string | null;
   isActive: boolean;
   kol: {
     id: string;
