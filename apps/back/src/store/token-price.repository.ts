@@ -49,3 +49,36 @@ export async function getLatestPriceMap(): Promise<Map<string, number>> {
 export async function findTokenByMint(mint: string): Promise<Token | null> {
   return prisma.token.findUnique({ where: { mint } });
 }
+
+export async function upsertVaultToken(data: {
+  name: string;
+  symbol: string;
+  decimals: number;
+  mint: string;
+}): Promise<Token> {
+  return prisma.token.upsert({
+    where: { mint: data.mint },
+    update: {
+      name: data.name,
+      symbol: data.symbol,
+      decimals: data.decimals,
+      isVault: true,
+    },
+    create: { ...data, isVault: true },
+  });
+}
+
+export async function findAllVaultTokens(): Promise<Token[]> {
+  return prisma.token.findMany({ where: { isVault: true } });
+}
+
+export async function getPriceHistory(
+  tokenId: string,
+  since: Date,
+): Promise<{ usdPrice: number; date: Date }[]> {
+  return prisma.tokenPrice.findMany({
+    where: { tokenId, date: { gte: since } },
+    orderBy: { date: "asc" },
+    select: { usdPrice: true, date: true },
+  });
+}

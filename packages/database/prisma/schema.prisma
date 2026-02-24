@@ -205,6 +205,7 @@ model SnapshotPerformance {
   symbol    String
   decimals  Int
   mint      String       @unique
+  isVault   Boolean      @default(false)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   prices    TokenPrice[]

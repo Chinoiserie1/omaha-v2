@@ -12,6 +12,7 @@ import { VaultInfo } from "./VaultInfo";
 import { InvestModal } from "./InvestModal";
 import { WithdrawModal } from "./WithdrawModal";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
+import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
 import { useVault } from "../../hooks/queries/use-vaults";
 
@@ -53,6 +54,7 @@ interface VaultData {
 type VaultSection =
   | { type: "header"; data: VaultData }
   | { type: "stats"; data: VaultData }
+  | { type: "performance"; data: { vaultId: string } }
   | { type: "investment"; data: VaultData }
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
   | { type: "allocations-header" }
@@ -69,6 +71,7 @@ function buildSections(vault: VaultData): VaultSection[] {
   const sections: VaultSection[] = [
     { type: "header", data: vault },
     { type: "stats", data: vault },
+    { type: "performance", data: { vaultId: vault.id } },
     { type: "investment", data: vault },
   ];
 
@@ -139,6 +142,8 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
               glamVaultPda={item.data.glamVaultPda}
             />
           );
+        case "performance":
+          return <VaultPerformanceChart vaultId={item.data.vaultId} />;
         case "investment":
           return (
             <VaultInvestmentCard

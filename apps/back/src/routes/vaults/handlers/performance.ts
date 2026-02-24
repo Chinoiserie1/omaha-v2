@@ -1,0 +1,102 @@
+import type { FastifyReply, FastifyRequest } from "fastify";
+import * as vaultRepo from "../../../store/vault.repository.js";
+import * as tokenPriceRepo from "../../../store/token-price.repository.js";
+import type {
+  VaultPerformancePeriod,
+  VaultPerformanceResponse,
+} from "@repo/shared";
+
+type GetPerformanceRequest = FastifyRequest<{
+  Params: { id: string };
+  Querystring: { period?: string; maxPoints?: string };
+}>;
+
+const PERIOD_MS: Record<VaultPerformancePeriod, number | null> = {
+  "1d": 24 * 60 * 60 * 1000,
+  "7d": 7 * 24 * 60 * 60 * 1000,
+  "30d": 30 * 24 * 60 * 60 * 1000,
+  all: null,
+};
+
+function isValidPeriod(value: string): value is VaultPerformancePeriod {
+  return value in PERIOD_MS;
+}
+
+export async function getVaultPerformance(
+  request: GetPerformanceRequest,
+  reply: FastifyReply,
+) {
+  const vault = await vaultRepo.findVaultById(request.params.id);
+  if (!vault) {
+    return reply.status(404).send({ error: "Vault not found" });
+  }
+
+  if (!vault.mintAddress) {
+    return emptyResponse(reply, "7d");
+  }
+
+  const token = await tokenPriceRepo.findTokenByMint(vault.mintAddress);
+  if (!token) {
+    return emptyResponse(reply, "7d");
+  }
+
+  const rawPeriod = request.query.period ?? "7d";
+  const period: VaultPerformancePeriod = isValidPeriod(rawPeriod)
+    ? rawPeriod
+    : "7d";
+
+  const periodMs = PERIOD_MS[period];
+  const since = periodMs ? new Date(Date.now() - periodMs) : new Date(0);
+
+  const rows = await tokenPriceRepo.getPriceHistory(token.id, since);
+
+  const allPoints = rows.map((r) => ({
+    timestamp: r.date.getTime(),
+    value: r.usdPrice,
+  }));
+
+  const maxPoints = Number.parseInt(request.query.maxPoints ?? "", 10);
+  const points =
+    maxPoints > 0 && allPoints.length > maxPoints
+      ? downsample(allPoints, maxPoints)
+      : allPoints;
+
+  const startPrice = points.length > 0 ? points[0]!.value : null;
+  const currentPrice = points.length > 0 ? points[points.length - 1]!.value : null;
+
+  const percentChange =
+    startPrice !== null && currentPrice !== null && startPrice > 0
+      ? ((currentPrice - startPrice) / startPrice) * 100
+      : null;
+
+  const response: VaultPerformanceResponse = {
+    period,
+    points,
+    currentPrice,
+    startPrice,
+    percentChange,
+  };
+
+  return response;
+}
+
+function downsample<T>(points: T[], maxPoints: number): T[] {
+  const step = Math.floor(points.length / maxPoints);
+  const sampled = points.filter((_, i) => i % step === 0);
+  const last = points[points.length - 1]!;
+  if (sampled[sampled.length - 1] !== last) {
+    sampled.push(last);
+  }
+  return sampled;
+}
+
+function emptyResponse(reply: FastifyReply, period: VaultPerformancePeriod) {
+  const response: VaultPerformanceResponse = {
+    period,
+    points: [],
+    currentPrice: null,
+    startPrice: null,
+    percentChange: null,
+  };
+  return reply.send(response);
+}

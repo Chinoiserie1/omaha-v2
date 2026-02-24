@@ -36,6 +36,21 @@ export interface SwapDelta {
   error?: string;
 }
 
+export interface VaultPerformancePoint {
+  timestamp: number;
+  value: number;
+}
+
+export type VaultPerformancePeriod = "1d" | "7d" | "30d" | "all";
+
+export interface VaultPerformanceResponse {
+  period: VaultPerformancePeriod;
+  points: VaultPerformancePoint[];
+  currentPrice: number | null;
+  startPrice: number | null;
+  percentChange: number | null;
+}
+
 export type RebalanceStatus =
   | "PENDING"
   | "EXECUTING"
