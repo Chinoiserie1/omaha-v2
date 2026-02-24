@@ -31,7 +31,7 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
   vaultId,
 }: VaultPerformanceChartProps) {
   const [period, setPeriod] = useState<VaultPerformancePeriod>("7d");
-  const { data, isLoading } = useVaultPerformance(vaultId, period, 100);
+  const { data, isLoading } = useVaultPerformance(vaultId, period, 60);
 
   const points = data?.points ?? [];
   const currentPrice = data?.currentPrice ?? null;

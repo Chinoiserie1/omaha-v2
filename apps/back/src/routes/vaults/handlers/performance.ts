@@ -48,18 +48,13 @@ export async function getVaultPerformance(
   const periodMs = PERIOD_MS[period];
   const since = periodMs ? new Date(Date.now() - periodMs) : new Date(0);
 
-  const rows = await tokenPriceRepo.getPriceHistory(token.id, since);
+  const maxPoints = Number.parseInt(request.query.maxPoints ?? "", 10) || undefined;
+  const rows = await tokenPriceRepo.getPriceHistory(token.id, since, maxPoints);
 
-  const allPoints = rows.map((r) => ({
+  const points = rows.map((r) => ({
     timestamp: r.date.getTime(),
     value: r.usdPrice,
   }));
-
-  const maxPoints = Number.parseInt(request.query.maxPoints ?? "", 10);
-  const points =
-    maxPoints > 0 && allPoints.length > maxPoints
-      ? downsample(allPoints, maxPoints)
-      : allPoints;
 
   const startPrice = points.length > 0 ? points[0]!.value : null;
   const currentPrice = points.length > 0 ? points[points.length - 1]!.value : null;
@@ -78,16 +73,6 @@ export async function getVaultPerformance(
   };
 
   return response;
-}
-
-function downsample<T>(points: T[], maxPoints: number): T[] {
-  const step = Math.floor(points.length / maxPoints);
-  const sampled = points.filter((_, i) => i % step === 0);
-  const last = points[points.length - 1]!;
-  if (sampled[sampled.length - 1] !== last) {
-    sampled.push(last);
-  }
-  return sampled;
 }
 
 function emptyResponse(reply: FastifyReply, period: VaultPerformancePeriod) {

@@ -75,10 +75,29 @@ export async function findAllVaultTokens(): Promise<Token[]> {
 export async function getPriceHistory(
   tokenId: string,
   since: Date,
+  maxPoints?: number,
 ): Promise<{ usdPrice: number; date: Date }[]> {
-  return prisma.tokenPrice.findMany({
-    where: { tokenId, date: { gte: since } },
-    orderBy: { date: "asc" },
-    select: { usdPrice: true, date: true },
-  });
+  if (!maxPoints || maxPoints <= 0) {
+    return prisma.tokenPrice.findMany({
+      where: { tokenId, date: { gte: since } },
+      orderBy: { date: "asc" },
+      select: { usdPrice: true, date: true },
+    });
+  }
+
+  return prisma.$queryRaw<{ usdPrice: number; date: Date }[]>`
+    WITH numbered AS (
+      SELECT "usdPrice", date,
+             ROW_NUMBER() OVER (ORDER BY date) AS rn,
+             COUNT(*) OVER () AS total
+      FROM "TokenPrice"
+      WHERE "tokenId" = ${tokenId} AND date >= ${since}
+    )
+    SELECT "usdPrice", date
+    FROM numbered
+    WHERE total <= ${maxPoints}
+       OR rn % GREATEST(total / ${maxPoints}, 1) = 0
+       OR rn = total
+    ORDER BY date
+  `;
 }
