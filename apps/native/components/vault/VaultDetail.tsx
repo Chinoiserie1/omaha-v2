@@ -11,8 +11,8 @@ import { VaultChanges } from "./VaultChanges";
 import { VaultInfo } from "./VaultInfo";
 import { InvestModal } from "./InvestModal";
 import { WithdrawModal } from "./WithdrawModal";
-import { VaultPosition } from "./VaultPosition";
-import { VaultActions } from "./VaultActions";
+import { VaultInvestmentCard } from "./VaultInvestmentCard";
+import { InvestHeaderButton } from "./InvestHeaderButton";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -53,8 +53,7 @@ interface VaultData {
 type VaultSection =
   | { type: "header"; data: VaultData }
   | { type: "stats"; data: VaultData }
-  | { type: "actions"; data: VaultData }
-  | { type: "position"; data: { mintAddress: string } }
+  | { type: "investment"; data: VaultData }
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
   | { type: "allocations-header" }
   | { type: "allocation"; data: Allocation }
@@ -70,12 +69,8 @@ function buildSections(vault: VaultData): VaultSection[] {
   const sections: VaultSection[] = [
     { type: "header", data: vault },
     { type: "stats", data: vault },
-    { type: "actions", data: vault },
+    { type: "investment", data: vault },
   ];
-
-  if (vault.mintAddress) {
-    sections.push({ type: "position", data: { mintAddress: vault.mintAddress } });
-  }
 
   if (vault.portfolio?.thesisSummary) {
     sections.push({
@@ -144,15 +139,15 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
               glamVaultPda={item.data.glamVaultPda}
             />
           );
-        case "actions":
+        case "investment":
           return (
-            <VaultActions
-              hasMintAddress={!!item.data.mintAddress}
+            <VaultInvestmentCard
+              vaultId={item.data.id}
+              mintAddress={item.data.mintAddress}
+              onInvest={() => setInvestVisible(true)}
               onWithdraw={() => setWithdrawVisible(true)}
             />
           );
-        case "position":
-          return <VaultPosition mintAddress={item.data.mintAddress} />;
         case "thesis":
           return (
             <VaultThesis
@@ -204,27 +199,15 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
         >
           <Ionicons name="chevron-back" size={20} color="#FAFAFA" />
         </Pressable>
-        {vault ? (
-          <Text
-            className="flex-1 text-base font-semibold text-white ml-3"
-            numberOfLines={1}
-          >
-            {vault.name}
-          </Text>
-        ) : (
-          <View className="flex-1 ml-3" />
-        )}
-        <Pressable
-          onPress={() => setInvestVisible(true)}
-          disabled={!vault?.glamVaultPda}
-          className={`ml-3 px-5 py-2 rounded-full ${
-            vault?.glamVaultPda
-              ? "bg-emerald-600 active:bg-emerald-700"
-              : "bg-zinc-700"
-          }`}
+        <Text
+          className="flex-1 text-base font-semibold text-white ml-3"
+          numberOfLines={1}
         >
-          <Text className="text-sm font-semibold text-white">Invest</Text>
-        </Pressable>
+          {vault?.name ?? ""}
+        </Text>
+        {vault && (
+          <InvestHeaderButton onPress={() => setInvestVisible(true)} />
+        )}
       </View>
 
       {isLoading ? (

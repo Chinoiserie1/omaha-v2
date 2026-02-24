@@ -1,5 +1,6 @@
-import type { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { getGlamClient } from "./client.js";
+import { getConnection } from "./config.js";
 import { logger } from "../utils/logger.js";
 import type { VaultHolding } from "@repo/shared";
 
@@ -34,6 +35,30 @@ export async function getVaultHoldings(statePda: PublicKey): Promise<{
   );
 
   return { holdings, totalEquityUsd };
+}
+
+/**
+ * Compute share price: total vault equity / share mint total supply.
+ * Returns null if supply is zero or data cannot be fetched.
+ */
+export async function getSharePrice(statePda: PublicKey): Promise<number | null> {
+  const client = getGlamClient(statePda);
+  const stateModel = await client.fetchStateModel();
+
+  if (!stateModel.mint) return null;
+
+  const shareMint = new PublicKey(stateModel.mint);
+  const connection = getConnection();
+
+  const [{ totalEquityUsd }, supplyResult] = await Promise.all([
+    getVaultHoldings(statePda),
+    connection.getTokenSupply(shareMint),
+  ]);
+
+  const supplyUiAmount = supplyResult.value.uiAmount ?? 0;
+  if (supplyUiAmount <= 0) return null;
+
+  return totalEquityUsd / supplyUiAmount;
 }
 
 /**
