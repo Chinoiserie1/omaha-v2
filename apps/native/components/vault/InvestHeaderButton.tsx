@@ -7,7 +7,6 @@ import Animated, {
   withTiming,
   Easing,
   interpolate,
-  withSequence,
 } from "react-native-reanimated";
 import { Ionicons } from "@expo/vector-icons";
 
@@ -23,19 +22,16 @@ export function InvestHeaderButton({ onPress }: InvestHeaderButtonProps) {
 
   useEffect(() => {
     breath.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-        withTiming(0, { duration: 1500, easing: Easing.inOut(Easing.ease) }),
-      ),
+      withTiming(1, { duration: 1800, easing: Easing.inOut(Easing.sin) }),
       -1,
-      false,
+      true,
     );
   }, [breath]);
 
   const glowStyle = useAnimatedStyle(() => ({
-    opacity: interpolate(breath.value, [0, 1], [0.25, 0.7]),
+    opacity: interpolate(breath.value, [0, 1], [0.2, 0.5]),
     transform: [
-      { scale: interpolate(breath.value, [0, 1], [1, 1.25]) },
+      { scale: interpolate(breath.value, [0, 1], [1, 1.12]) },
     ],
   }));
 
@@ -60,9 +56,11 @@ export function InvestHeaderButton({ onPress }: InvestHeaderButtonProps) {
         style={[
           {
             position: "absolute",
-            width: "100%",
-            height: "100%",
-            borderRadius: 12,
+            top: -4,
+            bottom: -4,
+            left: -4,
+            right: -4,
+            borderRadius: 14,
             backgroundColor: "#34d399",
           },
           glowStyle,
@@ -77,17 +75,17 @@ export function InvestHeaderButton({ onPress }: InvestHeaderButtonProps) {
           {
             flexDirection: "row",
             alignItems: "center",
-            gap: 6,
+            gap: 4,
             backgroundColor: "#059669",
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            borderRadius: 12,
+            paddingHorizontal: 10,
+            paddingVertical: 6,
+            borderRadius: 10,
           },
           buttonStyle,
         ]}
       >
-        <Ionicons name="flash" size={14} color="#ffffff" />
-        <Text style={{ color: "#ffffff", fontWeight: "600", fontSize: 14 }}>
+        <Ionicons name="flash" size={12} color="#ffffff" />
+        <Text style={{ color: "#ffffff", fontWeight: "600", fontSize: 12 }}>
           Invest
         </Text>
       </AnimatedPressable>
