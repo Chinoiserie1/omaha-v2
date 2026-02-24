@@ -89,7 +89,9 @@ export function InvestModal({
         signAndSend: (transaction, connection, options) =>
           provider.request({
             method: "signAndSendTransaction",
-            params: { transaction, connection, options },
+            params: options
+              ? { transaction, connection, options }
+              : { transaction, connection },
           }),
       });
 

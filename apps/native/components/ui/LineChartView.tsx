@@ -56,7 +56,7 @@ export const LineChartView = memo(function LineChartView({
       <View className={className} onLayout={onLayout} style={{ height: chartHeight }}>
         {loading && (
           <ChartSkeleton
-            width={containerWidth || undefined}
+            {...(containerWidth > 0 && { width: containerWidth })}
             height={chartHeight}
           />
         )}
