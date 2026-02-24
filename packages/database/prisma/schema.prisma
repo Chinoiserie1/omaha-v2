@@ -121,6 +121,7 @@ model KolVault {
   kolId            String           @unique
   kol              Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
   kolUsername      String           @default("")
+  avatarUrl        String           @default("")
   name             String           @default("")
   description      String           @default("")
   glamVaultPda     String?          @unique

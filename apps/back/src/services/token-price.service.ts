@@ -1,14 +1,15 @@
 import axios from "axios";
 import { logger } from "../utils/logger.js";
+import { env } from "../utils/env.js";
 import * as tokenPriceRepo from "../store/token-price.repository.js";
 
 const SOL_MINT = "So11111111111111111111111111111111111111112";
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
-const JUPITER_PRICE_URL = "https://api.jup.ag/price/v2";
+const JUPITER_PRICE_URL = "https://api.jup.ag/price/v3";
 
 interface JupiterPriceResponse {
-  data: Record<string, { price: string } | undefined>;
+  [mint: string]: { usdPrice: number; decimals: number } | undefined;
 }
 
 const SEED_TOKENS = [
@@ -32,11 +33,12 @@ export async function fetchAndStorePrices(): Promise<void> {
   try {
     const { data } = await axios.get<JupiterPriceResponse>(JUPITER_PRICE_URL, {
       params: { ids: SOL_MINT },
+      headers: { "x-api-key": env.JUPITER_API_KEY },
     });
 
-    const solPrice = data.data[SOL_MINT];
+    const solPrice = data[SOL_MINT];
     if (solPrice) {
-      const price = parseFloat(solPrice.price);
+      const price = solPrice.usdPrice;
       const solToken = await tokenPriceRepo.findTokenByMint(SOL_MINT);
       if (solToken) {
         await tokenPriceRepo.insertPrice(solToken.id, price);

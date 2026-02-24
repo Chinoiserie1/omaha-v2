@@ -18,19 +18,37 @@ const apiClient = axios.create({
 });
 
 export async function fetchUserDetails(
-  username: string
+  username: string,
 ): Promise<TwitterUser | null> {
   try {
     const response = await apiClient.get("/user", {
       params: { username },
     });
 
+    console.log("fetch user details twitter response", response.data);
+    console.log(
+      "fetch user details twitter response.data.result",
+      response.data.result,
+    );
+    console.log(
+      "fetch user details twitter response.data.result.data",
+      response.data.result.data,
+    );
+    console.log(
+      "fetch user details twitter response.data.result.data.user",
+      response.data.result.data.user,
+    );
+    console.log(
+      "fetch user details twitter response.data.result.data.user.result",
+      response.data.result.data.user.result,
+    );
+
     const parsed = UserDetailsResponseSchema.safeParse(response.data);
 
     if (!parsed.success) {
       logger.warn(
         { username, errors: parsed.error.issues },
-        "Failed to parse user details response"
+        "Failed to parse user details response",
       );
       return null;
     }
@@ -111,7 +129,7 @@ function extractTweetsFromResponse(data: unknown): TweetResult[] {
           } else {
             logger.debug(
               { errors: parsed.error.issues },
-              "Skipping malformed tweet entry"
+              "Skipping malformed tweet entry",
             );
           }
         }
@@ -122,9 +140,7 @@ function extractTweetsFromResponse(data: unknown): TweetResult[] {
   return tweets;
 }
 
-export async function fetchUserTweets(
-  restId: string
-): Promise<TweetResult[]> {
+export async function fetchUserTweets(restId: string): Promise<TweetResult[]> {
   try {
     const response = await apiClient.get("/user-tweets", {
       params: { user: restId, count: "40" },
@@ -211,7 +227,7 @@ function extractTweetsFromDetailResponse(data: unknown): TweetResult[] {
 }
 
 export async function fetchTweetDetail(
-  tweetId: string
+  tweetId: string,
 ): Promise<TweetResult[]> {
   try {
     const response = await apiClient.get("/tweet-detail", {
