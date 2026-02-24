@@ -18,6 +18,11 @@ export const threadParamsSchema = z.object({
 
 export const TwitterUserSchema = z.object({
   rest_id: z.string(),
+  avatar: z
+    .object({
+      image_url: z.string().optional(),
+    })
+    .optional(),
   legacy: z.object({
     name: z.string().optional(),
     screen_name: z.string().optional(),

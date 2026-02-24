@@ -85,15 +85,8 @@ export async function syncKolProfile(kolId: string): Promise<void> {
     return;
   }
 
-  console.log("user", user);
-  console.log("user.legacy", user.legacy);
-  console.log("user.legacy.name", user.legacy.name);
-  console.log("user.legacy.followers_count", user.legacy.followers_count);
-  console.log(
-    "user.legacy.profile_image_url_https",
-    user.legacy.profile_image_url_https,
-  );
-  console.log("user.legacy.description", user.legacy.description);
+  const avatarUrl =
+    user.avatar?.image_url ?? user.legacy.profile_image_url_https;
 
   await kolRepo.updateKolProfile(kolId, {
     restId: user.rest_id,
@@ -103,9 +96,7 @@ export async function syncKolProfile(kolId: string): Promise<void> {
     ...(user.legacy.followers_count !== undefined
       ? { followersCount: user.legacy.followers_count }
       : {}),
-    ...(user.legacy.profile_image_url_https !== undefined
-      ? { avatarUrl: user.legacy.profile_image_url_https }
-      : {}),
+    ...(avatarUrl !== undefined ? { avatarUrl } : {}),
     ...(user.legacy.description !== undefined
       ? { bio: user.legacy.description }
       : {}),

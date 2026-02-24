@@ -25,24 +25,6 @@ export async function fetchUserDetails(
       params: { username },
     });
 
-    console.log("fetch user details twitter response", response.data);
-    console.log(
-      "fetch user details twitter response.data.result",
-      response.data.result,
-    );
-    console.log(
-      "fetch user details twitter response.data.result.data",
-      response.data.result.data,
-    );
-    console.log(
-      "fetch user details twitter response.data.result.data.user",
-      response.data.result.data.user,
-    );
-    console.log(
-      "fetch user details twitter response.data.result.data.user.result",
-      response.data.result.data.user.result,
-    );
-
     const parsed = UserDetailsResponseSchema.safeParse(response.data);
 
     if (!parsed.success) {
