@@ -11,11 +11,11 @@ export const VaultTextSection = memo(function VaultTextSection({
   content,
 }: VaultTextSectionProps) {
   return (
-    <View className="mx-5 mt-3 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
-      <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
+    <View className="p-4 mx-5 mt-3">
+      <Text className="mb-3 text-xs font-semibold tracking-wider uppercase text-zinc-500">
         {title}
       </Text>
-      <Text className="text-sm text-zinc-300 leading-5">{content}</Text>
+      <Text className="text-sm leading-5 text-zinc-300">{content}</Text>
     </View>
   );
 });

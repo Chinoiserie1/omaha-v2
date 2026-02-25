@@ -33,6 +33,8 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
   const [period, setPeriod] = useState<VaultPerformancePeriod>("7d");
   const { data, isLoading } = useVaultPerformance(vaultId, period, 60);
 
+  console.log("VaultPerformanceChart data", data);
+
   const points = data?.points ?? [];
   const currentPrice = data?.currentPrice ?? null;
   const percentChange = data?.percentChange ?? null;
@@ -41,9 +43,9 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
 
   return (
     <View className="px-5 mb-2">
-      <View className="bg-zinc-900 border border-zinc-800 rounded-xl px-4 pt-4 pb-3">
+      <View className="px-4 pt-4 pb-3 rounded-xl border bg-zinc-900 border-zinc-800">
         {/* Price + change */}
-        <View className="flex-row items-baseline gap-2 mb-3">
+        <View className="flex-row gap-2 items-baseline mb-3">
           <Text className="text-xl font-bold text-white">
             {formatPrice(currentPrice)}
           </Text>
