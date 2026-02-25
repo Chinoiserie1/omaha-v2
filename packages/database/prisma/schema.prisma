@@ -199,11 +199,14 @@ model SnapshotPerformance {
   periodDays      Int
   details         Json?
   computedAt      DateTime          @default(now())
-  @@index([kolId, computedAt])}
 
-  // ── Token Price Models ────────────────────────────────────────
+  @@unique([fromSnapshotId, toSnapshotId])
+  @@index([kolId, computedAt])
+}
 
-  model Token {
+// ── Token Price Models ────────────────────────────────────────
+
+model Token {
   id        String       @id @default(cuid())
   name      String
   symbol    String
@@ -214,7 +217,6 @@ model SnapshotPerformance {
   updatedAt DateTime     @updatedAt
   prices    TokenPrice[]
 
-  @@unique([fromSnapshotId, toSnapshotId])
   @@index([symbol])
 }
 

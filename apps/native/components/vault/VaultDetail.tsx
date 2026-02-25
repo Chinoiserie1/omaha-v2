@@ -2,15 +2,12 @@ import { View, Text, ActivityIndicator, Pressable } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo } from "react";
 import { VaultHeader } from "./VaultHeader";
 import { VaultStats } from "./VaultStats";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
 import { VaultChanges } from "./VaultChanges";
-import { VaultInfo } from "./VaultInfo";
-import { InvestModal } from "./InvestModal";
-import { WithdrawModal } from "./WithdrawModal";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
@@ -75,6 +72,8 @@ type VaultSection =
 interface VaultDetailProps {
   vaultId: string;
   onBack: () => void;
+  onInvest: () => void;
+  onWithdraw: () => void;
 }
 
 function buildSections(vault: VaultData): VaultSection[] {
@@ -155,10 +154,8 @@ function SectionHeader({ title }: { title: string }) {
   );
 }
 
-export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
+export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
-  const [investVisible, setInvestVisible] = useState(false);
-  const [withdrawVisible, setWithdrawVisible] = useState(false);
 
   const sections = useMemo(
     () => (vault ? buildSections(vault as VaultData) : []),
@@ -188,8 +185,8 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
           <VaultInvestmentCard
             vaultId={item.data.id}
             mintAddress={item.data.mintAddress}
-            onInvest={() => setInvestVisible(true)}
-            onWithdraw={() => setWithdrawVisible(true)}
+            onInvest={onInvest}
+            onWithdraw={onWithdraw}
           />
         );
       case "thesis":
@@ -240,7 +237,8 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
       default:
         return null;
     }
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onInvest, onWithdraw]);
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);
   const keyExtractor = useCallback(
@@ -263,7 +261,7 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
         >
           {vault?.name ?? ""}
         </Text>
-        {vault && <InvestHeaderButton onPress={() => setInvestVisible(true)} />}
+        {vault && <InvestHeaderButton onPress={onInvest} />}
       </View>
 
       {isLoading ? (
@@ -293,25 +291,6 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
         />
       )}
 
-      {vault && (
-        <>
-          <InvestModal
-            visible={investVisible}
-            onClose={() => setInvestVisible(false)}
-            vaultId={vault.id}
-            vaultName={vault.name}
-          />
-          {vault.mintAddress && (
-            <WithdrawModal
-              visible={withdrawVisible}
-              onClose={() => setWithdrawVisible(false)}
-              vaultId={vault.id}
-              vaultName={vault.name}
-              mintAddress={vault.mintAddress}
-            />
-          )}
-        </>
-      )}
     </SafeAreaView>
   );
 }
