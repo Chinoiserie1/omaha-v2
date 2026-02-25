@@ -22,6 +22,9 @@ const envSchema = z.object({
   // KOL Pipeline — Jupiter
   JUPITER_API_KEY: z.string().min(1),
 
+  // KOL Pipeline — Birdeye (price data)
+  BIRDEYE_API_KEY: z.string().min(1),
+
   // KOL Pipeline — Solana (optional — crons work without these)
   SOLANA_RPC_URL: z.string().optional(),
   KEEPER_PRIVATE_KEY: z.string().optional(),

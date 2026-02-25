@@ -5,6 +5,7 @@ import { onboardingRoutes } from "./routes/onboarding/index.js";
 import { kolRoutes } from "./routes/kols/index.js";
 import { tweetRoutes, kolTweetRoutes } from "./routes/tweets/index.js";
 import { portfolioRoutes } from "./routes/portfolio/index.js";
+import { backtestRoutes } from "./routes/backtest/index.js";
 import { vaultRoutes } from "./routes/vaults/index.js";
 import { profileRoutes } from "./routes/profile/index.js";
 import { followRoutes } from "./routes/follows/index.js";
@@ -34,6 +35,7 @@ export async function buildApp() {
   await app.register(tweetRoutes, { prefix: "/api/tweets" });
   await app.register(kolTweetRoutes, { prefix: "/api/kols" });
   await app.register(portfolioRoutes, { prefix: "/api/kols" });
+  await app.register(backtestRoutes, { prefix: "/api/kols" });
 
   // Vault routes
   await app.register(vaultRoutes, { prefix: "/api/vaults" });
