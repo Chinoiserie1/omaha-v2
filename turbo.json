@@ -86,7 +86,8 @@
     "SNAPSHOT_STALENESS_H",
     "CRON_FETCH_TWEETS",
     "CRON_RUN_ALGO",
-    "CRON_REBALANCE_VAULTS"
+    "CRON_REBALANCE_VAULTS",
+    "BIRDEYE_API_KEY"
   ],
   "globalPassThroughEnv": ["CI"]
 }

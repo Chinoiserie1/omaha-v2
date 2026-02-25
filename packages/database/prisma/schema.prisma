@@ -109,6 +109,11 @@ model PortfolioSnapshot {
   createdAt       DateTime         @default(now())
   rebalanceEvents RebalanceEvent[]
 
+  // Backtest: this snapshot is the "from" side of a performance period
+  perfFrom SnapshotPerformance[] @relation("PerfFrom")
+  // Backtest: this snapshot is the "to" side of a performance period
+  perfTo   SnapshotPerformance[] @relation("PerfTo")
+
   @@index([kolId, createdAt])
 }
 
@@ -162,5 +167,35 @@ model TradeableAsset {
   mint     String
   decimals Int
   isActive Boolean @default(true)
+}
 
+// ── Backtest Models ───────────────────────────────────────────
+
+model TokenPriceDaily {
+  id        String   @id @default(cuid())
+  symbol    String
+  date      DateTime @db.Date
+  priceUsd  Float
+  source    String
+  fetchedAt DateTime @default(now())
+
+  @@unique([symbol, date])
+  @@index([symbol, date])
+}
+
+model SnapshotPerformance {
+  id              String            @id @default(cuid())
+  kolId           String
+  fromSnapshotId  String
+  fromSnapshot    PortfolioSnapshot @relation("PerfFrom", fields: [fromSnapshotId], references: [id], onDelete: Cascade)
+  toSnapshotId    String
+  toSnapshot      PortfolioSnapshot @relation("PerfTo", fields: [toSnapshotId], references: [id], onDelete: Cascade)
+  periodReturn    Float
+  cumulativeValue Float
+  periodDays      Int
+  details         Json?
+  computedAt      DateTime          @default(now())
+
+  @@unique([fromSnapshotId, toSnapshotId])
+  @@index([kolId, computedAt])
 }

@@ -11,6 +11,7 @@ import * as classificationRepo from "../store/classification.repository.js";
 import { findActiveKols } from "../store/kol.repository.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
 import { classifyUnclassifiedTweets } from "./classifier.service.js";
+import { computeLatestPeriod } from "./backtest.service.js";
 
 export function applyConvictionDecay(
   allocations: Allocation[],
@@ -240,6 +241,14 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     { kolId, allocations: decayedAllocations.length, changes: portfolio.changes.length },
     "Portfolio snapshot saved"
   );
+
+  // Compute backtest performance for this new period (non-fatal)
+  try {
+    await computeLatestPeriod(kolId);
+  } catch (err) {
+    logger.warn({ err, kolId }, "Failed to compute period performance (non-fatal)");
+  }
+
   return true;
 }
 
