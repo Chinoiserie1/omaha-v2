@@ -7,6 +7,10 @@ interface VaultSeed {
   vaultSymbol: string;
   name: string;
   description: string;
+  about: string;
+  dataSource: string;
+  performanceCalc: string;
+  disclosure: string;
   statePda: string;
   glamVaultPda: string;
   mintAddress: string | null;
@@ -23,6 +27,14 @@ const VAULTS: VaultSeed[] = [
     name: "SBC7H7La Vault",
     description:
       "Bitcoin-focused trading strategies informed by macro analysis and on-chain data.",
+    about:
+      "This vault follows a Bitcoin-focused strategy driven by macro analysis, on-chain metrics, and sentiment signals. The AI agent monitors the KOL's public commentary and translates their conviction into portfolio allocations across BTC and correlated assets. Rebalancing occurs automatically when new signals are detected.",
+    dataSource:
+      "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+    performanceCalc:
+      "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
+    disclosure:
+      "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
     statePda: "3A3wmPRdEnMUQ8Za5nVL9KNqJhSFiAUghnqrWp2HTi83",
     glamVaultPda: "D8gNHPbPvsgTfqh3Rwjc9cEevPTz8MzESekszZN23QGP",
     mintAddress: null,
@@ -37,6 +49,14 @@ const VAULTS: VaultSeed[] = [
     name: "Mert Vault",
     description:
       "Trading strategies curated by Mert, focused on Solana ecosystem insights.",
+    about:
+      "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
+    dataSource:
+      "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+    performanceCalc:
+      "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
+    disclosure:
+      "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
     statePda: "5jdMWiou4AVzev5HZgsuzpcU8jGW9wztenko5sDVpULX",
     glamVaultPda: "ABhUh47ATwrrgD7gUA1AK9g9jGkXp47BcB6Uhs2bF8hQ",
     mintAddress: null,
@@ -75,6 +95,10 @@ async function seedVaults(): Promise<void> {
         kolUsername: v.kolUsername,
         name: v.name,
         description: v.description,
+        about: v.about,
+        dataSource: v.dataSource,
+        performanceCalc: v.performanceCalc,
+        disclosure: v.disclosure,
         glamVaultPda: v.glamVaultPda,
         mintAddress: v.mintAddress,
         jupiterEnabled: v.jupiterEnabled,
@@ -85,6 +109,10 @@ async function seedVaults(): Promise<void> {
         kolUsername: v.kolUsername,
         name: v.name,
         description: v.description,
+        about: v.about,
+        dataSource: v.dataSource,
+        performanceCalc: v.performanceCalc,
+        disclosure: v.disclosure,
         statePda: v.statePda,
         glamVaultPda: v.glamVaultPda,
         mintAddress: v.mintAddress,
@@ -115,6 +143,14 @@ async function seedVaults(): Promise<void> {
       name: "mert Vault",
       description:
         "Crypto-native trading strategies by mert.",
+      about:
+        "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
+      dataSource:
+        "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+      performanceCalc:
+        "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
+      disclosure:
+        "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
       glamVaultPda: "ABhUh47ATwrrgD7gUA1AK9g9jGkXp47BcB6Uhs2bF8hQ",
       jupiterEnabled: true,
       dryRun: true,
@@ -125,6 +161,14 @@ async function seedVaults(): Promise<void> {
       name: "mert Vault",
       description:
         "Crypto-native trading strategies by mert.",
+      about:
+        "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
+      dataSource:
+        "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+      performanceCalc:
+        "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
+      disclosure:
+        "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
       statePda: "5jdMWiou4AVzev5HZgsuzpcU8jGW9wztenko5sDVpULX",
       glamVaultPda: "ABhUh47ATwrrgD7gUA1AK9g9jGkXp47BcB6Uhs2bF8hQ",
       vaultName: "mert",

@@ -14,6 +14,7 @@ import { WithdrawModal } from "./WithdrawModal";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
+import { VaultTextSection } from "./VaultTextSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -36,6 +37,10 @@ interface VaultData {
   glamVaultPda: string | null;
   mintAddress: string | null;
   isActive: boolean;
+  about: string;
+  dataSource: string;
+  performanceCalc: string;
+  disclosure: string;
   kol: {
     id: string;
     username: string;
@@ -60,7 +65,11 @@ type VaultSection =
   | { type: "allocations-header" }
   | { type: "allocation"; data: Allocation }
   | { type: "changes"; data: string[] }
-  | { type: "info"; data: VaultData };
+  | { type: "info"; data: VaultData }
+  | { type: "about"; data: { title: string; content: string } }
+  | { type: "data-source"; data: { title: string; content: string } }
+  | { type: "performance-calc"; data: { title: string; content: string } }
+  | { type: "disclosure"; data: { title: string; content: string } };
 
 interface VaultDetailProps {
   vaultId: string;
@@ -98,6 +107,19 @@ function buildSections(vault: VaultData): VaultSection[] {
   }
 
   sections.push({ type: "info", data: vault });
+
+  if (vault.about) {
+    sections.push({ type: "about", data: { title: "About", content: vault.about } });
+  }
+  if (vault.dataSource) {
+    sections.push({ type: "data-source", data: { title: "Data Source", content: vault.dataSource } });
+  }
+  if (vault.performanceCalc) {
+    sections.push({ type: "performance-calc", data: { title: "Performance Calculation", content: vault.performanceCalc } });
+  }
+  if (vault.disclosure) {
+    sections.push({ type: "disclosure", data: { title: "Disclosure", content: vault.disclosure } });
+  }
 
   return sections;
 }
@@ -180,6 +202,16 @@ export function VaultDetail({ vaultId, onBack }: VaultDetailProps) {
               glamVaultPda={item.data.glamVaultPda}
               vaultSymbol={item.data.name}
               kolBio={item.data.kol.bio}
+            />
+          );
+        case "about":
+        case "data-source":
+        case "performance-calc":
+        case "disclosure":
+          return (
+            <VaultTextSection
+              title={item.data.title}
+              content={item.data.content}
             />
           );
         default:

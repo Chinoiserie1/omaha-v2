@@ -1,0 +1,5 @@
+-- AlterTable
+ALTER TABLE "KolVault" ADD COLUMN "about" TEXT NOT NULL DEFAULT '',
+ADD COLUMN "dataSource" TEXT NOT NULL DEFAULT '',
+ADD COLUMN "performanceCalc" TEXT NOT NULL DEFAULT '',
+ADD COLUMN "disclosure" TEXT NOT NULL DEFAULT '';
