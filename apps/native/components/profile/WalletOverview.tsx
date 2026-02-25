@@ -1,43 +1,28 @@
-import { useEffect, useState, useCallback } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
-import {
-  getConnection,
-  getWalletBalances,
-  type WalletBalances,
-} from "@repo/solana";
-import { TokenList } from "./TokenList";
+import { useWalletPortfolio } from "../../hooks/queries/use-wallet-portfolio";
+import { ExpandableTokenList } from "./ExpandableTokenList";
 
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
+function formatTotalUsd(value: number): string {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toFixed(2)}M`;
+  }
+  if (value >= 1_000) {
+    return `$${value.toLocaleString(undefined, {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })}`;
+  }
+  return `$${value.toFixed(2)}`;
+}
 
 export function WalletOverview() {
   const router = useRouter();
   const { wallets } = useEmbeddedSolanaWallet();
   const wallet = wallets?.[0];
-  const [balances, setBalances] = useState<WalletBalances | null>(null);
-  const [loading, setLoading] = useState(true);
 
-  const fetchBalances = useCallback(async () => {
-    if (!wallet?.address) return;
-    try {
-      const connection = getConnection(RPC_URL);
-      const data = await getWalletBalances(connection, wallet.address);
-      setBalances(data);
-    } catch {
-      setBalances(null);
-    } finally {
-      setLoading(false);
-    }
-  }, [wallet?.address]);
-
-  console.log("[WalletOverview] Balances:", JSON.stringify(balances, null, 2));
-
-  useEffect(() => {
-    fetchBalances();
-  }, [fetchBalances]);
+  const { data: portfolio, isLoading } = useWalletPortfolio(wallet?.address);
 
   if (!wallet) {
     return (
@@ -55,9 +40,9 @@ export function WalletOverview() {
   return (
     <View className="p-5 mb-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900">
       <Text className="mb-1 text-xs tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
-        Wallet Balance
+        Total Balance
       </Text>
-      {loading ? (
+      {isLoading ? (
         <ActivityIndicator
           size="small"
           color="#71717A"
@@ -65,7 +50,7 @@ export function WalletOverview() {
         />
       ) : (
         <Text className="mb-4 text-3xl font-bold text-zinc-900 dark:text-white">
-          {balances !== null ? `${balances.sol.toFixed(4)} SOL` : "-- SOL"}
+          {portfolio ? formatTotalUsd(portfolio.totalUsd) : "$0.00"}
         </Text>
       )}
 
@@ -73,6 +58,7 @@ export function WalletOverview() {
         className="mb-4 font-mono text-xs text-zinc-500 dark:text-zinc-400"
         numberOfLines={1}
         ellipsizeMode="middle"
+        selectable
       >
         {wallet.address}
       </Text>
@@ -102,8 +88,8 @@ export function WalletOverview() {
         </TouchableOpacity>
       </View>
 
-      {!loading && balances && balances.tokens.length > 0 && (
-        <TokenList tokens={balances.tokens} />
+      {!isLoading && portfolio && portfolio.items.length > 0 && (
+        <ExpandableTokenList items={portfolio.items} />
       )}
     </View>
   );

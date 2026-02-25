@@ -44,6 +44,12 @@ const envSchema = z.object({
   CRON_FETCH_TWEETS: z.string().default("*/15 * * * *"),
   CRON_RUN_ALGO: z.string().default("*/30 * * * *"),
   CRON_REBALANCE_VAULTS: z.string().default("0 */6 * * *"),
+
+  // KOL Pipeline — Profile sync
+  CRON_SYNC_PROFILES: z.string().default("0 3 * * 0"),
+
+  // Token prices — Cron schedule
+  CRON_FETCH_PRICES: z.string().default("* * * * *"),
 });
 
 export type Env = z.infer<typeof envSchema>;

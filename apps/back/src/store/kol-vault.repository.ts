@@ -50,3 +50,13 @@ export async function deactivate(id: string): Promise<KolVault> {
     data: { isActive: false },
   });
 }
+
+export async function updateVaultProfile(
+  kolId: string,
+  data: { kolUsername?: string; avatarUrl?: string; name?: string; description?: string }
+): Promise<KolVault | null> {
+  const vault = await prisma.kolVault.findUnique({ where: { kolId } });
+  if (!vault) return null;
+
+  return prisma.kolVault.update({ where: { kolId }, data });
+}

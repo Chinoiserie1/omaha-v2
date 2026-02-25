@@ -1,7 +1,8 @@
 import { View, type LayoutChangeEvent } from "react-native";
-import { memo, useCallback, useState } from "react";
+import { memo, useCallback, useMemo, useState } from "react";
 import { LineChart } from "react-native-wagmi-charts";
 import * as Haptics from "expo-haptics";
+import { useColorScheme } from "nativewind";
 import { ChartSkeleton } from "./Skeleton";
 
 interface DataPoint {
@@ -36,6 +37,11 @@ export const LineChartView = memo(function LineChartView({
 }: LineChartViewProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const chartHeight = height;
+  const { colorScheme } = useColorScheme();
+  const tooltipTextStyle = useMemo(
+    () => ({ color: colorScheme === "dark" ? "#ffffff" : "#000000" }),
+    [colorScheme],
+  );
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setContainerWidth(Math.round(e.nativeEvent.layout.width));
@@ -81,7 +87,7 @@ export const LineChartView = memo(function LineChartView({
                 onActivated={invokeHaptic}
                 onEnded={invokeHaptic}
               >
-                {showTooltip && <LineChart.Tooltip />}
+                {showTooltip && <LineChart.Tooltip textStyle={tooltipTextStyle} />}
               </LineChart.CursorCrosshair>
             </>
           )}

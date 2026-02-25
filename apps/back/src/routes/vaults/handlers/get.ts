@@ -24,6 +24,10 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     glamVaultPda: vault.glamVaultPda,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
+    about: vault.about,
+    dataSource: vault.dataSource,
+    performanceCalc: vault.performanceCalc,
+    disclosure: vault.disclosure,
     kol: {
       id: vault.kol.id,
       username: vault.kol.username,

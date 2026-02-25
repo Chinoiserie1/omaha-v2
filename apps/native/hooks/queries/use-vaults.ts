@@ -37,6 +37,10 @@ interface VaultData {
   glamVaultPda: string | null;
   mintAddress: string | null;
   isActive: boolean;
+  about: string;
+  dataSource: string;
+  performanceCalc: string;
+  disclosure: string;
   kol: {
     id: string;
     username: string;
