@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
 import { Redirect, Stack } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
+import { useColorScheme } from "nativewind";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
@@ -60,11 +61,19 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout() {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <AuthGate>
       <OnboardingGate>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
         </Stack>
       </OnboardingGate>
     </AuthGate>

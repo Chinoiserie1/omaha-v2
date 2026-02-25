@@ -1,5 +1,4 @@
 import "../global.css";
-import { useEffect } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -25,13 +24,8 @@ const queryClient = new QueryClient({
 });
 
 export default function RootLayout() {
-  const { colorScheme, setColorScheme } = useColorScheme();
+  const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
-
-  useEffect(() => {
-    setColorScheme("dark");
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (!PRIVY_APP_ID || !PRIVY_CLIENT_ID) {
     console.error("[_layout] Privy credentials are missing!");
