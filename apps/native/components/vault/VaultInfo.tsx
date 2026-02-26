@@ -10,10 +10,10 @@ interface VaultInfoProps {
 
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <View className="flex-row justify-between items-center py-2 border-b border-zinc-800 last:border-b-0">
+    <View className="flex-row justify-between items-center py-2 border-b border-zinc-200 dark:border-zinc-800 last:border-b-0">
       <Text className="text-xs text-zinc-500">{label}</Text>
       <Text
-        className="text-xs text-zinc-400 font-mono max-w-[200px]"
+        className="text-xs text-zinc-600 dark:text-zinc-400 font-mono max-w-[200px]"
         numberOfLines={1}
       >
         {value}
@@ -29,7 +29,7 @@ export const VaultInfo = memo(function VaultInfo({
   kolBio,
 }: VaultInfoProps) {
   return (
-    <View className="p-4 mx-5 mt-4 rounded-xl border bg-zinc-900 border-zinc-800">
+    <View className="p-4 mx-5 mt-4 rounded-xl border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
       <Text className="mb-3 text-xs font-semibold tracking-wider uppercase text-zinc-500">
         Technical Details
       </Text>

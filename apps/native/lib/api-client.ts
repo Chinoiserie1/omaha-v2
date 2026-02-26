@@ -18,6 +18,10 @@ export function setTokenProvider(provider: TokenProvider) {
   tokenProvider = provider;
 }
 
+export function resetTokenProvider() {
+  tokenProvider = null;
+}
+
 async function buildHeaders(body?: unknown): Promise<Record<string, string>> {
   const headers: Record<string, string> = {};
 

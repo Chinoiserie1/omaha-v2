@@ -3,8 +3,8 @@ import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo } from "react";
+import { useColorScheme } from "nativewind";
 import { VaultHeader } from "./VaultHeader";
-import { VaultStats } from "./VaultStats";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
 import { VaultChanges } from "./VaultChanges";
@@ -12,6 +12,7 @@ import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
+import { VaultHoldingsSection } from "./VaultHoldingsSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -62,6 +63,7 @@ type VaultSection =
   | { type: "allocations-header" }
   | { type: "allocation"; data: Allocation }
   | { type: "changes"; data: string[] }
+  | { type: "holdings"; data: { vaultId: string } }
   | { type: "description"; data: string }
   | { type: "info"; data: VaultData }
   | { type: "about"; data: { title: string; content: string } }
@@ -111,6 +113,8 @@ function buildSections(vault: VaultData): VaultSection[] {
     sections.push({ type: "changes", data: vault.portfolio.changes });
   }
 
+  sections.push({ type: "holdings", data: { vaultId: vault.id } });
+
   sections.push({ type: "info", data: vault });
 
   if (vault.about) {
@@ -156,6 +160,8 @@ function SectionHeader({ title }: { title: string }) {
 
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
+  const { colorScheme } = useColorScheme();
+  const iconColor = colorScheme === "dark" ? "#FAFAFA" : "#18181B";
 
   const sections = useMemo(
     () => (vault ? buildSections(vault as VaultData) : []),
@@ -174,7 +180,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         );
       case "description":
         return (
-          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-400">
+          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-600 dark:text-zinc-400">
             {item.data}
           </Text>
         );
@@ -209,6 +215,8 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         );
       case "changes":
         return <VaultChanges changes={item.data} />;
+      case "holdings":
+        return <VaultHoldingsSection vaultId={item.data.vaultId} />;
       case "about":
       case "data-source":
       case "performance-calc":
@@ -237,7 +245,6 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
       default:
         return null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onInvest, onWithdraw]);
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);
@@ -247,16 +254,16 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" edges={["top"]}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={onBack}
-          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-900 active:bg-zinc-800"
+          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-900 active:bg-zinc-300 dark:active:bg-zinc-800"
         >
-          <Ionicons name="chevron-back" size={20} color="#FAFAFA" />
+          <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
         <Text
-          className="flex-1 ml-3 text-base font-semibold text-white"
+          className="flex-1 ml-3 text-base font-semibold text-zinc-900 dark:text-white"
           numberOfLines={1}
         >
           {vault?.name ?? ""}
@@ -266,11 +273,11 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
 
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
-          <ActivityIndicator size="large" color="#FAFAFA" />
+          <ActivityIndicator size="large" color={iconColor} />
         </View>
       ) : error ? (
         <View className="flex-1 justify-center items-center px-6">
-          <Text className="mb-4 text-base text-center text-zinc-400">
+          <Text className="mb-4 text-base text-center text-zinc-600 dark:text-zinc-400">
             {error.message}
           </Text>
           <Pressable

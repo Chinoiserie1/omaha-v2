@@ -24,6 +24,17 @@ export interface VaultHolding {
   valueUsd: number;
 }
 
+export interface VaultHoldingWithPct extends VaultHolding {
+  percentage: number;
+}
+
+export interface VaultHoldingsResponse {
+  holdings: VaultHoldingWithPct[];
+  totalEquityUsd: number;
+  snapshotId: string;
+  snapshotDate: string;
+}
+
 export interface SwapDelta {
   asset: string;
   mint: string;

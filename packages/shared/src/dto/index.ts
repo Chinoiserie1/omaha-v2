@@ -55,3 +55,12 @@ export type FollowStatusQueryDto = z.infer<typeof followStatusQuerySchema>;
 import type { walletAddressSchema } from "../schemas/index.js";
 
 export type WalletAddressDto = z.infer<typeof walletAddressSchema>;
+
+// Holdings DTOs
+import type {
+  vaultHoldingWithPctSchema,
+  vaultHoldingsResponseSchema,
+} from "../schemas/index.js";
+
+export type VaultHoldingWithPctDto = z.infer<typeof vaultHoldingWithPctSchema>;
+export type VaultHoldingsResponseDto = z.infer<typeof vaultHoldingsResponseSchema>;

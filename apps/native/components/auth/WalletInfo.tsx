@@ -1,9 +1,20 @@
+import { useCallback } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useColorScheme } from "nativewind";
 import { usePrivy, useEmbeddedSolanaWallet } from "@privy-io/expo";
+import { useAuth } from "../../contexts/auth-context";
 
 export function WalletInfo() {
-  const { user, logout } = usePrivy();
+  const { user } = usePrivy();
+  const { signOut } = useAuth();
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await signOut();
+    } catch {
+      // AuthContext handles cleanup; error is non-actionable here
+    }
+  }, [signOut]);
   const { wallets } = useEmbeddedSolanaWallet();
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
@@ -15,10 +26,6 @@ export function WalletInfo() {
   const twitter = user?.linked_accounts?.find(
     (account) => account.type === "twitter_oauth"
   );
-
-  const handleLogout = async () => {
-    await logout();
-  };
 
   if (!user) {
     return (
@@ -70,7 +77,7 @@ export function WalletInfo() {
 
       <TouchableOpacity
         className="mt-4 py-3 rounded-lg bg-zinc-200 dark:bg-zinc-800"
-        onPress={handleLogout}
+        onPress={handleSignOut}
       >
         <Text className="text-zinc-700 dark:text-zinc-300 text-center font-semibold text-base">
           Sign Out

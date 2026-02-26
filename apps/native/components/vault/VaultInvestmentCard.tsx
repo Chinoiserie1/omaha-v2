@@ -79,11 +79,11 @@ function useCountdown(targetTimestamp: number | null) {
 
 function NotInvestedState({ onInvest }: { onInvest: () => void }) {
   return (
-    <View className="mx-5 mt-4 p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+    <View className="mx-5 mt-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
       <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
         Your Position
       </Text>
-      <Text className="text-sm text-zinc-400 mb-5 leading-5">
+      <Text className="text-sm text-zinc-600 dark:text-zinc-400 mb-5 leading-5">
         You haven&apos;t invested in this vault yet. Start earning by depositing
         USDC.
       </Text>
@@ -118,7 +118,7 @@ function InvestedState({
   const usdValue = sharePrice != null ? balance * sharePrice : null;
 
   return (
-    <View className="mx-5 mt-4 p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+    <View className="mx-5 mt-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
       <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-2">
         Your Position
       </Text>
@@ -132,13 +132,13 @@ function InvestedState({
           </Text>
         </>
       ) : (
-        <Text className="text-2xl font-bold text-white mb-4">
+        <Text className="text-2xl font-bold text-zinc-900 dark:text-white mb-4">
           {balance.toLocaleString(undefined, { maximumFractionDigits: 6 })} shares
         </Text>
       )}
-      <View className="h-px bg-zinc-800 mb-3" />
+      <View className="h-px bg-zinc-200 dark:bg-zinc-800 mb-3" />
       <View className="flex-row items-baseline mb-5">
-        <Text className="text-sm font-medium text-white">
+        <Text className="text-sm font-medium text-zinc-900 dark:text-white">
           {balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
         </Text>
         <Text className="text-xs text-zinc-500 ml-2">
@@ -154,7 +154,7 @@ function InvestedState({
         </Pressable>
         <Pressable
           onPress={onWithdraw}
-          className="flex-1 py-3.5 rounded-xl items-center bg-zinc-800 border border-red-600/50 active:bg-zinc-700"
+          className="flex-1 py-3.5 rounded-xl items-center bg-zinc-200 dark:bg-zinc-800 border border-red-600/50 active:bg-zinc-300 dark:active:bg-zinc-700"
         >
           <Text className="text-red-400 font-semibold text-sm">Withdraw</Text>
         </Pressable>
@@ -186,7 +186,7 @@ function PendingWithdrawalState({
     sharePrice != null ? pendingAmount * sharePrice : null;
 
   return (
-    <View className="mx-5 mt-4 p-5 rounded-2xl bg-zinc-900 border border-zinc-800">
+    <View className="mx-5 mt-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
       <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
         Your Position
       </Text>
@@ -194,7 +194,7 @@ function PendingWithdrawalState({
       {balance !== null && balance > 0 && (
         <View className="mb-3">
           <View className="flex-row items-baseline">
-            <Text className="text-lg font-bold text-white">
+            <Text className="text-lg font-bold text-zinc-900 dark:text-white">
               {balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
             </Text>
             {remainingUsd != null && (
@@ -214,7 +214,7 @@ function PendingWithdrawalState({
         </Text>
       </View>
 
-      <View className="bg-zinc-800 rounded-xl p-4 items-center mb-4">
+      <View className="bg-zinc-200 dark:bg-zinc-800 rounded-xl p-4 items-center mb-4">
         {canClaim ? (
           <View className="flex-row items-center">
             <Ionicons name="checkmark-circle" size={20} color="#10b981" />
@@ -236,7 +236,7 @@ function PendingWithdrawalState({
 
       <Text className="text-xs text-zinc-500 mb-4">
         Redeeming{" "}
-        <Text className="text-zinc-300 font-medium">
+        <Text className="text-zinc-700 dark:text-zinc-300 font-medium">
           {pendingAmount.toLocaleString(undefined, {
             maximumFractionDigits: 6,
           })}
@@ -255,7 +255,7 @@ function PendingWithdrawalState({
         className={`py-4 rounded-xl items-center ${
           canClaim && !claimPending
             ? "bg-emerald-600 active:bg-emerald-700"
-            : "bg-zinc-700"
+            : "bg-zinc-300 dark:bg-zinc-700"
         }`}
       >
         {claimPending ? (
@@ -329,7 +329,7 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
 
   if (balanceLoading) {
     return (
-      <View className="mx-5 mt-4 p-5 rounded-2xl bg-zinc-900 border border-zinc-800 items-center">
+      <View className="mx-5 mt-4 p-5 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 items-center">
         <ActivityIndicator size="small" color="#71717A" />
       </View>
     );

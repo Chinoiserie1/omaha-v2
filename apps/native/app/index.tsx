@@ -1,8 +1,7 @@
-import { useEffect, useCallback, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
 import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
-import { usePrivy } from "@privy-io/expo";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   useSharedValue,
@@ -12,69 +11,34 @@ import Animated, {
   runOnJS,
 } from "react-native-reanimated";
 import { AnimatedLogo } from "../components/landing/AnimatedLogo";
-import { useOnboardingStatus } from "../hooks/queries/use-onboarding";
-import { setTokenProvider } from "../lib/api-client";
+import { useAuth } from "../contexts/auth-context";
 
 export default function LandingScreen() {
-  const { isReady, user, getAccessToken, logout } = usePrivy();
+  const { status } = useAuth();
   const router = useRouter();
-  const hasRedirected = useRef(false);
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
+  const didRedirectToApp = useRef(false);
 
   const contentOpacity = useSharedValue(1);
   const contentTranslateY = useSharedValue(0);
 
-  const { data: onboardingData, isError: onboardingError } =
-    useOnboardingStatus(user?.id);
-
-  // Wire token provider early for any authenticated calls
+  // Auto-redirect to app exactly once when already authenticated.
+  // Using useEffect (not <Redirect>) to avoid re-firing if this screen
+  // stays mounted during the navigation transition.
   useEffect(() => {
-    if (user) {
-      setTokenProvider(getAccessToken);
+    console.log("[LandingScreen] useEffect fired — status:", status, "didRedirectToApp:", didRedirectToApp.current);
+    if (status === "authenticated" && !didRedirectToApp.current) {
+      didRedirectToApp.current = true;
+      console.log("[LandingScreen] REDIRECTING to /(app)/(tabs)/(home)");
+      router.replace("/(app)/(tabs)/(home)");
     }
-  }, [user, getAccessToken]);
-
-  // Validate session and redirect (only once)
-  useEffect(() => {
-    if (!isReady || hasRedirected.current || !user) return;
-
-    const validateSession = async () => {
-      try {
-        const token = await getAccessToken();
-        if (!token) {
-          await logout();
-        }
-      } catch {
-        await logout();
-      }
-    };
-    validateSession();
-  }, [isReady, user, getAccessToken, logout]);
-
-  // Redirect based on onboarding status
-  useEffect(() => {
-    if (!user || hasRedirected.current) return;
-
-    // If query errored, optimistically redirect to app
-    if (onboardingError) {
-      hasRedirected.current = true;
-      router.replace("/(app)/(tabs)/(home)" as const);
-      return;
+    if (status === "unauthenticated") {
+      didRedirectToApp.current = false;
     }
-
-    if (onboardingData === undefined) return;
-
-    hasRedirected.current = true;
-    if (onboardingData.onboardingCompleted) {
-      router.replace("/(app)/(tabs)/(home)" as const);
-    } else {
-      router.replace("/(onboarding)/connect-twitter");
-    }
-  }, [user, onboardingData, onboardingError, router]);
+  }, [status, router]);
 
   const navigateToOnboarding = useCallback(() => {
-    hasRedirected.current = true;
     router.replace("/(onboarding)/connect-twitter");
   }, [router]);
 
@@ -100,21 +64,10 @@ export default function LandingScreen() {
     transform: [{ translateY: contentTranslateY.value }],
   }));
 
-  // Show loading while Privy initializes
-  if (!isReady) {
+  if (status === "loading" || status === "authenticated") {
     return (
       <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 items-center justify-center">
         <ActivityIndicator size="large" color={isDark ? "#FAFAFA" : "#18181B"} />
-      </SafeAreaView>
-    );
-  }
-
-  // Show loading while checking auth state for logged-in users
-  if (user) {
-    return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 items-center justify-center">
-        <ActivityIndicator size="large" color={isDark ? "#FAFAFA" : "#18181B"} />
-        <Text className="mt-4 text-zinc-500 dark:text-zinc-400 text-sm">Loading...</Text>
       </SafeAreaView>
     );
   }

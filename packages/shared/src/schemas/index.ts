@@ -47,3 +47,4 @@ export * from "./portfolio.schema.js";
 export * from "./classification.schema.js";
 export * from "./follow.schema.js";
 export * from "./wallet.schema.js";
+export * from "./holdings.schema.js";

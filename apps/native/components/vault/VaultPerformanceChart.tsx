@@ -43,10 +43,10 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
 
   return (
     <View className="px-5 mb-2">
-      <View className="px-4 pt-4 pb-3 rounded-xl border bg-zinc-900 border-zinc-800">
+      <View className="px-4 pt-4 pb-3 rounded-xl border bg-white dark:bg-zinc-900 border-zinc-200 dark:border-zinc-800">
         {/* Price + change */}
         <View className="flex-row gap-2 items-baseline mb-3">
-          <Text className="text-xl font-bold text-white">
+          <Text className="text-xl font-bold text-zinc-900 dark:text-white">
             {formatPrice(currentPrice)}
           </Text>
           {percentChange !== null && (
@@ -79,12 +79,12 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
                 key={p.value}
                 onPress={() => setPeriod(p.value)}
                 className={`flex-1 items-center py-1.5 rounded-lg ${
-                  active ? "bg-zinc-700" : "bg-zinc-800"
+                  active ? "bg-zinc-300 dark:bg-zinc-700" : "bg-zinc-200 dark:bg-zinc-800"
                 }`}
               >
                 <Text
                   className={`text-xs font-semibold ${
-                    active ? "text-white" : "text-zinc-500"
+                    active ? "text-zinc-900 dark:text-white" : "text-zinc-500"
                   }`}
                 >
                   {p.label}

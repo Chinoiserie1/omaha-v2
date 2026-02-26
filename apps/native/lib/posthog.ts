@@ -23,7 +23,7 @@ export const posthogConfig = {
   },
   autocapture: {
     captureTouches: true,
-    captureScreens: true,
+    captureScreens: false, // Manual tracking via PostHogScreenTracker inside navigator
   },
-  debug: __DEV__,
+  debug: false,
 } as const;

@@ -9,7 +9,8 @@ import { getTradeableAssetsMap } from "./jupiter.service.js";
 import * as kolVaultRepo from "../store/kol-vault.repository.js";
 import * as rebalanceRepo from "../store/rebalance.repository.js";
 import * as portfolioRepo from "../store/portfolio.repository.js";
-import type { Allocation, VaultHolding, SwapDelta, RebalanceStatus } from "@repo/shared";
+import * as holdingsRepo from "../store/holdings.repository.js";
+import type { Allocation, VaultHolding, VaultHoldingWithPct, SwapDelta, RebalanceStatus } from "@repo/shared";
 import type { Prisma } from "@repo/database";
 
 const USDC_MINT_STR = USDC_MINT.toBase58();
@@ -319,6 +320,33 @@ export async function rebalanceKolVault(
 
   // 14. Update KolVault.lastRebalancedAt
   await kolVaultRepo.updateLastRebalanced(kolVault.id);
+
+  // 15. Snapshot post-rebalance holdings
+  if (finalStatus === "COMPLETED") {
+    try {
+      const postHoldings = await getVaultHoldings(statePda);
+      const holdingsWithPct: VaultHoldingWithPct[] = postHoldings.holdings.map(
+        (h) => ({
+          ...h,
+          percentage:
+            postHoldings.totalEquityUsd > 0
+              ? (h.valueUsd / postHoldings.totalEquityUsd) * 100
+              : 0,
+        }),
+      );
+      await holdingsRepo.createSnapshot({
+        kolVaultId: kolVault.id,
+        holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
+        totalEquityUsd: postHoldings.totalEquityUsd,
+      });
+      logger.info({ kolId }, "Post-rebalance holdings snapshot created");
+    } catch (snapErr) {
+      logger.error(
+        { kolId, error: snapErr instanceof Error ? snapErr.message : snapErr },
+        "Failed to create post-rebalance holdings snapshot",
+      );
+    }
+  }
 
   logger.info(
     {

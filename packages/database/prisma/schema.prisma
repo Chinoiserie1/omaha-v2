@@ -139,7 +139,8 @@ model KolVault {
   lastRebalancedAt DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  rebalanceEvents  RebalanceEvent[]
+  rebalanceEvents    RebalanceEvent[]
+  holdingsSnapshots  HoldingsSnapshot[]
 
   @@index([kolId])
 }
@@ -162,6 +163,20 @@ model RebalanceEvent {
 
   @@index([kolVaultId, startedAt])
   @@index([snapshotId])
+}
+
+model HoldingsSnapshot {
+  id             String    @id @default(cuid())
+  kolVaultId     String
+  kolVault       KolVault  @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  holdings       Json
+  totalEquityUsd Float
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  createdAt      DateTime  @default(now())
+
+  @@index([kolVaultId, startDate])
+  @@index([kolVaultId, endDate])
 }
 
 model TradeableAsset {
