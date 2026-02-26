@@ -37,8 +37,7 @@
     "sync-tokens": "turbo run sync-tokens",
     "seed-vaults": "turbo run seed-vaults",
     "start:back": "pnpm --filter @repo/back start",
-    "android": "expo run:android",
-    "ios": "expo run:ios"
+    "native:clean": "pnpm --filter @repo/native clean"
   },
   "devDependencies": {
     "turbo": "^2.7.1",
