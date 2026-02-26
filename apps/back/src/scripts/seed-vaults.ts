@@ -1,4 +1,10 @@
 import { prisma } from "@repo/database";
+import type { VaultHoldingWithPct } from "@repo/shared";
+
+interface HoldingsSeed {
+  holdings: VaultHoldingWithPct[];
+  totalEquityUsd: number;
+}
 
 interface VaultSeed {
   kolUsername: string;
@@ -16,6 +22,7 @@ interface VaultSeed {
   mintAddress: string | null;
   jupiterEnabled: boolean;
   dryRun: boolean;
+  holdings?: HoldingsSeed;
 }
 
 const VAULTS: VaultSeed[] = [
@@ -40,6 +47,27 @@ const VAULTS: VaultSeed[] = [
     mintAddress: null,
     jupiterEnabled: false,
     dryRun: true,
+    holdings: {
+      holdings: [
+        {
+          mint: "So11111111111111111111111111111111111111112",
+          symbol: "SOL",
+          uiAmount: 50.5,
+          price: 145.2,
+          valueUsd: 7332.6,
+          percentage: 60.0,
+        },
+        {
+          mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          symbol: "USDC",
+          uiAmount: 4888.4,
+          price: 1.0,
+          valueUsd: 4888.4,
+          percentage: 40.0,
+        },
+      ],
+      totalEquityUsd: 12221.0,
+    },
   },
   {
     kolUsername: "mert",
@@ -62,6 +90,35 @@ const VAULTS: VaultSeed[] = [
     mintAddress: null,
     jupiterEnabled: true,
     dryRun: true,
+    holdings: {
+      holdings: [
+        {
+          mint: "So11111111111111111111111111111111111111112",
+          symbol: "SOL",
+          uiAmount: 120.0,
+          price: 145.2,
+          valueUsd: 17424.0,
+          percentage: 45.0,
+        },
+        {
+          mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+          symbol: "JUP",
+          uiAmount: 8500.0,
+          price: 1.05,
+          valueUsd: 8925.0,
+          percentage: 23.1,
+        },
+        {
+          mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+          symbol: "USDC",
+          uiAmount: 12371.0,
+          price: 1.0,
+          valueUsd: 12371.0,
+          percentage: 31.9,
+        },
+      ],
+      totalEquityUsd: 38720.0,
+    },
   },
 ];
 
@@ -125,6 +182,26 @@ async function seedVaults(): Promise<void> {
 
     const action = existing ? "Updated" : "Created";
     console.log(`  ${action} vault: ${vault.name} (${vault.id})`);
+
+    // Seed holdings snapshot
+    if (v.holdings) {
+      const existingSnapshot = await prisma.holdingsSnapshot.findFirst({
+        where: { kolVaultId: vault.id, endDate: null },
+      });
+
+      if (existingSnapshot) {
+        console.log(`  Holdings snapshot already exists for ${vault.name} — skipping`);
+      } else {
+        await prisma.holdingsSnapshot.create({
+          data: {
+            kolVaultId: vault.id,
+            holdings: v.holdings.holdings as unknown as import("@repo/database").Prisma.InputJsonValue,
+            totalEquityUsd: v.holdings.totalEquityUsd,
+          },
+        });
+        console.log(`  Created holdings snapshot for ${vault.name}`);
+      }
+    }
   }
 
   // Upsert mert KOL
@@ -178,6 +255,48 @@ async function seedVaults(): Promise<void> {
     },
   });
   console.log(`  Upserted vault: ${mertVault.name} (${mertVault.id})`);
+
+  // Seed holdings snapshot for mert vault
+  const mertHoldingsExists = await prisma.holdingsSnapshot.findFirst({
+    where: { kolVaultId: mertVault.id, endDate: null },
+  });
+  if (!mertHoldingsExists) {
+    await prisma.holdingsSnapshot.create({
+      data: {
+        kolVaultId: mertVault.id,
+        holdings: [
+          {
+            mint: "So11111111111111111111111111111111111111112",
+            symbol: "SOL",
+            uiAmount: 120.0,
+            price: 145.2,
+            valueUsd: 17424.0,
+            percentage: 45.0,
+          },
+          {
+            mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+            symbol: "JUP",
+            uiAmount: 8500.0,
+            price: 1.05,
+            valueUsd: 8925.0,
+            percentage: 23.1,
+          },
+          {
+            mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+            symbol: "USDC",
+            uiAmount: 12371.0,
+            price: 1.0,
+            valueUsd: 12371.0,
+            percentage: 31.9,
+          },
+        ] as unknown as import("@repo/database").Prisma.InputJsonValue,
+        totalEquityUsd: 38720.0,
+      },
+    });
+    console.log(`  Created holdings snapshot for ${mertVault.name}`);
+  } else {
+    console.log(`  Holdings snapshot already exists for ${mertVault.name} — skipping`);
+  }
 
   console.log("Seed vaults completed.");
 }
