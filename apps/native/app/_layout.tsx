@@ -12,6 +12,7 @@ import { AuthProvider, useAuth } from "../contexts/auth-context";
 import Constants from "expo-constants";
 import { useColorScheme } from "nativewind";
 import Toast from "react-native-toast-message";
+import { toastConfig } from "../components/ui/toasts/toastConfig";
 import { posthogConfig } from "../lib/posthog";
 import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary";
 
