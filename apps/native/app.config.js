@@ -39,9 +39,11 @@ const env = loadEnv();
 module.exports = ({ config }) => {
   const privyAppId = process.env.EXPO_PUBLIC_PRIVY_APP_ID || env.EXPO_PUBLIC_PRIVY_APP_ID || "";
   const privyClientId = process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID || env.EXPO_PUBLIC_PRIVY_CLIENT_ID || "";
+  const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY || env.EXPO_PUBLIC_POSTHOG_API_KEY || "";
 
   console.log("[app.config.js] PRIVY_APP_ID:", privyAppId ? `${privyAppId.slice(0, 8)}...` : "MISSING");
   console.log("[app.config.js] PRIVY_CLIENT_ID:", privyClientId ? `${privyClientId.slice(0, 8)}...` : "MISSING");
+  console.log("[app.config.js] POSTHOG_API_KEY:", posthogApiKey ? `${posthogApiKey.slice(0, 8)}...` : "MISSING");
 
   return {
     ...config,
@@ -49,6 +51,7 @@ module.exports = ({ config }) => {
       ...config.extra,
       privyAppId,
       privyClientId,
+      posthogApiKey,
     },
   };
 };
