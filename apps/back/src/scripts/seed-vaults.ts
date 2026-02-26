@@ -1,4 +1,5 @@
 import { prisma } from "@repo/database";
+import type { Prisma } from "@repo/database";
 import type { VaultHoldingWithPct } from "@repo/shared";
 
 interface HoldingsSeed {
@@ -195,7 +196,7 @@ async function seedVaults(): Promise<void> {
         await prisma.holdingsSnapshot.create({
           data: {
             kolVaultId: vault.id,
-            holdings: v.holdings.holdings as unknown as import("@repo/database").Prisma.InputJsonValue,
+            holdings: v.holdings.holdings as unknown as Prisma.InputJsonValue,
             totalEquityUsd: v.holdings.totalEquityUsd,
           },
         });
@@ -289,7 +290,7 @@ async function seedVaults(): Promise<void> {
             valueUsd: 12371.0,
             percentage: 31.9,
           },
-        ] as unknown as import("@repo/database").Prisma.InputJsonValue,
+        ] as unknown as Prisma.InputJsonValue,
         totalEquityUsd: 38720.0,
       },
     });

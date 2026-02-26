@@ -2,7 +2,7 @@ import "../global.css";
 import { AppState, type AppStateStatus } from "react-native";
 import { useEffect, useRef } from "react";
 import { Stack } from "expo-router";
-import { CommonActions, useNavigation } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PrivyProvider } from "@privy-io/expo";
@@ -76,9 +76,7 @@ function RootNavigator() {
       console.log(
         "[RootNavigator] transition to unauthenticated, resetting to index",
       );
-      navigation.dispatch(
-        CommonActions.reset({ index: 0, routes: [{ name: "index" }] }),
-      );
+      navigation.reset({ index: 0, routes: [{ name: "index" as never }] });
     }
     prevStatus.current = status;
   }, [status, navigation]);
@@ -99,7 +97,7 @@ function RootNavigator() {
         <Stack.Screen name="(app)" options={{ animation: "fade" }} />
       </Stack>
       <StatusBar style={isDark ? "light" : "dark"} />
-      <Toast />
+      <Toast config={toastConfig} />
     </>
   );
 }
