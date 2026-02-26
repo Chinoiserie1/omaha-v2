@@ -6,6 +6,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { TwitterLoginButton } from "../../components/onboarding/TwitterLoginButton";
 import { useCompleteOnboarding } from "../../hooks/queries/use-onboarding";
 import { ApiError } from "../../lib/api-client";
+import { showErrorToast } from "../../lib/show-error-toast";
 
 interface OnboardingData {
   privyId: string;
@@ -64,6 +65,7 @@ export default function ConnectTwitterScreen() {
       onError: (err) => {
         hasNavigated.current = false;
         setIsCreatingGuest(false);
+        showErrorToast("Login Failed", err);
         if (err instanceof ApiError) {
           const body = err.body as Record<string, string> | null;
           setError(body?.error ?? "Something went wrong. Please try again.");
@@ -140,8 +142,12 @@ export default function ConnectTwitterScreen() {
       const privyId = result?.id;
       if (privyId) {
         completeOnboarding({ privyId });
+      } else {
+        showErrorToast("Guest Login Failed", new Error("Account created but no user ID returned"));
+        setIsCreatingGuest(false);
       }
-    } catch {
+    } catch (error) {
+      showErrorToast("Guest Login Failed", error);
       setIsCreatingGuest(false);
     }
   };
@@ -161,7 +167,10 @@ export default function ConnectTwitterScreen() {
           </Text>
         </View>
 
-        <TwitterLoginButton onSuccess={handleTwitterSuccess} />
+        <TwitterLoginButton
+          onSuccess={handleTwitterSuccess}
+          onError={(error) => showErrorToast("Twitter Login Failed", error)}
+        />
 
         {error && (
           <View className="p-4 mt-4 bg-red-50 rounded-xl dark:bg-red-950">
