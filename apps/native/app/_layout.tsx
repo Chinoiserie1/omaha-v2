@@ -1,8 +1,7 @@
 import "../global.css";
 import { AppState, type AppStateStatus } from "react-native";
 import { useEffect, useRef } from "react";
-import { Stack } from "expo-router";
-import { useNavigation } from "@react-navigation/native";
+import { Stack, useNavigationContainerRef } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PrivyProvider } from "@privy-io/expo";
@@ -15,6 +14,7 @@ import Toast from "react-native-toast-message";
 import { toastConfig } from "../components/ui/toasts/toastConfig";
 import { posthogConfig } from "../lib/posthog";
 import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary";
+import { PostHogScreenTracker } from "../components/shared/PostHogScreenTracker";
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -62,12 +62,10 @@ function RootNavigator() {
   const { colorScheme } = useColorScheme();
   const isDark = colorScheme === "dark";
   const { status } = useAuth();
-  const navigation = useNavigation();
+  const rootNav = useNavigationContainerRef();
   const prevStatus = useRef(status);
 
   // Centralized auth guard: full navigation reset on sign-out.
-  // router.replace("/") doesn't work across nested navigators,
-  // so we reset the entire navigation state to the index screen.
   useEffect(() => {
     if (
       prevStatus.current !== "unauthenticated" &&
@@ -76,10 +74,12 @@ function RootNavigator() {
       console.log(
         "[RootNavigator] transition to unauthenticated, resetting to index",
       );
-      navigation.reset({ index: 0, routes: [{ name: "index" as never }] });
+      if (rootNav.isReady()) {
+        rootNav.reset({ index: 0, routes: [{ name: "index" as never }] });
+      }
     }
     prevStatus.current = status;
-  }, [status, navigation]);
+  }, [status, rootNav]);
 
   return (
     <>
@@ -96,6 +96,7 @@ function RootNavigator() {
         />
         <Stack.Screen name="(app)" options={{ animation: "fade" }} />
       </Stack>
+      <PostHogScreenTracker />
       <StatusBar style={isDark ? "light" : "dark"} />
       <Toast config={toastConfig} />
     </>
