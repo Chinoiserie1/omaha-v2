@@ -1,5 +1,6 @@
 import Toast from "react-native-toast-message";
 import { ApiError } from "./api-client";
+import { captureError } from "./capture-error";
 
 const CANCEL_PATTERNS = ["cancel", "cancelled", "canceled"];
 
@@ -19,12 +20,14 @@ function extractMessage(error: unknown): string {
   return "An unexpected error occurred";
 }
 
-export function showErrorToast(title: string, error: unknown): void {
+export function showErrorToast(title: string, error: unknown, source?: string): void {
   const message = extractMessage(error);
 
   console.error(`[${title}]`, error);
 
   if (isCancellation(message)) return;
+
+  captureError(error, { source: source ?? title });
 
   Toast.show({ type: "error", text1: title, text2: message });
 }

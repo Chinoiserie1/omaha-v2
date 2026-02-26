@@ -9,6 +9,7 @@ import {
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
+import { captureError } from "../../lib/capture-error";
 import { useRedeemVault } from "../../hooks/mutations/use-redeem-vault";
 
 const RPC_URL =
@@ -94,6 +95,7 @@ export function WithdrawScreen({
       onClose();
     } catch (err) {
       console.error("[WithdrawScreen] Error:", err);
+      captureError(err, { source: "withdraw" });
       Toast.show({
         type: "error",
         text1: "Withdrawal Failed",

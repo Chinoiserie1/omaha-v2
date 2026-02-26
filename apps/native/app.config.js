@@ -1,9 +1,8 @@
 const fs = require("fs");
 const path = require("path");
 
-// Load .env from monorepo root
-function loadEnv() {
-  const envPath = path.resolve(__dirname, "../../.env");
+// Parse a single .env file into an object
+function parseEnvFile(envPath) {
   const env = {};
 
   try {
@@ -19,8 +18,10 @@ function loadEnv() {
       let value = trimmed.slice(eqIndex + 1);
 
       // Remove quotes
-      if ((value.startsWith('"') && value.endsWith('"')) ||
-          (value.startsWith("'") && value.endsWith("'"))) {
+      if (
+        (value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'"))
+      ) {
         value = value.slice(1, -1);
       }
 
@@ -34,24 +35,42 @@ function loadEnv() {
   return env;
 }
 
-const env = loadEnv();
+// Load root .env first, then native .env (native overrides root)
+const rootEnv = parseEnvFile(path.resolve(__dirname, "../../.env"));
+const nativeEnv = parseEnvFile(path.resolve(__dirname, ".env"));
+const env = { ...rootEnv, ...nativeEnv };
 
 module.exports = ({ config }) => {
-  const privyAppId = process.env.EXPO_PUBLIC_PRIVY_APP_ID || env.EXPO_PUBLIC_PRIVY_APP_ID || "";
-  const privyClientId = process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID || env.EXPO_PUBLIC_PRIVY_CLIENT_ID || "";
-  const posthogApiKey = process.env.EXPO_PUBLIC_POSTHOG_API_KEY || env.EXPO_PUBLIC_POSTHOG_API_KEY || "";
+  const apiUrl =
+    process.env.EXPO_PUBLIC_API_URL || env.EXPO_PUBLIC_API_URL || "";
+  const apiUrlProd =
+    process.env.EXPO_PUBLIC_API_URL_PROD || env.EXPO_PUBLIC_API_URL_PROD || "";
+  const privyAppId =
+    process.env.EXPO_PUBLIC_PRIVY_APP_ID || env.EXPO_PUBLIC_PRIVY_APP_ID || "";
+  const privyClientId =
+    process.env.EXPO_PUBLIC_PRIVY_CLIENT_ID ||
+    env.EXPO_PUBLIC_PRIVY_CLIENT_ID ||
+    "";
+  const solanaRpcUrl =
+    process.env.EXPO_PUBLIC_SOLANA_RPC_URL ||
+    env.EXPO_PUBLIC_SOLANA_RPC_URL ||
+    "";
 
+  console.log("[app.config.js] API_URL:", apiUrl || "MISSING");
+  console.log("[app.config.js] API_URL_PROD:", apiUrlProd ? `${apiUrlProd.slice(0, 20)}...` : "MISSING");
   console.log("[app.config.js] PRIVY_APP_ID:", privyAppId ? `${privyAppId.slice(0, 8)}...` : "MISSING");
   console.log("[app.config.js] PRIVY_CLIENT_ID:", privyClientId ? `${privyClientId.slice(0, 8)}...` : "MISSING");
-  console.log("[app.config.js] POSTHOG_API_KEY:", posthogApiKey ? `${posthogApiKey.slice(0, 8)}...` : "MISSING");
+  console.log("[app.config.js] SOLANA_RPC_URL:", solanaRpcUrl ? `${solanaRpcUrl.slice(0, 20)}...` : "MISSING");
 
   return {
     ...config,
     extra: {
       ...config.extra,
+      apiUrl,
+      apiUrlProd,
       privyAppId,
       privyClientId,
-      posthogApiKey,
+      solanaRpcUrl,
     },
   };
 };

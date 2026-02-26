@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "reac
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import { captureError } from "../../lib/capture-error";
 
 const RPC_URL = process.env.EXPO_PUBLIC_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
 
@@ -74,6 +75,7 @@ export function WithdrawForm() {
 
       setTxSignature(result.signature);
     } catch (err) {
+      captureError(err, { source: "send_sol" });
       setError(err instanceof Error ? err.message : "Transaction failed");
     } finally {
       setSending(false);

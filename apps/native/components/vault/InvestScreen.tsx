@@ -9,6 +9,7 @@ import {
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
+import { captureError } from "../../lib/capture-error";
 import { useSubscribeVault } from "../../hooks/mutations/use-subscribe-vault";
 
 const RPC_URL =
@@ -94,6 +95,7 @@ export function InvestScreen({ vaultId, vaultName, onClose }: InvestScreenProps)
       onClose();
     } catch (err) {
       console.error("[InvestScreen] Error:", err);
+      captureError(err, { source: "invest" });
       Toast.show({
         type: "error",
         text1: "Investment Failed",

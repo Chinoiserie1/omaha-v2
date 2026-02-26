@@ -1,5 +1,5 @@
 import { Component, type ReactNode } from "react";
-import { usePostHog } from "posthog-react-native";
+import { captureError } from "../../lib/capture-error";
 import { ErrorScreen } from "./ErrorScreen";
 
 interface Props {
@@ -10,21 +10,15 @@ interface State {
   error: Error | null;
 }
 
-class PostHogErrorBoundaryInner extends Component<Props & { posthog: ReturnType<typeof usePostHog> }, State> {
+export class PostHogErrorBoundary extends Component<Props, State> {
   override state: State = { error: null };
 
   static getDerivedStateFromError(error: Error): State {
     return { error };
   }
 
-  override componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    this.props.posthog.capture("$exception", {
-      $exception_type: error.name,
-      $exception_message: error.message,
-      $exception_stack_trace_raw: error.stack ?? "",
-      $exception_component_stack: errorInfo.componentStack ?? "",
-      $exception_source: "react_error_boundary",
-    });
+  override componentDidCatch(error: Error) {
+    captureError(error, { source: "react_error_boundary" });
   }
 
   handleRetry = () => {
@@ -37,9 +31,4 @@ class PostHogErrorBoundaryInner extends Component<Props & { posthog: ReturnType<
     }
     return this.props.children;
   }
-}
-
-export function PostHogErrorBoundary({ children }: Props) {
-  const posthog = usePostHog();
-  return <PostHogErrorBoundaryInner posthog={posthog}>{children}</PostHogErrorBoundaryInner>;
 }
