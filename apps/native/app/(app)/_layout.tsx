@@ -1,6 +1,8 @@
 import { useEffect, useRef } from "react";
 import { Redirect, Stack } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
+import { usePostHog } from "posthog-react-native";
+import { useColorScheme } from "nativewind";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
@@ -32,15 +34,36 @@ function OnboardingGate({ children }: { children: React.ReactNode }) {
 
 function AuthGate({ children }: { children: React.ReactNode }) {
   const { isReady, user, getAccessToken } = usePrivy();
+  const posthog = usePostHog();
   const wasAuthenticated = useRef(false);
 
   useEffect(() => {
     setTokenProvider(getAccessToken);
   }, [getAccessToken]);
 
-  if (user) {
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) {
+      if (wasAuthenticated.current) {
+        posthog.reset();
+      }
+      return;
+    }
+
     wasAuthenticated.current = true;
-  }
+
+    const twitter = user?.linked_accounts?.find(
+      (a: { type: string }) => a.type === "twitter_oauth",
+    );
+
+    const twitterUsername = twitter
+      ? (twitter as { username?: string }).username
+      : null;
+
+    posthog.identify(userId, {
+      ...(twitterUsername ? { linked_twitter: twitterUsername } : {}),
+    });
+  }, [userId, posthog]);
 
   if (!isReady) {
     return <FullScreenLoader />;
@@ -60,11 +83,19 @@ function AuthGate({ children }: { children: React.ReactNode }) {
 }
 
 export default function AppLayout() {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+
   return (
     <AuthGate>
       <OnboardingGate>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
         </Stack>
       </OnboardingGate>
     </AuthGate>
