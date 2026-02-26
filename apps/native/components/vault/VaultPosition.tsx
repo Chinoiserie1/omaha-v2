@@ -38,7 +38,7 @@ export function VaultPosition({ mintAddress }: VaultPositionProps) {
   }, [fetchBalance]);
 
   return (
-    <View className="mx-5 mt-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
+    <View className="mx-5 mt-4 p-4 rounded-2xl bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800">
       <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
         Your Position
       </Text>
@@ -50,10 +50,10 @@ export function VaultPosition({ mintAddress }: VaultPositionProps) {
         <Text className="text-sm text-zinc-500">No position</Text>
       ) : (
         <View className="flex-row items-baseline">
-          <Text className="text-2xl font-bold text-white">
+          <Text className="text-2xl font-bold text-zinc-900 dark:text-white">
             {balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
           </Text>
-          <Text className="text-sm text-zinc-400 ml-2">shares</Text>
+          <Text className="text-sm text-zinc-600 dark:text-zinc-400 ml-2">shares</Text>
         </View>
       )}
     </View>

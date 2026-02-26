@@ -13,30 +13,10 @@ import type {
 } from "@repo/shared";
 import type { Prisma } from "@repo/database";
 
-type GetHoldingsRequest = FastifyRequest<{ Params: { id: string } }>;
-type HoldingsSnapshot = Awaited<
-  ReturnType<typeof holdingsRepo.findCurrentByKolVault>
->;
+type SnapshotHoldingsRequest = FastifyRequest<{ Params: { id: string } }>;
 
-const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
-
-function isFresh(startDate: Date): boolean {
-  return Date.now() - startDate.getTime() < CACHE_TTL_MS;
-}
-
-function snapshotToResponse(
-  snapshot: NonNullable<HoldingsSnapshot>,
-): VaultHoldingsResponse {
-  return {
-    holdings: snapshot.holdings as unknown as VaultHoldingWithPct[],
-    totalEquityUsd: snapshot.totalEquityUsd,
-    snapshotId: snapshot.id,
-    snapshotDate: snapshot.startDate.toISOString(),
-  };
-}
-
-export async function getVaultHoldingsHandler(
-  request: GetHoldingsRequest,
+export async function snapshotHoldingsHandler(
+  request: SnapshotHoldingsRequest,
   reply: FastifyReply,
 ) {
   const vault = await vaultRepo.findVaultById(request.params.id);
@@ -44,23 +24,18 @@ export async function getVaultHoldingsHandler(
     return reply.status(404).send({ error: "Vault not found" });
   }
 
-  // Check for fresh cached snapshot
-  const cached = await holdingsRepo.findCurrentByKolVault(vault.id);
-  if (cached && isFresh(cached.startDate)) {
-    return snapshotToResponse(cached);
-  }
-
-  // Dry-run vaults have no real on-chain PDA — skip GLAM fetch
   if (vault.dryRun) {
-    if (cached) {
-      return snapshotToResponse(cached);
-    }
     return reply
-      .status(404)
-      .send({ error: "No holdings snapshot available for dry-run vault" });
+      .status(400)
+      .send({ error: "Cannot snapshot holdings for a dry-run vault" });
   }
 
-  // Fetch live from GLAM
+  if (!vault.statePda) {
+    return reply
+      .status(400)
+      .send({ error: "Vault has no on-chain state PDA" });
+  }
+
   try {
     const statePda = new PublicKey(vault.statePda);
     const { holdings, totalEquityUsd } = await getVaultHoldings(statePda);
@@ -83,17 +58,13 @@ export async function getVaultHoldingsHandler(
       snapshotId: snapshot.id,
       snapshotDate: snapshot.startDate.toISOString(),
     };
-    return response;
+
+    return reply.status(201).send(response);
   } catch (err) {
     logger.error(
       { error: err instanceof Error ? err.message : err, vaultId: vault.id },
-      "Failed to fetch live holdings from GLAM",
+      "Failed to fetch live holdings from GLAM for snapshot",
     );
-
-    // Fall back to stale cached snapshot
-    if (cached) {
-      return snapshotToResponse(cached);
-    }
 
     return reply.status(502).send({ error: "Unable to fetch vault holdings" });
   }

@@ -12,7 +12,7 @@ const convictionConfig = {
   high: { label: "High", bg: "bg-emerald-900/40", text: "text-emerald-400", bar: "#4ade80" },
   medium: { label: "Medium", bg: "bg-amber-900/40", text: "text-amber-400", bar: "#fbbf24" },
   low: { label: "Low", bg: "bg-red-900/40", text: "text-red-400", bar: "#fb7185" },
-  stale: { label: "Stale", bg: "bg-zinc-800", text: "text-zinc-500", bar: "#71717a" },
+  stale: { label: "Stale", bg: "bg-zinc-200 dark:bg-zinc-800", text: "text-zinc-500", bar: "#71717a" },
 };
 
 export const VaultAllocationCard = memo(function VaultAllocationCard({
@@ -25,12 +25,12 @@ export const VaultAllocationCard = memo(function VaultAllocationCard({
   const barWidth = Math.min(percentage, 100);
 
   return (
-    <View className="mx-5 bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-2">
+    <View className="mx-5 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 mb-2">
       <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-base font-semibold text-white">{asset}</Text>
-        <Text className="text-base font-bold text-white">{percentage}%</Text>
+        <Text className="text-base font-semibold text-zinc-900 dark:text-white">{asset}</Text>
+        <Text className="text-base font-bold text-zinc-900 dark:text-white">{percentage}%</Text>
       </View>
-      <View className="h-1.5 bg-zinc-800 rounded-full mb-3 overflow-hidden">
+      <View className="h-1.5 bg-zinc-200 dark:bg-zinc-800 rounded-full mb-3 overflow-hidden">
         <View
           style={{ width: `${barWidth}%`, backgroundColor: config.bar }}
           className="h-full rounded-full"
@@ -44,7 +44,7 @@ export const VaultAllocationCard = memo(function VaultAllocationCard({
         </View>
       </View>
       {reasoning ? (
-        <Text className="text-xs text-zinc-400 leading-4" numberOfLines={2}>
+        <Text className="text-xs text-zinc-600 dark:text-zinc-400 leading-4" numberOfLines={2}>
           {reasoning}
         </Text>
       ) : null}

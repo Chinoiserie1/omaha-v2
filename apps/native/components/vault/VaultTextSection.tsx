@@ -15,7 +15,7 @@ export const VaultTextSection = memo(function VaultTextSection({
       <Text className="mb-3 text-xs font-semibold tracking-wider uppercase text-zinc-500">
         {title}
       </Text>
-      <Text className="text-sm leading-5 text-zinc-300">{content}</Text>
+      <Text className="text-sm leading-5 text-zinc-700 dark:text-zinc-300">{content}</Text>
     </View>
   );
 });

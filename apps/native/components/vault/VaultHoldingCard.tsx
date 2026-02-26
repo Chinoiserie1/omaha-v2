@@ -24,26 +24,26 @@ export const VaultHoldingCard = memo(function VaultHoldingCard({
   const barWidth = Math.min(holding.percentage, 100);
 
   return (
-    <View className="mx-5 mb-2 rounded-xl border border-zinc-800 bg-zinc-900 p-4">
+    <View className="mx-5 mb-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
       <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-white">
+        <Text className="text-base font-semibold text-zinc-900 dark:text-white">
           {holding.symbol}
         </Text>
-        <Text className="text-base font-bold text-white">
+        <Text className="text-base font-bold text-zinc-900 dark:text-white">
           {holding.percentage.toFixed(1)}%
         </Text>
       </View>
-      <View className="mb-3 h-1.5 overflow-hidden rounded-full bg-zinc-800">
+      <View className="mb-3 h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
         <View
           style={{ width: `${barWidth}%`, backgroundColor: "#818cf8" }}
           className="h-full rounded-full"
         />
       </View>
       <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-zinc-400">
+        <Text className="text-xs text-zinc-600 dark:text-zinc-400">
           {formatAmount(holding.uiAmount)} tokens
         </Text>
-        <Text className="text-xs text-zinc-400">
+        <Text className="text-xs text-zinc-600 dark:text-zinc-400">
           {formatUsd(holding.valueUsd)}
         </Text>
       </View>
