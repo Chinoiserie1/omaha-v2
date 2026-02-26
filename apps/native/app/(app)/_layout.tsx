@@ -6,56 +6,34 @@ import { useColorScheme } from "nativewind";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
-import { setTokenProvider } from "../../lib/api-client";
+import { useAuth } from "../../contexts/auth-context";
 
-function OnboardingGate({ children }: { children: React.ReactNode }) {
+export default function AppLayout() {
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
+  const { status } = useAuth();
   const { user } = usePrivy();
+  const posthog = usePostHog();
+  const wasIdentified = useRef(false);
 
   useTwitterSync();
 
-  const { data, isLoading, isError } = useOnboardingStatus(user?.id);
-
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
-
-  // If the query errored, optimistically render children
-  // (user already passed AuthGate, so they're authenticated)
-  if (isError) {
-    return <>{children}</>;
-  }
-
-  if (!data?.onboardingCompleted) {
-    return <Redirect href="/(onboarding)/connect-twitter" />;
-  }
-
-  return <>{children}</>;
-}
-
-function AuthGate({ children }: { children: React.ReactNode }) {
-  const { isReady, user, getAccessToken } = usePrivy();
-  const posthog = usePostHog();
-  const wasAuthenticated = useRef(false);
-
-  useEffect(() => {
-    setTokenProvider(getAccessToken);
-  }, [getAccessToken]);
-
+  // PostHog identify/reset based on auth state
   const userId = user?.id;
   useEffect(() => {
     if (!userId) {
-      if (wasAuthenticated.current) {
+      if (wasIdentified.current) {
         posthog.reset();
+        wasIdentified.current = false;
       }
       return;
     }
 
-    wasAuthenticated.current = true;
+    wasIdentified.current = true;
 
     const twitter = user?.linked_accounts?.find(
       (a: { type: string }) => a.type === "twitter_oauth",
     );
-
     const twitterUsername = twitter
       ? (twitter as { username?: string }).username
       : null;
@@ -63,41 +41,45 @@ function AuthGate({ children }: { children: React.ReactNode }) {
     posthog.identify(userId, {
       ...(twitterUsername ? { linked_twitter: twitterUsername } : {}),
     });
-  }, [userId, posthog]);
+  }, [userId, posthog, user?.linked_accounts]);
 
-  if (!isReady) {
+  // Only fetch onboarding status when authenticated
+  const onboardingUserId = status === "authenticated" ? user?.id : undefined;
+  const {
+    data: onboardingData,
+    isLoading: onboardingLoading,
+    isError: onboardingError,
+  } = useOnboardingStatus(onboardingUserId);
+
+  // Navigation away from (app) is handled by RootNavigator in _layout.tsx.
+  // This layout just shows a loader while the redirect settles.
+  if (status !== "authenticated") {
     return <FullScreenLoader />;
   }
 
-  // Never had a user (deep link without auth) — redirect once
-  if (!user && !wasAuthenticated.current) {
-    return <Redirect href="/" />;
-  }
-
-  // User logged out — show loader while SettingsButton navigates away
-  if (!user) {
+  // Check onboarding status (only when authenticated)
+  if (onboardingLoading) {
     return <FullScreenLoader />;
   }
 
-  return <>{children}</>;
-}
-
-export default function AppLayout() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
+  // If onboarding query errored, optimistically render the app
+  // Guard against undefined data (cache miss before query resolves)
+  if (
+    !onboardingError &&
+    onboardingData !== undefined &&
+    !onboardingData.onboardingCompleted
+  ) {
+    return <Redirect href="/(onboarding)/connect-twitter" />;
+  }
 
   return (
-    <AuthGate>
-      <OnboardingGate>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
-          }}
-        >
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </OnboardingGate>
-    </AuthGate>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+        contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+      }}
+    >
+      <Stack.Screen name="(tabs)" />
+    </Stack>
   );
 }

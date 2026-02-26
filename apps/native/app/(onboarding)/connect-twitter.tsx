@@ -5,7 +5,6 @@ import { usePrivy, useCreateGuestAccount } from "@privy-io/expo";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { TwitterLoginButton } from "../../components/onboarding/TwitterLoginButton";
 import { useCompleteOnboarding } from "../../hooks/queries/use-onboarding";
-import { setTokenProvider } from "../../lib/api-client";
 import { ApiError } from "../../lib/api-client";
 
 interface OnboardingData {
@@ -39,7 +38,7 @@ function buildOnboardingData(
 
 export default function ConnectTwitterScreen() {
   const router = useRouter();
-  const { user, getAccessToken } = usePrivy();
+  const { user } = usePrivy();
   const guest = useCreateGuestAccount();
   const hasNavigated = useRef(false);
   const [isCreatingGuest, setIsCreatingGuest] = useState(false);
@@ -47,13 +46,6 @@ export default function ConnectTwitterScreen() {
   const lastDataRef = useRef<OnboardingData | null>(null);
 
   const mutation = useCompleteOnboarding();
-
-  // Wire token provider for authenticated calls
-  useEffect(() => {
-    if (user) {
-      setTokenProvider(getAccessToken);
-    }
-  }, [user, getAccessToken]);
 
   useEffect(() => {
     hasNavigated.current = false;

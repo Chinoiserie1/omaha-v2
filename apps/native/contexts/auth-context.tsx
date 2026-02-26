@@ -1,0 +1,101 @@
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+} from "react";
+import { usePrivy } from "@privy-io/expo";
+import { useQueryClient } from "@tanstack/react-query";
+import { setTokenProvider, resetTokenProvider } from "../lib/api-client";
+
+type AuthStatus = "loading" | "authenticated" | "unauthenticated";
+
+interface AuthContextValue {
+  status: AuthStatus;
+  signOut: () => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const { isReady, user, getAccessToken, logout } = usePrivy();
+  const queryClient = useQueryClient();
+  const signingOut = useRef(false);
+  const hasValidated = useRef(false);
+
+  // Stabilize Privy function references via refs to prevent
+  // useCallback/useMemo deps from changing every render.
+  const logoutRef = useRef(logout);
+  logoutRef.current = logout;
+  const getAccessTokenRef = useRef(getAccessToken);
+  getAccessTokenRef.current = getAccessToken;
+
+  // Derive status directly from Privy state — no intermediate "loading" overrides.
+  // Navigation is handled centrally by RootNavigator in _layout.tsx.
+  const status: AuthStatus = useMemo(() => {
+    if (!isReady) return "loading";
+    return user ? "authenticated" : "unauthenticated";
+  }, [isReady, user]);
+
+  console.log("[AuthContext] status:", status, { isReady, hasUser: !!user });
+
+  // Wire token provider when authenticated
+  useEffect(() => {
+    if (status === "authenticated") {
+      setTokenProvider(getAccessTokenRef.current);
+    }
+  }, [status]);
+
+  // Validate session once after authentication
+  useEffect(() => {
+    if (status !== "authenticated" || hasValidated.current) return;
+    hasValidated.current = true;
+
+    const validateSession = async () => {
+      try {
+        const token = await getAccessTokenRef.current();
+        if (!token) {
+          await logoutRef.current();
+        }
+      } catch {
+        await logoutRef.current();
+      }
+    };
+    validateSession();
+  }, [status]);
+
+  const signOut = useCallback(async () => {
+    if (signingOut.current) return;
+    signingOut.current = true;
+    console.log("[AuthContext] signOut START");
+
+    try {
+      queryClient.clear();
+      resetTokenProvider();
+      await logoutRef.current();
+      console.log("[AuthContext] signOut DONE");
+      hasValidated.current = false;
+    } finally {
+      signingOut.current = false;
+    }
+  }, [queryClient]);
+
+  const value = useMemo(
+    () => ({ status, signOut }),
+    [status, signOut],
+  );
+
+  return (
+    <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
+  );
+}
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used within an AuthProvider");
+  }
+  return context;
+}
