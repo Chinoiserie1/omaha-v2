@@ -4,6 +4,7 @@ import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { Ionicons } from "@expo/vector-icons";
 import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
+import { captureError } from "../../lib/capture-error";
 import { useInvestorStatus } from "../../hooks/queries/use-investor-status";
 import { useClaimRedemption } from "../../hooks/mutations/use-claim-redemption";
 
@@ -319,6 +320,7 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
         text2: `Tx: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
       });
     } catch (err) {
+      captureError(err, { source: "claim" });
       Toast.show({
         type: "error",
         text1: "Claim Failed",

@@ -12,7 +12,7 @@ import Constants from "expo-constants";
 import { useColorScheme } from "nativewind";
 import Toast from "react-native-toast-message";
 import { toastConfig } from "../components/ui/toasts/toastConfig";
-import { posthogConfig } from "../lib/posthog";
+import { posthogClient, posthogAutocapture } from "../lib/posthog";
 import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary";
 import { PostHogScreenTracker } from "../components/shared/PostHogScreenTracker";
 
@@ -110,12 +110,7 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <PostHogProvider
-        apiKey={posthogConfig.apiKey}
-        options={posthogConfig.options}
-        autocapture={posthogConfig.autocapture}
-        debug={posthogConfig.debug}
-      >
+      <PostHogProvider client={posthogClient} autocapture={posthogAutocapture}>
         <PostHogErrorBoundary>
           <QueryClientProvider client={queryClient}>
             <PrivyProvider

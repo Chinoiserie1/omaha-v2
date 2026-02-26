@@ -9,6 +9,7 @@ import {
 import { usePrivy } from "@privy-io/expo";
 import { useQueryClient } from "@tanstack/react-query";
 import { setTokenProvider, resetTokenProvider } from "../lib/api-client";
+import { captureError } from "../lib/capture-error";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -59,7 +60,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!token) {
           await logoutRef.current();
         }
-      } catch {
+      } catch (err) {
+        captureError(err, { source: "session_validation" });
         await logoutRef.current();
       }
     };
