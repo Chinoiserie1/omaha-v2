@@ -4,7 +4,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo } from "react";
 import { VaultHeader } from "./VaultHeader";
-import { VaultStats } from "./VaultStats";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
 import { VaultChanges } from "./VaultChanges";
@@ -12,6 +11,7 @@ import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
+import { VaultHoldingsSection } from "./VaultHoldingsSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -62,6 +62,7 @@ type VaultSection =
   | { type: "allocations-header" }
   | { type: "allocation"; data: Allocation }
   | { type: "changes"; data: string[] }
+  | { type: "holdings"; data: { vaultId: string } }
   | { type: "description"; data: string }
   | { type: "info"; data: VaultData }
   | { type: "about"; data: { title: string; content: string } }
@@ -110,6 +111,8 @@ function buildSections(vault: VaultData): VaultSection[] {
   if (vault.portfolio?.changes && vault.portfolio.changes.length > 0) {
     sections.push({ type: "changes", data: vault.portfolio.changes });
   }
+
+  sections.push({ type: "holdings", data: { vaultId: vault.id } });
 
   sections.push({ type: "info", data: vault });
 
@@ -209,6 +212,8 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         );
       case "changes":
         return <VaultChanges changes={item.data} />;
+      case "holdings":
+        return <VaultHoldingsSection vaultId={item.data.vaultId} />;
       case "about":
       case "data-source":
       case "performance-calc":
@@ -237,7 +242,6 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
       default:
         return null;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onInvest, onWithdraw]);
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);
