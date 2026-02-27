@@ -1,8 +1,9 @@
-import { View } from "react-native";
+import { View, StyleSheet } from "react-native";
 import {
   LiquidGlassView,
   LiquidGlassContainerView,
 } from "@callstack/liquid-glass";
+import { BlurView } from "@sbaiahmed1/react-native-blur";
 import { useColorScheme } from "nativewind";
 import { isNativeLiquidGlassSupported, GLASS_CONFIG } from "@/lib/glass";
 import { cn } from "@/lib/utils";
@@ -21,18 +22,29 @@ export function GlassView({
   const { colorScheme: systemScheme } = useColorScheme();
   const isDark = systemScheme === "dark";
 
-  if (!isNativeLiquidGlassSupported || effect === "none") {
+  // iOS 26+: native liquid glass
+  if (isNativeLiquidGlassSupported && effect !== "none") {
+    const glassProps = {
+      effect,
+      interactive,
+      style,
+      className: cn("overflow-hidden rounded-xl", className),
+      ...(tintColor != null ? { tintColor } : {}),
+    };
+
+    return (
+      <LiquidGlassView {...glassProps}>
+        {children}
+      </LiquidGlassView>
+    );
+  }
+
+  // No effect requested: plain view
+  if (effect === "none") {
     return (
       <View
         className={cn("overflow-hidden rounded-xl", className)}
-        style={[
-          {
-            backgroundColor: isDark
-              ? GLASS_CONFIG.fallbackBgDark
-              : GLASS_CONFIG.fallbackBgLight,
-          },
-          style,
-        ]}
+        style={style}
         {...props}
       >
         {children}
@@ -40,18 +52,27 @@ export function GlassView({
     );
   }
 
-  const glassProps = {
-    effect,
-    interactive,
-    style,
-    className: cn("overflow-hidden rounded-xl", className),
-    ...(tintColor != null ? { tintColor } : {}),
-  };
+  // iOS < 26: blur fallback (same strategy as Android)
+  const blurType = isDark
+    ? GLASS_CONFIG.androidBlurTypeDark
+    : GLASS_CONFIG.androidBlurTypeLight;
 
   return (
-    <LiquidGlassView {...glassProps}>
+    <View
+      className={cn("overflow-hidden rounded-xl", className)}
+      style={style}
+      {...props}
+    >
+      <BlurView
+        blurType={blurType}
+        blurAmount={GLASS_CONFIG.androidBlurAmount}
+        reducedTransparencyFallbackColor={
+          isDark ? GLASS_CONFIG.fallbackBgDark : GLASS_CONFIG.fallbackBgLight
+        }
+        style={StyleSheet.absoluteFill}
+      />
       {children}
-    </LiquidGlassView>
+    </View>
   );
 }
 
