@@ -1,4 +1,5 @@
 import { TextClassContext } from "@/components/ui/text";
+import { GlassView } from "@/components/ui/glass";
 import { cn } from "@/lib/utils";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Platform, Pressable } from "react-native";
@@ -13,7 +14,8 @@ const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: cn(
+        default: "",
+        classic: cn(
           "bg-primary active:bg-primary/90 shadow-sm shadow-black/5",
           Platform.select({ web: "hover:bg-primary/90" }),
         ),
@@ -70,6 +72,7 @@ const buttonTextVariants = cva(
     variants: {
       variant: {
         default: "text-primary-foreground",
+        classic: "text-primary-foreground",
         destructive: "text-white",
         outline: cn(
           "group-active:text-accent-foreground",
@@ -95,7 +98,9 @@ type ButtonProps = React.ComponentProps<typeof Pressable> &
   VariantProps<typeof buttonVariants>;
 
 function Button({ className, variant, size, ...props }: ButtonProps) {
-  return (
+  const isGlass = variant === "default" || variant === undefined;
+
+  const inner = (
     <TextClassContext.Provider value={buttonTextVariants({ variant, size })}>
       <Pressable
         className={cn(
@@ -108,6 +113,16 @@ function Button({ className, variant, size, ...props }: ButtonProps) {
       />
     </TextClassContext.Provider>
   );
+
+  if (isGlass) {
+    return (
+      <GlassView interactive effect="regular" className="rounded-md">
+        {inner}
+      </GlassView>
+    );
+  }
+
+  return inner;
 }
 
 export { Button, buttonTextVariants, buttonVariants };

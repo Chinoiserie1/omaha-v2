@@ -71,6 +71,7 @@ export function WalletOverview() {
 
         <View className="flex-row gap-3">
           <Button
+            variant="classic"
             className="flex-1"
             onPress={() =>
               router.push("/(app)/(tabs)/(profile)/deposit" as never)

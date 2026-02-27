@@ -20,7 +20,7 @@ export function ErrorScreen({ error, onRetry }: ErrorScreenProps) {
           {error.message}
         </Text>
         {onRetry && (
-          <Button onPress={onRetry}>
+          <Button variant="classic" onPress={onRetry}>
             <Text className="font-semibold text-primary-foreground">
               Try Again
             </Text>

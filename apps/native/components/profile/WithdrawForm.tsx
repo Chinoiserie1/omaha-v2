@@ -107,7 +107,7 @@ export function WithdrawForm() {
         >
           {txSignature}
         </Text>
-        <Button className="w-full" size="lg" onPress={() => router.back()}>
+        <Button variant="classic" className="w-full" size="lg" onPress={() => router.back()}>
           <Text className="font-semibold text-primary-foreground">Done</Text>
         </Button>
       </View>
@@ -153,6 +153,7 @@ export function WithdrawForm() {
       )}
 
       <Button
+        variant="classic"
         className="mt-2"
         onPress={handleSend}
         disabled={sending}

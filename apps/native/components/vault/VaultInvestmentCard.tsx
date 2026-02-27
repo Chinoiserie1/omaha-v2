@@ -108,6 +108,7 @@ function NotInvestedState({ onInvest }: { onInvest: () => void }) {
           depositing USDC.
         </Text>
         <Button
+          variant="classic"
           onPress={onInvest}
           className="bg-emerald-600 active:bg-emerald-700"
           size="lg"
@@ -169,6 +170,7 @@ function InvestedState({
         </View>
         <View className="flex-row gap-3">
           <Button
+            variant="classic"
             onPress={onInvest}
             className="flex-1 bg-emerald-600 active:bg-emerald-700"
           >
@@ -284,6 +286,7 @@ function PendingWithdrawalState({
         </Text>
 
         <Button
+          variant="classic"
           onPress={onClaim}
           disabled={!canClaim || claimPending}
           className={

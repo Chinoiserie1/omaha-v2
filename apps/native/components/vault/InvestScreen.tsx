@@ -158,6 +158,7 @@ export function InvestScreen({
       )}
 
       <Button
+        variant="classic"
         onPress={handleInvest}
         disabled={isDisabled}
         className={

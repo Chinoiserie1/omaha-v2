@@ -82,6 +82,7 @@ export function TwitterLoginButton({
   return (
     <View>
       <Button
+        variant="classic"
         onPress={handlePress}
         disabled={isLoading}
         size="lg"

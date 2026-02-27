@@ -1,15 +1,34 @@
 import { Text, TextClassContext } from "@/components/ui/text";
+import { GlassView } from "@/components/ui/glass";
 import { cn } from "@/lib/utils";
 import { View, type ViewProps } from "react-native";
 
-function Card({ className, ...props }: ViewProps & React.RefAttributes<View>) {
+type CardVariant = "glass" | "classic";
+
+type CardProps = ViewProps &
+  React.RefAttributes<View> & {
+    variant?: CardVariant;
+  };
+
+function Card({ className, variant = "glass", ...props }: CardProps) {
+  if (variant === "classic") {
+    return (
+      <TextClassContext.Provider value="text-card-foreground">
+        <View
+          className={cn(
+            "bg-card border-border flex flex-col gap-6 rounded-xl border py-6 shadow-sm shadow-black/5",
+            className,
+          )}
+          {...props}
+        />
+      </TextClassContext.Provider>
+    );
+  }
+
   return (
     <TextClassContext.Provider value="text-card-foreground">
-      <View
-        className={cn(
-          "bg-card border-border flex flex-col gap-6 rounded-xl border py-6 shadow-sm shadow-black/5",
-          className,
-        )}
+      <GlassView
+        className={cn("flex flex-col gap-6 rounded-xl py-6", className)}
         {...props}
       />
     </TextClassContext.Provider>
@@ -78,3 +97,4 @@ export {
   CardHeader,
   CardTitle,
 };
+export type { CardProps, CardVariant };

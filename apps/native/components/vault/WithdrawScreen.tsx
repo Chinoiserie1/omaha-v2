@@ -159,6 +159,7 @@ export function WithdrawScreen({
       )}
 
       <Button
+        variant="classic"
         onPress={handleWithdraw}
         disabled={isDisabled}
         className={

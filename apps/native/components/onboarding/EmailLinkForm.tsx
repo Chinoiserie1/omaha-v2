@@ -91,6 +91,7 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
           )}
 
           <Button
+            variant="classic"
             className="mt-4"
             onPress={handleSendCode}
             disabled={isLoading || !email.trim()}
@@ -128,6 +129,7 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
           )}
 
           <Button
+            variant="classic"
             className="mt-4"
             onPress={handleSubmitCode}
             disabled={isLoading || !code.trim()}

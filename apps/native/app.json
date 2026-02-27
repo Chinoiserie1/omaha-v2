@@ -22,8 +22,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#09090B"
       },
-      "package": "com.omaha.app",
-      "usesCleartextTraffic": true
+      "package": "com.omaha.app"
     },
     "web": {
       "bundler": "metro",
@@ -33,7 +32,10 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-asset"
+      "expo-asset",
+      "expo-localization",
+      "expo-secure-store",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true
