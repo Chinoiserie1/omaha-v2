@@ -15,6 +15,7 @@ import { toastConfig } from "../components/ui/toasts/toastConfig";
 import { posthogClient, posthogAutocapture } from "../lib/posthog";
 import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary";
 import { PostHogScreenTracker } from "../components/shared/PostHogScreenTracker";
+import { PortalHost } from "@rn-primitives/portal";
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -132,6 +133,7 @@ export default function RootLayout() {
           </QueryClientProvider>
         </PostHogErrorBoundary>
       </PostHogProvider>
+      <PortalHost />
     </GestureHandlerRootView>
   );
 }

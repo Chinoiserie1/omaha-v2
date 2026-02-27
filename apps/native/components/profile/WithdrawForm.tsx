@@ -1,11 +1,23 @@
 import { useState, useCallback } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
-import { Connection, PublicKey, SystemProgram, Transaction, LAMPORTS_PER_SOL } from "@solana/web3.js";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction,
+  LAMPORTS_PER_SOL,
+} from "@solana/web3.js";
 import { captureError } from "../../lib/capture-error";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
-const RPC_URL = process.env.EXPO_PUBLIC_SOLANA_RPC_URL ?? "https://api.mainnet-beta.solana.com";
+const RPC_URL =
+  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
+  "https://api.mainnet-beta.solana.com";
 
 export function WithdrawForm() {
   const router = useRouter();
@@ -57,7 +69,7 @@ export function WithdrawForm() {
           fromPubkey,
           toPubkey,
           lamports: Math.round(amountNum * LAMPORTS_PER_SOL),
-        })
+        }),
       );
 
       const { blockhash } = await connection.getLatestBlockhash();
@@ -85,89 +97,83 @@ export function WithdrawForm() {
   if (txSignature) {
     return (
       <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
-          Sent!
-        </Text>
-        <Text className="text-sm text-zinc-500 dark:text-zinc-400 text-center mb-6">
+        <Text className="mb-2 text-xl font-bold">Sent!</Text>
+        <Text className="mb-6 text-center text-sm text-muted-foreground">
           Your transaction has been submitted.
         </Text>
         <Text
-          className="text-xs text-zinc-500 dark:text-zinc-400 font-mono text-center mb-8"
+          className="mb-8 text-center font-mono text-xs text-muted-foreground"
           numberOfLines={2}
         >
           {txSignature}
         </Text>
-        <TouchableOpacity
-          className="w-full bg-zinc-900 dark:bg-white py-4 rounded-xl"
-          onPress={() => router.back()}
-          activeOpacity={0.8}
-        >
-          <Text className="text-white dark:text-zinc-950 text-center font-semibold">Done</Text>
-        </TouchableOpacity>
+        <Button className="w-full" size="lg" onPress={() => router.back()}>
+          <Text className="font-semibold text-primary-foreground">Done</Text>
+        </Button>
       </View>
     );
   }
 
   return (
     <View className="flex-1 px-6 pt-8">
-      <Text className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
-        Withdraw SOL
-      </Text>
-      <Text className="text-sm text-zinc-500 dark:text-zinc-400 mb-8">
+      <Text className="mb-2 text-xl font-bold">Withdraw SOL</Text>
+      <Text className="mb-8 text-sm text-muted-foreground">
         Send SOL to another wallet
       </Text>
 
-      <Text className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+      <Label nativeID="recipient-label" className="mb-2">
         Recipient Address
-      </Text>
-      <TextInput
-        className="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white rounded-xl px-4 py-3 mb-4 font-mono text-sm"
+      </Label>
+      <Input
+        className="mb-4 font-mono text-sm"
         value={recipient}
         onChangeText={setRecipient}
         placeholder="Solana address..."
         placeholderTextColor="#71717A"
         autoCapitalize="none"
         autoCorrect={false}
+        aria-labelledby="recipient-label"
       />
 
-      <Text className="text-xs text-zinc-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
+      <Label nativeID="sol-amount-label" className="mb-2">
         Amount (SOL)
-      </Text>
-      <TextInput
-        className="bg-zinc-100 dark:bg-zinc-900 text-zinc-900 dark:text-white rounded-xl px-4 py-3 mb-4 text-sm"
+      </Label>
+      <Input
+        className="mb-4 text-sm"
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
         placeholderTextColor="#71717A"
         keyboardType="decimal-pad"
+        aria-labelledby="sol-amount-label"
       />
 
       {error && (
-        <Text className="text-red-500 dark:text-red-400 text-sm mb-4">{error}</Text>
+        <Text className="mb-4 text-sm text-destructive">{error}</Text>
       )}
 
-      <TouchableOpacity
-        className={`py-4 rounded-xl mt-2 ${sending ? "bg-zinc-400 dark:bg-zinc-600" : "bg-zinc-900 dark:bg-white"}`}
+      <Button
+        className="mt-2"
         onPress={handleSend}
         disabled={sending}
-        activeOpacity={0.8}
+        size="lg"
       >
         {sending ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white dark:text-zinc-950 text-center font-semibold text-base">
+          <Text className="text-base font-semibold text-primary-foreground">
             Send
           </Text>
         )}
-      </TouchableOpacity>
+      </Button>
 
-      <TouchableOpacity
-        className="py-3 mt-3"
+      <Button
+        variant="ghost"
+        className="mt-3"
         onPress={() => router.back()}
-        activeOpacity={0.6}
       >
-        <Text className="text-zinc-500 dark:text-zinc-400 text-center">Cancel</Text>
-      </TouchableOpacity>
+        <Text className="text-muted-foreground">Cancel</Text>
+      </Button>
     </View>
   );
 }

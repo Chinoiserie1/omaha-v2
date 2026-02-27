@@ -1,16 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
 import { useRedeemVault } from "../../hooks/mutations/use-redeem-vault";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const RPC_URL =
   process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
@@ -104,84 +102,76 @@ export function WithdrawScreen({
     }
   };
 
+  const isDisabled =
+    !isValidAmount ||
+    exceedsBalance ||
+    redeemMutation.isPending ||
+    !wallet;
+
   return (
-    <View className="flex-1 px-6 pt-6 pb-10">
-      <Text className="text-xl font-bold text-zinc-900 dark:text-white mb-1">
+    <View className="flex-1 px-6 pb-10 pt-6">
+      <Text className="mb-1 text-xl font-bold">
         Withdraw from {vaultName}
       </Text>
-      <Text className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+      <Text className="mb-6 text-sm text-muted-foreground">
         Redeem your vault shares
       </Text>
 
-      {/* Balance display */}
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-xs text-zinc-500 uppercase tracking-wider">
-          Amount (Shares)
-        </Text>
+      <View className="mb-2 flex-row items-center justify-between">
+        <Label nativeID="share-amount-label">Amount (Shares)</Label>
         <View className="flex-row items-center">
           {loadingBalance ? (
             <ActivityIndicator size="small" color="#71717A" />
           ) : (
-            <Text className="text-xs text-zinc-500">
+            <Text className="text-xs text-muted-foreground">
               Balance:{" "}
               {shareBalance !== null
                 ? shareBalance.toLocaleString(undefined, {
                     maximumFractionDigits: 6,
                   })
-                : "—"}{" "}
+                : "\u2014"}{" "}
               shares
             </Text>
           )}
           {shareBalance !== null && shareBalance > 0 && (
-            <Pressable onPress={handleMax} className="ml-2">
-              <Text className="text-xs font-semibold text-red-400">
-                MAX
-              </Text>
-            </Pressable>
+            <Button variant="ghost" size="sm" onPress={handleMax} className="ml-1">
+              <Text className="text-xs font-semibold text-red-400">MAX</Text>
+            </Button>
           )}
         </View>
       </View>
 
-      {/* Amount input */}
-      <TextInput
-        className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-lg rounded-xl px-4 py-3 mb-3"
+      <Input
+        className="mb-3 text-lg"
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
         placeholderTextColor="#A1A1AA"
         keyboardType="decimal-pad"
         editable={!redeemMutation.isPending}
+        aria-labelledby="share-amount-label"
       />
 
-      {/* Validation error */}
       {exceedsBalance && (
-        <Text className="text-red-400 text-sm mb-3">
+        <Text className="mb-3 text-sm text-destructive">
           Insufficient share balance
         </Text>
       )}
 
-      {/* Withdraw button */}
-      <Pressable
+      <Button
         onPress={handleWithdraw}
-        disabled={
-          !isValidAmount ||
-          exceedsBalance ||
-          redeemMutation.isPending ||
-          !wallet
+        disabled={isDisabled}
+        className={
+          isDisabled
+            ? "mt-2 bg-muted"
+            : "mt-2 bg-red-600 active:bg-red-700"
         }
-        className={`py-4 rounded-xl mt-2 items-center ${
-          !isValidAmount ||
-          exceedsBalance ||
-          redeemMutation.isPending ||
-          !wallet
-            ? "bg-zinc-300 dark:bg-zinc-700"
-            : "bg-red-600 active:bg-red-700"
-        }`}
+        size="lg"
       >
         {redeemMutation.isPending ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white font-semibold text-base">
+          <Text className="text-base font-semibold text-white">
             {!wallet
               ? "Wallet not ready"
               : !isValidAmount
@@ -191,12 +181,11 @@ export function WithdrawScreen({
                   : `Withdraw ${amount} shares`}
           </Text>
         )}
-      </Pressable>
+      </Button>
 
-      {/* Cancel button */}
-      <Pressable onPress={onClose} className="py-3 mt-2">
-        <Text className="text-zinc-500 text-center">Cancel</Text>
-      </Pressable>
+      <Button variant="ghost" onPress={onClose} className="mt-2">
+        <Text className="text-muted-foreground">Cancel</Text>
+      </Button>
     </View>
   );
 }

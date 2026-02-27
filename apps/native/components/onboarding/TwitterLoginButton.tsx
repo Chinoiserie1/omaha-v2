@@ -1,6 +1,8 @@
-import { Text, TouchableOpacity, ActivityIndicator, View } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useLoginWithOAuth, useLinkWithOAuth, usePrivy } from "@privy-io/expo";
 import type { User } from "@privy-io/expo";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
 
 interface TwitterData {
   privyId: string;
@@ -35,7 +37,9 @@ function extractTwitterData(user: User): TwitterData {
     const name = "name" in twitterAccount ? twitterAccount.name : undefined;
     const profilePic =
       "profile_picture_url" in twitterAccount
-        ? (twitterAccount as unknown as Record<string, string>)["profile_picture_url"]
+        ? (twitterAccount as unknown as Record<string, string>)[
+            "profile_picture_url"
+          ]
         : undefined;
 
     if (username) result.twitterUsername = String(username);
@@ -77,23 +81,22 @@ export function TwitterLoginButton({
 
   return (
     <View>
-      <TouchableOpacity
-        className={`py-4 rounded-xl ${isLoading ? "bg-zinc-400 dark:bg-zinc-600" : "bg-zinc-900 dark:bg-white"}`}
+      <Button
         onPress={handlePress}
         disabled={isLoading}
-        activeOpacity={0.8}
+        size="lg"
       >
         {isLoading ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-lg font-semibold text-center text-white dark:text-zinc-950">
+          <Text className="text-lg font-semibold text-primary-foreground">
             Continue with Twitter
           </Text>
         )}
-      </TouchableOpacity>
+      </Button>
 
       {activeState.status === "error" && activeState.error && (
-        <Text className="mt-3 text-sm text-center text-red-500 dark:text-red-400">
+        <Text className="mt-3 text-center text-sm text-destructive">
           {activeState.error.message}
         </Text>
       )}

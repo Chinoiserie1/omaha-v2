@@ -33,8 +33,7 @@
     "plugins": [
       "expo-router",
       "expo-font",
-      "expo-asset",
-      "posthog-react-native-session-replay"
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

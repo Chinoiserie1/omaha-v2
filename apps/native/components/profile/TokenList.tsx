@@ -1,5 +1,7 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import type { TokenBalance } from "@repo/solana";
+import { Text } from "@/components/ui/text";
+import { Separator } from "@/components/ui/separator";
 
 interface TokenListProps {
   tokens: TokenBalance[];
@@ -11,30 +13,31 @@ function shortenMint(mint: string): string {
 
 export function TokenList({ tokens }: TokenListProps) {
   return (
-    <View className="border-t border-zinc-200 dark:border-zinc-800 pt-3">
-      <Text className="text-xs text-zinc-500 dark:text-zinc-400 mb-2 uppercase tracking-wider">
+    <View className="pt-3">
+      <Separator className="mb-3" />
+      <Text className="mb-2 text-xs uppercase tracking-wider text-muted-foreground">
         Tokens
       </Text>
       {tokens.map((token) => (
         <View
           key={token.mint}
-          className="flex-row items-center justify-between py-2 border-b border-zinc-200/50 dark:border-zinc-800/50"
+          className="flex-row items-center justify-between border-b border-border/50 py-2"
         >
           <View className="flex-1">
             <Text
-              className="text-xs text-zinc-500 dark:text-zinc-400 font-mono"
+              className="font-mono text-xs text-muted-foreground"
               numberOfLines={1}
             >
               {shortenMint(token.mint)}
             </Text>
           </View>
           <View className="items-end">
-            <Text className="text-sm font-semibold text-zinc-900 dark:text-white">
+            <Text className="text-sm font-semibold">
               {token.uiAmount.toLocaleString(undefined, {
                 maximumFractionDigits: token.decimals > 4 ? 4 : token.decimals,
               })}
             </Text>
-            <Text className="text-xs text-zinc-500 dark:text-zinc-400">
+            <Text className="text-xs text-muted-foreground">
               {token.decimals}d
             </Text>
           </View>

@@ -1,5 +1,7 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { ProfilePicture } from "../shared/ProfilePicture";
+import { Text } from "@/components/ui/text";
+import { Separator } from "@/components/ui/separator";
 
 interface ProfileHeaderProps {
   profileImageUrl?: string | null | undefined;
@@ -20,14 +22,18 @@ export function ProfileHeader({
 }: ProfileHeaderProps) {
   return (
     <View className="mb-6">
-      <View className="flex-row items-center mb-4">
-        <ProfilePicture imageUrl={profileImageUrl} name={name ?? username} size={72} />
+      <View className="mb-4 flex-row items-center">
+        <ProfilePicture
+          imageUrl={profileImageUrl}
+          name={name ?? username}
+          size={72}
+        />
         <View className="ml-4 flex-1">
-          <Text className="text-xl font-bold text-zinc-900 dark:text-white">
+          <Text className="text-xl font-bold">
             {name ?? username ?? "Anonymous"}
           </Text>
           {twitterUsername && (
-            <Text className="text-sm text-zinc-500 dark:text-zinc-400 mt-0.5">
+            <Text className="mt-0.5 text-sm text-muted-foreground">
               @{twitterUsername}
             </Text>
           )}
@@ -36,16 +42,13 @@ export function ProfileHeader({
 
       <View className="flex-row">
         <View className="mr-6">
-          <Text className="text-lg font-bold text-zinc-900 dark:text-white">
-            {followersCount}
-          </Text>
-          <Text className="text-xs text-zinc-500 dark:text-zinc-400">Followers</Text>
+          <Text className="text-lg font-bold">{followersCount}</Text>
+          <Text className="text-xs text-muted-foreground">Followers</Text>
         </View>
+        <Separator orientation="vertical" className="mr-6" />
         <View>
-          <Text className="text-lg font-bold text-zinc-900 dark:text-white">
-            {followingCount}
-          </Text>
-          <Text className="text-xs text-zinc-500 dark:text-zinc-400">Following</Text>
+          <Text className="text-lg font-bold">{followingCount}</Text>
+          <Text className="text-xs text-muted-foreground">Following</Text>
         </View>
       </View>
     </View>

@@ -41,4 +41,4 @@ const resolveRequestWithPackageExports = (context, moduleName, platform) => {
 
 config.resolver.resolveRequest = resolveRequestWithPackageExports;
 
-module.exports = withNativeWind(config, { input: "./global.css" });
+module.exports = withNativeWind(config, { input: "./global.css", inlineRem: 16 });

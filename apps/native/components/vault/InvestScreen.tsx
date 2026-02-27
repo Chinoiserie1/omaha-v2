@@ -1,16 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  Pressable,
-  ActivityIndicator,
-} from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
 import { useSubscribeVault } from "../../hooks/mutations/use-subscribe-vault";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 const RPC_URL =
   process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
@@ -24,7 +22,11 @@ interface InvestScreenProps {
   onClose: () => void;
 }
 
-export function InvestScreen({ vaultId, vaultName, onClose }: InvestScreenProps) {
+export function InvestScreen({
+  vaultId,
+  vaultName,
+  onClose,
+}: InvestScreenProps) {
   const { wallets } = useEmbeddedSolanaWallet();
   const wallet = wallets?.[0];
 
@@ -104,79 +106,71 @@ export function InvestScreen({ vaultId, vaultName, onClose }: InvestScreenProps)
     }
   };
 
+  const isDisabled =
+    !isValidAmount ||
+    exceedsBalance ||
+    subscribeMutation.isPending ||
+    !wallet;
+
   return (
-    <View className="flex-1 px-6 pt-6 pb-10">
-      <Text className="text-xl font-bold text-zinc-900 dark:text-white mb-1">
-        Invest in {vaultName}
-      </Text>
-      <Text className="text-sm text-zinc-500 dark:text-zinc-400 mb-6">
+    <View className="flex-1 px-6 pb-10 pt-6">
+      <Text className="mb-1 text-xl font-bold">Invest in {vaultName}</Text>
+      <Text className="mb-6 text-sm text-muted-foreground">
         Deposit USDC into this vault
       </Text>
 
-      {/* Balance display */}
-      <View className="flex-row items-center justify-between mb-2">
-        <Text className="text-xs text-zinc-500 uppercase tracking-wider">
-          Amount (USDC)
-        </Text>
+      <View className="mb-2 flex-row items-center justify-between">
+        <Label nativeID="amount-label">Amount (USDC)</Label>
         <View className="flex-row items-center">
           {loadingBalance ? (
             <ActivityIndicator size="small" color="#71717A" />
           ) : (
-            <Text className="text-xs text-zinc-500">
-              Balance: {usdcBalance !== null ? usdcBalance.toFixed(2) : "—"}{" "}
-              USDC
+            <Text className="text-xs text-muted-foreground">
+              Balance:{" "}
+              {usdcBalance !== null ? usdcBalance.toFixed(2) : "\u2014"} USDC
             </Text>
           )}
           {usdcBalance !== null && usdcBalance > 0 && (
-            <Pressable onPress={handleMax} className="ml-2">
+            <Button variant="ghost" size="sm" onPress={handleMax} className="ml-1">
               <Text className="text-xs font-semibold text-emerald-500">
                 MAX
               </Text>
-            </Pressable>
+            </Button>
           )}
         </View>
       </View>
 
-      {/* Amount input */}
-      <TextInput
-        className="bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-white text-lg rounded-xl px-4 py-3 mb-3"
+      <Input
+        className="mb-3 text-lg"
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
         placeholderTextColor="#A1A1AA"
         keyboardType="decimal-pad"
         editable={!subscribeMutation.isPending}
+        aria-labelledby="amount-label"
       />
 
-      {/* Validation error */}
       {exceedsBalance && (
-        <Text className="text-red-400 text-sm mb-3">
+        <Text className="mb-3 text-sm text-destructive">
           Insufficient USDC balance
         </Text>
       )}
 
-      {/* Invest button */}
-      <Pressable
+      <Button
         onPress={handleInvest}
-        disabled={
-          !isValidAmount ||
-          exceedsBalance ||
-          subscribeMutation.isPending ||
-          !wallet
+        disabled={isDisabled}
+        className={
+          isDisabled
+            ? "mt-2 bg-muted"
+            : "mt-2 bg-emerald-600 active:bg-emerald-700"
         }
-        className={`py-4 rounded-xl mt-2 items-center ${
-          !isValidAmount ||
-          exceedsBalance ||
-          subscribeMutation.isPending ||
-          !wallet
-            ? "bg-zinc-300 dark:bg-zinc-700"
-            : "bg-emerald-600 active:bg-emerald-700"
-        }`}
+        size="lg"
       >
         {subscribeMutation.isPending ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-white font-semibold text-base">
+          <Text className="text-base font-semibold text-white">
             {!wallet
               ? "Wallet not ready"
               : !isValidAmount
@@ -186,12 +180,11 @@ export function InvestScreen({ vaultId, vaultName, onClose }: InvestScreenProps)
                   : `Invest ${amount} USDC`}
           </Text>
         )}
-      </Pressable>
+      </Button>
 
-      {/* Cancel button */}
-      <Pressable onPress={onClose} className="py-3 mt-2">
-        <Text className="text-zinc-500 text-center">Cancel</Text>
-      </Pressable>
+      <Button variant="ghost" onPress={onClose} className="mt-2">
+        <Text className="text-muted-foreground">Cancel</Text>
+      </Button>
     </View>
   );
 }

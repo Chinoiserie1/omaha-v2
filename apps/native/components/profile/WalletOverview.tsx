@@ -1,8 +1,11 @@
-import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { useWalletPortfolio } from "../../hooks/queries/use-wallet-portfolio";
 import { ExpandableTokenList } from "./ExpandableTokenList";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 function formatTotalUsd(value: number): string {
   if (value >= 1_000_000) {
@@ -26,71 +29,74 @@ export function WalletOverview() {
 
   if (!wallet) {
     return (
-      <View className="p-5 mb-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900">
-        <View className="flex-row items-center">
-          <ActivityIndicator size="small" color="#71717A" />
-          <Text className="ml-3 text-sm text-zinc-500 dark:text-zinc-400">
-            Setting up wallet...
-          </Text>
-        </View>
-      </View>
+      <Card className="mb-4">
+        <CardContent>
+          <View className="flex-row items-center">
+            <ActivityIndicator size="small" color="#71717A" />
+            <Text className="ml-3 text-sm text-muted-foreground">
+              Setting up wallet...
+            </Text>
+          </View>
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <View className="p-5 mb-4 rounded-2xl bg-zinc-100 dark:bg-zinc-900">
-      <Text className="mb-1 text-xs tracking-wider uppercase text-zinc-500 dark:text-zinc-400">
-        Total Balance
-      </Text>
-      {isLoading ? (
-        <ActivityIndicator
-          size="small"
-          color="#71717A"
-          className="self-start my-2"
-        />
-      ) : (
-        <Text className="mb-4 text-3xl font-bold text-zinc-900 dark:text-white">
-          {portfolio ? formatTotalUsd(portfolio.totalUsd) : "$0.00"}
+    <Card className="mb-4">
+      <CardContent className="gap-4">
+        <Text className="text-xs uppercase tracking-wider text-muted-foreground">
+          Total Balance
         </Text>
-      )}
-
-      <Text
-        className="mb-4 font-mono text-xs text-zinc-500 dark:text-zinc-400"
-        numberOfLines={1}
-        ellipsizeMode="middle"
-        selectable
-      >
-        {wallet.address}
-      </Text>
-
-      <View className="flex-row gap-3 mb-4">
-        <TouchableOpacity
-          className="flex-1 py-3 rounded-xl bg-zinc-900 dark:bg-white"
-          onPress={() =>
-            router.push("/(app)/(tabs)/(profile)/deposit" as never)
-          }
-          activeOpacity={0.8}
-        >
-          <Text className="font-semibold text-center text-white dark:text-zinc-950">
-            Deposit
+        {isLoading ? (
+          <ActivityIndicator
+            size="small"
+            color="#71717A"
+            className="my-2 self-start"
+          />
+        ) : (
+          <Text className="text-3xl font-bold">
+            {portfolio ? formatTotalUsd(portfolio.totalUsd) : "$0.00"}
           </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          className="flex-1 py-3 rounded-xl bg-zinc-200 dark:bg-zinc-800"
-          onPress={() =>
-            router.push("/(app)/(tabs)/(profile)/withdraw" as never)
-          }
-          activeOpacity={0.8}
-        >
-          <Text className="font-semibold text-center text-zinc-900 dark:text-white">
-            Withdraw
-          </Text>
-        </TouchableOpacity>
-      </View>
+        )}
 
-      {!isLoading && portfolio && portfolio.items.length > 0 && (
-        <ExpandableTokenList items={portfolio.items} />
-      )}
-    </View>
+        <Text
+          className="font-mono text-xs text-muted-foreground"
+          numberOfLines={1}
+          ellipsizeMode="middle"
+          selectable
+        >
+          {wallet.address}
+        </Text>
+
+        <View className="flex-row gap-3">
+          <Button
+            className="flex-1"
+            onPress={() =>
+              router.push("/(app)/(tabs)/(profile)/deposit" as never)
+            }
+          >
+            <Text className="font-semibold text-primary-foreground">
+              Deposit
+            </Text>
+          </Button>
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onPress={() =>
+              router.push("/(app)/(tabs)/(profile)/withdraw" as never)
+            }
+          >
+            <Text className="font-semibold text-secondary-foreground">
+              Withdraw
+            </Text>
+          </Button>
+        </View>
+
+        {!isLoading && portfolio && portfolio.items.length > 0 && (
+          <ExpandableTokenList items={portfolio.items} />
+        )}
+      </CardContent>
+    </Card>
   );
 }

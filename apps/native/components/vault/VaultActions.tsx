@@ -1,4 +1,6 @@
-import { View, Text, Pressable } from "react-native";
+import { View } from "react-native";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
 
 interface VaultActionsProps {
   hasMintAddress: boolean;
@@ -13,12 +15,13 @@ export function VaultActions({
 
   return (
     <View className="mx-5 mt-4">
-      <Pressable
+      <Button
+        variant="outline"
         onPress={onWithdraw}
-        className="py-3 rounded-xl items-center bg-zinc-200 dark:bg-zinc-800 border border-red-600 active:bg-zinc-300 dark:active:bg-zinc-700"
+        className="border-red-600"
       >
         <Text className="text-sm font-semibold text-red-400">Withdraw</Text>
-      </Pressable>
+      </Button>
     </View>
   );
 }
