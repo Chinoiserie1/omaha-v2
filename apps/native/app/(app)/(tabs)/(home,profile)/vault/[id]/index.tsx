@@ -8,7 +8,7 @@ export default function VaultScreen() {
   const segments = useSegments();
 
   const tabSegment = useMemo(
-    () => segments.find((s) => ["(home)", "(tracker)", "(profile)"].includes(s)) ?? "(home)",
+    () => segments.find((s) => ["(home)", "(profile)"].includes(s)) ?? "(home)",
     [segments],
   );
 
