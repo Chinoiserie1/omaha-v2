@@ -3,6 +3,7 @@ import {
   LiquidGlassView,
   LiquidGlassContainerView,
 } from "@callstack/liquid-glass";
+import { useColorScheme } from "nativewind";
 import { isNativeLiquidGlassSupported, GLASS_CONFIG } from "@/lib/glass";
 import { cn } from "@/lib/utils";
 import type { GlassViewProps, GlassContainerProps } from "./types";
@@ -11,17 +12,27 @@ export function GlassView({
   effect = "regular",
   tintColor,
   interactive = false,
-  colorScheme = "system",
+  colorScheme: _colorScheme,
   className,
   style,
   children,
   ...props
 }: GlassViewProps) {
+  const { colorScheme: systemScheme } = useColorScheme();
+  const isDark = systemScheme === "dark";
+
   if (!isNativeLiquidGlassSupported || effect === "none") {
     return (
       <View
         className={cn("overflow-hidden rounded-xl", className)}
-        style={[{ backgroundColor: GLASS_CONFIG.fallbackBgLight }, style]}
+        style={[
+          {
+            backgroundColor: isDark
+              ? GLASS_CONFIG.fallbackBgDark
+              : GLASS_CONFIG.fallbackBgLight,
+          },
+          style,
+        ]}
         {...props}
       >
         {children}
@@ -32,7 +43,6 @@ export function GlassView({
   const glassProps = {
     effect,
     interactive,
-    colorScheme,
     style,
     className: cn("overflow-hidden rounded-xl", className),
     ...(tintColor != null ? { tintColor } : {}),

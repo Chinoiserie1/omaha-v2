@@ -16,6 +16,10 @@ import { posthogClient, posthogAutocapture } from "../lib/posthog";
 import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary";
 import { PostHogScreenTracker } from "../components/shared/PostHogScreenTracker";
 import { PortalHost } from "@rn-primitives/portal";
+import * as SystemUI from "expo-system-ui";
+
+// Set native root background to dark before React mounts (prevents white flash)
+SystemUI.setBackgroundColorAsync("#09090B");
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -105,6 +109,13 @@ function RootNavigator() {
 }
 
 export default function RootLayout() {
+  const { setColorScheme } = useColorScheme();
+
+  // Force dark mode — override system preference
+  useEffect(() => {
+    setColorScheme("dark");
+  }, [setColorScheme]);
+
   if (!PRIVY_APP_ID || !PRIVY_CLIENT_ID) {
     console.error("[_layout] Privy credentials are missing!");
   }
