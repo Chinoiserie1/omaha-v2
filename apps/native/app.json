@@ -30,7 +30,12 @@
       "output": "static",
       "favicon": "./assets/favicon.png"
     },
-    "plugins": ["expo-router", "expo-font", "expo-asset"],
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-asset",
+      "posthog-react-native-session-replay"
+    ],
     "experiments": {
       "typedRoutes": true
     },
