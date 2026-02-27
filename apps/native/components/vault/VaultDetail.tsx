@@ -1,9 +1,11 @@
-import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import { View, Text, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useColorScheme } from "nativewind";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/query-keys";
 import { VaultHeader } from "./VaultHeader";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
@@ -160,8 +162,19 @@ function SectionHeader({ title }: { title: string }) {
 
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
+  const queryClient = useQueryClient();
   const { colorScheme } = useColorScheme();
   const iconColor = colorScheme === "dark" ? "#FAFAFA" : "#18181B";
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.vaults.detail(vaultId),
+    });
+    setIsRefreshing(false);
+  }, [queryClient, vaultId]);
 
   const sections = useMemo(
     () => (vault ? buildSections(vault as VaultData) : []),
@@ -295,6 +308,9 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
           keyExtractor={keyExtractor}
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+          }
         />
       )}
 
