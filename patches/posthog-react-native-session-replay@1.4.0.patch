@@ -1,0 +1,13 @@
+diff --git a/ios/PosthogReactNativeSessionReplay.swift b/ios/PosthogReactNativeSessionReplay.swift
+index a0ddd4f9d2306efc5c7b67e6cda7d9d667e77052..2d80955286249f9f199f78361e11b8eed3f64a8c 100644
+--- a/ios/PosthogReactNativeSessionReplay.swift
++++ b/ios/PosthogReactNativeSessionReplay.swift
+@@ -60,7 +60,7 @@ class PosthogReactNativeSessionReplay: NSObject {
+         let captureNetworkTelemetry = sdkReplayConfig["captureNetworkTelemetry"] as? Bool ?? true
+         config.sessionReplayConfig.captureNetworkTelemetry = captureNetworkTelemetry
+ 
+-        if let captureLog = sdkReplayConfig["captureLog"] as? Bool ?? true
++        let captureLog = sdkReplayConfig["captureLog"] as? Bool ?? true
+         config.sessionReplayConfig.captureLogs = captureLog
+ 
+         let endpoint = decideReplayConfig["endpoint"] as? String ?? ""

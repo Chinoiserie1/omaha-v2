@@ -59,6 +59,9 @@
   "pnpm": {
     "overrides": {
       "react": "19.1.0"
+    },
+    "patchedDependencies": {
+      "posthog-react-native-session-replay@1.4.0": "patches/posthog-react-native-session-replay@1.4.0.patch"
     }
   }
 }
