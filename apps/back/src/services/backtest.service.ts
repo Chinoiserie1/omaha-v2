@@ -52,6 +52,14 @@ async function computePeriod(
   const fromDate = current.createdAt;
   const toDate = next.createdAt;
 
+  const totalPct = allocations.reduce((sum, a) => sum + a.percentage, 0);
+  if (Math.abs(totalPct - 100) > 1) {
+    logger.warn(
+      { snapshotId: current.id, totalPct, assets: allocations.map((a) => `${a.asset}:${a.percentage}%`) },
+      "Allocation percentages do not sum to 100%"
+    );
+  }
+
   let periodReturn = 0;
   const details: PeriodResult["details"] = {};
 
@@ -59,6 +67,13 @@ async function computePeriod(
     const weight = alloc.percentage / 100;
     const priceFrom = await getPriceOnDate(alloc.asset, fromDate);
     const priceTo = await getPriceOnDate(alloc.asset, toDate);
+
+    if (!priceFrom || !priceTo) {
+      logger.warn(
+        { symbol: alloc.asset, fromDate: fromDate.toISOString(), toDate: toDate.toISOString(), priceFrom, priceTo },
+        "Missing price for asset, treating as 0% return"
+      );
+    }
 
     let assetReturn = 0;
     if (priceFrom && priceTo && priceFrom > 0) {
@@ -192,15 +207,15 @@ export async function runBacktest(kolId: string): Promise<BacktestResult> {
 
     const stored = storedMap.get(key);
     if (stored) {
-      // Use stored result
-      cumulativeValue = stored.cumulativeValue;
+      // Recompute cumulative from running product (stored value may be stale)
+      cumulativeValue = cumulativeValue * (1 + stored.periodReturn);
       periods.push({
         fromSnapshotId: stored.fromSnapshotId,
         toSnapshotId: stored.toSnapshotId,
         fromDate: current.createdAt.toISOString(),
         toDate: next.createdAt.toISOString(),
         periodReturn: stored.periodReturn,
-        cumulativeValue: stored.cumulativeValue,
+        cumulativeValue,
         periodDays: stored.periodDays,
         details: (stored.details as PeriodResult["details"]) ?? {},
       });
