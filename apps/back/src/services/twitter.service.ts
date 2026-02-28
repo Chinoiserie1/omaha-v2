@@ -212,7 +212,7 @@ export async function fetchTweetDetail(
   tweetId: string,
 ): Promise<TweetResult[]> {
   try {
-    const response = await apiClient.get("/tweet-detail", {
+    const response = await apiClient.get("/tweet", {
       params: { pid: tweetId },
     });
 
