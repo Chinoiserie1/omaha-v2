@@ -3,10 +3,7 @@ import { Transaction, Connection, type SendOptions } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
+import { SOLANA_RPC_URL } from "../../lib/solana";
 
 interface ClaimWithdrawalParams {
   withdrawalId: string;
@@ -43,10 +40,28 @@ export function useClaimWithdrawal() {
       const transaction = Transaction.from(Buffer.from(txBase64, "base64"));
 
       // Step 3: User signs + sends via Privy
-      const connection = new Connection(RPC_URL);
+      const connection = new Connection(SOLANA_RPC_URL);
       const result = await signAndSend(transaction, connection, {
         skipPreflight: true,
       });
+
+      // Step 3.5: Wait for on-chain confirmation before notifying backend
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash("confirmed");
+      const confirmation = await connection.confirmTransaction(
+        {
+          signature: result.signature,
+          blockhash,
+          lastValidBlockHeight,
+        },
+        "confirmed",
+      );
+
+      if (confirmation.value.err) {
+        throw new Error(
+          `Claim transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`,
+        );
+      }
 
       // Step 4: Confirm claim on backend
       await apiClient.post(

@@ -10,7 +10,7 @@ export function computeBatchId(
   timestampMs: number,
 ): string {
   const window = Math.floor(timestampMs / env.WITHDRAWAL_BATCH_WINDOW_MS);
-  return `${vaultId}:${window}`;
+  return `${vaultId}-${window}`;
 }
 
 /**

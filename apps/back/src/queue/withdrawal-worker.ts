@@ -1,26 +1,26 @@
 import { Worker } from "bullmq";
 import type { Job } from "bullmq";
 import { getRedisConnectionConfig } from "../infra/redis-config.js";
-import { processWithdrawalBatch } from "../services/withdrawal.service.js";
+import { processFulfillBatch } from "../services/withdrawal.service.js";
 import { logger } from "../utils/logger.js";
-import type { WithdrawalJobData, WithdrawalJobResult } from "./withdrawal-queue.js";
+import type { FulfillJobData, FulfillJobResult } from "./withdrawal-queue.js";
 
-let worker: Worker<WithdrawalJobData, WithdrawalJobResult> | null = null;
+let worker: Worker<FulfillJobData, FulfillJobResult> | null = null;
 
 export function startWithdrawalWorker(): void {
   if (worker) return;
 
-  worker = new Worker<WithdrawalJobData, WithdrawalJobResult>(
+  worker = new Worker<FulfillJobData, FulfillJobResult>(
     "withdrawal",
-    async (job: Job<WithdrawalJobData>) => {
-      const { batchId, vaultId } = job.data;
-      logger.info({ batchId, vaultId, jobId: job.id }, "Processing withdrawal batch");
+    async (job: Job<FulfillJobData>) => {
+      const { vaultId } = job.data;
+      logger.info({ vaultId, jobId: job.id }, "Processing fulfill job");
 
-      const result = await processWithdrawalBatch(batchId, vaultId);
+      const result = await processFulfillBatch(vaultId);
 
       logger.info(
-        { batchId, ...result },
-        "Withdrawal batch processed",
+        { vaultId, ...result },
+        "Fulfill job processed",
       );
       return result;
     },
@@ -32,15 +32,15 @@ export function startWithdrawalWorker(): void {
 
   worker.on("failed", (job, err) => {
     logger.error(
-      { jobId: job?.id, batchId: job?.data.batchId, err },
-      "Withdrawal job failed",
+      { jobId: job?.id, vaultId: job?.data.vaultId, err },
+      "Fulfill job failed",
     );
   });
 
   worker.on("completed", (job) => {
     logger.info(
-      { jobId: job.id, batchId: job.data.batchId },
-      "Withdrawal job completed",
+      { jobId: job.id, vaultId: job.data.vaultId },
+      "Fulfill job completed",
     );
   });
 

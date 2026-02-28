@@ -2,51 +2,51 @@ import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
 import { isRedisAvailable } from "../infra/redis.js";
 import * as withdrawalRepo from "../store/withdrawal.repository.js";
-import { enqueueWithdrawalBatch } from "../queue/withdrawal-queue.js";
-import { computeBatchId, remainingBatchWindowMs } from "../queue/batch-utils.js";
+import { enqueueFulfillJob } from "../queue/withdrawal-queue.js";
 
-const PROCESSING_TIMEOUT_MS = 15 * 60_000; // 15 min
+const REQUESTED_TIMEOUT_MS = 30 * 60_000; // 30 min — user never signed
+const PROCESSING_TIMEOUT_MS = 15 * 60_000; // 15 min — fulfill didn't happen
 
 /**
  * Recovery cron: catches stuck/orphaned withdrawals.
- * - REQUESTED older than 2x batch window → re-queue
- * - PROCESSING older than 15 min → mark FAILED
+ * - REQUESTED older than 30 min → mark FAILED (user never signed the redeem tx)
+ * - PROCESSING older than 15 min → re-enqueue fulfill job
  */
 export async function recoverWithdrawals(): Promise<void> {
-  const stuckRequestedMs = env.WITHDRAWAL_BATCH_WINDOW_MS * 2;
-
-  // Recover stuck REQUESTED records
-  const stuckRequested = await withdrawalRepo.findStuckRequested(stuckRequestedMs);
+  // Expire stale REQUESTED records (user never signed the queuedRedeem tx)
+  const stuckRequested = await withdrawalRepo.findStuckRequested(REQUESTED_TIMEOUT_MS);
   if (stuckRequested.length > 0) {
     logger.warn(
       { count: stuckRequested.length },
-      "Found stuck REQUESTED withdrawals, re-queuing",
+      "Found stale REQUESTED withdrawals (user never signed), marking FAILED",
     );
 
-    if (isRedisAvailable()) {
-      for (const req of stuckRequested) {
-        const now = Date.now();
-        const batchId = computeBatchId(req.kolVaultId, now);
-        const delayMs = remainingBatchWindowMs(now);
-        await enqueueWithdrawalBatch(batchId, req.kolVaultId, delayMs);
-      }
+    for (const req of stuckRequested) {
+      await withdrawalRepo.updateStatus(req.id, "FAILED", {
+        errorMessage: "Redeem transaction not signed within timeout",
+        errorCount: req.errorCount + 1,
+        failedAt: new Date(),
+      });
     }
   }
 
-  // Fail stuck PROCESSING records
+  // Re-enqueue stuck PROCESSING records (fulfill didn't happen)
   const stuckProcessing = await withdrawalRepo.findStuckProcessing(PROCESSING_TIMEOUT_MS);
   if (stuckProcessing.length > 0) {
     logger.warn(
       { count: stuckProcessing.length },
-      "Found stuck PROCESSING withdrawals, marking FAILED",
+      "Found stuck PROCESSING withdrawals, re-enqueuing fulfill",
     );
 
-    for (const req of stuckProcessing) {
-      await withdrawalRepo.updateStatus(req.id, "FAILED", {
-        errorMessage: "Processing timed out",
-        errorCount: req.errorCount + 1,
-        failedAt: new Date(),
-      });
+    if (isRedisAvailable()) {
+      const enqueuedVaults = new Set<string>();
+
+      for (const req of stuckProcessing) {
+        if (!enqueuedVaults.has(req.kolVaultId)) {
+          await enqueueFulfillJob(req.kolVaultId);
+          enqueuedVaults.add(req.kolVaultId);
+        }
+      }
     }
   }
 }

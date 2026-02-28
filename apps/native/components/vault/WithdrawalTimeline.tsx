@@ -2,6 +2,7 @@ import { View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui/text";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { useCountdown, formatCountdown } from "../../hooks/use-countdown";
 import type { WithdrawalStatus } from "@repo/shared";
 
 interface WithdrawalTimelineProps {
@@ -12,6 +13,7 @@ interface WithdrawalTimelineProps {
   claimedAt: string | null;
   failedAt: string | null;
   errorMessage: string | null;
+  estimatedFulfillAt: string | null;
 }
 
 interface Step {
@@ -71,7 +73,12 @@ export function WithdrawalTimeline({
   claimedAt,
   failedAt,
   errorMessage,
+  estimatedFulfillAt,
 }: WithdrawalTimelineProps) {
+  const remaining = useCountdown(
+    status === "PROCESSING" ? estimatedFulfillAt : null,
+  );
+
   const steps: Step[] = [
     { label: "Requested", key: "REQUESTED", timestamp: requestedAt },
     { label: "Processing", key: "PROCESSING", timestamp: processingAt },
@@ -91,6 +98,8 @@ export function WithdrawalTimeline({
           const state = getStepState(step.key, status);
           const icon = ICON_MAP[state];
           const isLast = idx === steps.length - 1;
+          const showCountdown =
+            step.key === "PROCESSING" && state === "current" && remaining > 0;
 
           return (
             <View key={step.key} className="flex-row">
@@ -109,7 +118,7 @@ export function WithdrawalTimeline({
                 )}
               </View>
 
-              {/* Label + timestamp */}
+              {/* Label + timestamp / countdown */}
               <View className="mb-3 flex-1">
                 <Text
                   className={`text-sm font-medium ${
@@ -127,6 +136,18 @@ export function WithdrawalTimeline({
                 <Text className="text-xs text-muted-foreground">
                   {formatTimestamp(step.timestamp)}
                 </Text>
+                {showCountdown && (
+                  <View className="mt-1 flex-row items-center">
+                    <Ionicons
+                      name="hourglass-outline"
+                      size={12}
+                      color="#f59e0b"
+                    />
+                    <Text className="ml-1 text-xs font-medium text-amber-400">
+                      Claimable in ~{formatCountdown(remaining)}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           );

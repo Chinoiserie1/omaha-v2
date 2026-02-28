@@ -1,145 +1,149 @@
-import { PublicKey, Transaction } from "@solana/web3.js";
-import BN from "bn.js";
+import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
 import { getGlamClient } from "../solana/client.js";
 import { getConnection, getKeeper } from "../solana/config.js";
 import * as withdrawalRepo from "../store/withdrawal.repository.js";
 import * as vaultRepo from "../store/vault.repository.js";
 import { notifyUser } from "../infra/websocket.js";
 import { logger } from "../utils/logger.js";
-import type { WithdrawalJobResult } from "../queue/withdrawal-queue.js";
+import type { FulfillJobResult } from "../queue/withdrawal-queue.js";
 
 /**
- * Process a batch of withdrawal requests:
- * 1. Fetch all REQUESTED records for the batch
- * 2. Transition to PROCESSING, notify users
- * 3. Build + send queued redeem tx (keeper signs as vault manager)
- * 4. On success: transition to CLAIMABLE, notify users
- * 5. On failure: transition to FAILED
+ * Process the fulfill step for a vault:
+ * 1. Find all PROCESSING records for the vault
+ * 2. Call fulfillIx (keeper signs as vault manager)
+ * 3. On success: transition to CLAIMABLE, notify users
+ * 4. On failure: transition to FAILED
  */
-export async function processWithdrawalBatch(
-  batchId: string,
+export async function processFulfillBatch(
   vaultId: string,
-): Promise<WithdrawalJobResult> {
-  const requests = await withdrawalRepo.findByBatchId(batchId);
-  const pending = requests.filter((r) => r.status === "REQUESTED");
+): Promise<FulfillJobResult> {
+  const requests = await withdrawalRepo.findPendingFulfill(vaultId);
 
-  if (pending.length === 0) {
-    logger.info({ batchId }, "No pending requests in batch, skipping");
+  logger.info(
+    {
+      vaultId,
+      count: requests.length,
+      requests: requests.map((r) => ({
+        id: r.id,
+        userId: r.userId,
+        amount: r.amount,
+        status: r.status,
+        batchId: r.batchId,
+        processingAt: r.processingAt,
+        redeemTxSignature: r.redeemTxSignature,
+      })),
+    },
+    `[DEBUG] processFulfillBatch — found ${requests.length} PROCESSING requests`,
+  );
+
+  if (requests.length === 0) {
     return { processedCount: 0, failedCount: 0 };
   }
 
-  // Sum total shares to redeem
-  const totalAmount = pending.reduce((sum, r) => sum + r.amount, 0);
-
-  logger.info(
-    { batchId, vaultId, count: pending.length, totalAmount },
-    "Processing withdrawal batch",
-  );
-
-  // Transition to PROCESSING
-  const now = new Date();
-  await withdrawalRepo.updateBatchStatus(batchId, "REQUESTED", "PROCESSING", {
-    processingAt: now,
-  });
-
-  for (const req of pending) {
-    notifyUser(req.userId, "withdrawal:status", {
-      withdrawalId: req.id,
-      status: "PROCESSING",
-      timestamp: now.toISOString(),
-    });
-  }
-
-  // Lookup vault
   const vault = await vaultRepo.findVaultById(vaultId);
   if (!vault?.statePda) {
-    await failBatch(batchId, pending, "Vault not found or missing state PDA");
-    return { processedCount: 0, failedCount: pending.length };
+    await failRequests(requests, "Vault not found or missing state PDA");
+    return { processedCount: 0, failedCount: requests.length };
   }
 
   try {
-    const txSig = await executeQueuedRedeem(
-      vault.statePda,
-      totalAmount,
-    );
+    const txSig = await executeFulfill(vault.statePda);
 
-    // Transition to CLAIMABLE
+    // Transition all to CLAIMABLE in a single query
     const claimableAt = new Date();
-    await withdrawalRepo.updateBatchStatus(
-      batchId,
-      "PROCESSING",
-      "CLAIMABLE",
-      { claimableAt, redeemTxSignature: txSig },
-    );
+    const ids = requests.map((r) => r.id);
+    await withdrawalRepo.updateManyStatus(ids, "CLAIMABLE", { claimableAt });
 
-    for (const req of pending) {
+    // Notify each user individually
+    for (const req of requests) {
       notifyUser(req.userId, "withdrawal:status", {
         withdrawalId: req.id,
         status: "CLAIMABLE",
         timestamp: claimableAt.toISOString(),
-        redeemTxSignature: txSig,
       });
     }
 
-    logger.info({ batchId, txSig }, "Batch redeem confirmed, now CLAIMABLE");
-    return { processedCount: pending.length, failedCount: 0 };
+    logger.info({ vaultId, txSig }, "Fulfill confirmed, requests now CLAIMABLE");
+    return { processedCount: requests.length, failedCount: 0 };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    await failBatch(batchId, pending, msg);
-    return { processedCount: 0, failedCount: pending.length };
+    await failRequests(requests, msg);
+    return { processedCount: 0, failedCount: requests.length };
   }
 }
 
-async function executeQueuedRedeem(
-  statePdaStr: string,
-  totalAmount: number,
-): Promise<string> {
+async function executeFulfill(statePdaStr: string): Promise<string> {
   const statePda = new PublicKey(statePdaStr);
   const glamClient = getGlamClient(statePda);
   const keeper = getKeeper();
   const connection = getConnection();
 
-  // Convert share amount to 9-decimal BN
-  const amountBN = new BN(Math.round(totalAmount * 1_000_000_000));
+  logger.info({ statePda: statePdaStr }, "Building fulfill transaction");
 
-  // Price vault + build queued redeem
+  // Price the vault first (required by GLAM before fulfill)
   const priceIxs = await glamClient.price.priceVaultIxs();
-  const redeemIx = await glamClient.invest.txBuilder.queuedRedeemIx(
-    amountBN,
+
+  const fulfillIx = await glamClient.invest.txBuilder.fulfillIx(
+    null,
     keeper.publicKey,
   );
 
   const { blockhash } = await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction();
-  transaction.add(...priceIxs, redeemIx);
+  transaction.add(
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+    ...priceIxs,
+    fulfillIx,
+  );
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = keeper.publicKey;
   transaction.sign(keeper);
+
+  logger.info({ blockhash }, "Fulfill tx signed, sending to network");
 
   const txSig = await connection.sendRawTransaction(
     transaction.serialize(),
     { skipPreflight: true },
   );
-  await connection.confirmTransaction(txSig, "confirmed");
+  logger.info({ txSig }, "Fulfill tx sent, awaiting confirmation");
+
+  const { blockhash: confirmBlockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash("confirmed");
+  const confirmation = await connection.confirmTransaction(
+    { signature: txSig, blockhash: confirmBlockhash, lastValidBlockHeight },
+    "confirmed",
+  );
+
+  if (confirmation.value.err) {
+    const errorDetail = JSON.stringify(confirmation.value.err);
+    logger.error(
+      { txSig, onChainError: confirmation.value.err },
+      "Fulfill tx failed on-chain",
+    );
+    throw new Error(`Fulfill transaction failed on-chain: ${errorDetail}`);
+  }
+
+  logger.info({ txSig }, "Fulfill tx confirmed on-chain");
 
   return txSig;
 }
 
-async function failBatch(
-  batchId: string,
+async function failRequests(
   requests: Array<{ id: string; userId: string; errorCount: number }>,
   errorMessage: string,
 ): Promise<void> {
   const failedAt = new Date();
+  const ids = requests.map((r) => r.id);
+  await withdrawalRepo.updateManyStatus(ids, "FAILED", {
+    errorMessage,
+    failedAt,
+  });
 
+  // Increment error counts individually (each may differ) and notify
   for (const req of requests) {
-    await withdrawalRepo.updateStatus(req.id, "FAILED", {
-      errorMessage,
-      errorCount: req.errorCount + 1,
-      failedAt,
-    });
-
+    await withdrawalRepo.incrementErrorCount(req.id);
     notifyUser(req.userId, "withdrawal:status", {
       withdrawalId: req.id,
       status: "FAILED",
@@ -148,5 +152,5 @@ async function failBatch(
     });
   }
 
-  logger.error({ batchId, errorMessage }, "Batch withdrawal failed");
+  logger.error({ count: requests.length, errorMessage }, "Fulfill batch failed");
 }

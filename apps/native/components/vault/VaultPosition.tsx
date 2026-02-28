@@ -2,10 +2,7 @@ import { useState, useEffect, useCallback } from "react";
 import { View, Text, ActivityIndicator } from "react-native";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { getConnection, getTokenBalances } from "@repo/solana";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
+import { SOLANA_RPC_URL } from "../../lib/solana";
 
 interface VaultPositionProps {
   mintAddress: string;
@@ -22,7 +19,7 @@ export function VaultPosition({ mintAddress }: VaultPositionProps) {
     if (!wallet?.address) return;
     setLoading(true);
     try {
-      const connection = getConnection(RPC_URL);
+      const connection = getConnection(SOLANA_RPC_URL);
       const tokens = await getTokenBalances(connection, wallet.address);
       const share = tokens.find((t) => t.mint === mintAddress);
       setBalance(share?.uiAmount ?? 0);

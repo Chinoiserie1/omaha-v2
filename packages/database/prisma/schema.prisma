@@ -14,6 +14,7 @@ model User {
   email               String?  @unique
   username            String?  @unique
   name                String?
+  walletAddress       String?  @unique
   twitterId           String?  @unique
   twitterUsername     String?
   profileImageUrl     String?
@@ -293,6 +294,7 @@ model WithdrawalRequest {
   claimTxSignature   String?
   errorMessage       String?
   errorCount         Int       @default(0)
+  removedReason      String?
   requestedAt        DateTime  @default(now())
   processingAt       DateTime?
   claimableAt        DateTime?
@@ -305,4 +307,5 @@ model WithdrawalRequest {
   @@index([kolVaultId, status])
   @@index([batchId])
   @@index([status, requestedAt])
+  @@index([status, processingAt])
 }

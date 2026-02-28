@@ -10,14 +10,11 @@ import {
   LAMPORTS_PER_SOL,
 } from "@solana/web3.js";
 import { captureError } from "../../lib/capture-error";
+import { SOLANA_RPC_URL } from "../../lib/solana";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
 
 export function WithdrawForm() {
   const router = useRouter();
@@ -60,7 +57,7 @@ export function WithdrawForm() {
 
     setSending(true);
     try {
-      const connection = new Connection(RPC_URL);
+      const connection = new Connection(SOLANA_RPC_URL);
       const fromPubkey = new PublicKey(wallet.address);
       const toPubkey = new PublicKey(recipient);
 

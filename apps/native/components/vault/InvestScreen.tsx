@@ -1,18 +1,14 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
-import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
+import { useShareBalance } from "../../hooks/use-share-balance";
 import { useSubscribeVault } from "../../hooks/mutations/use-subscribe-vault";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
 
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
@@ -31,32 +27,13 @@ export function InvestScreen({
   const wallet = wallets?.[0];
 
   const [amount, setAmount] = useState("");
-  const [usdcBalance, setUsdcBalance] = useState<number | null>(null);
-  const [loadingBalance, setLoadingBalance] = useState(false);
+
+  const { balance: usdcBalance, loading: loadingBalance } = useShareBalance(
+    USDC_MINT,
+    wallet?.address,
+  );
 
   const subscribeMutation = useSubscribeVault();
-
-  const fetchBalance = useCallback(async () => {
-    if (!wallet?.address) return;
-    setLoadingBalance(true);
-    try {
-      const connection = getConnection(RPC_URL);
-      const tokens = await getTokenBalances(connection, wallet.address);
-      const usdc = tokens.find((t) => t.mint === USDC_MINT);
-      setUsdcBalance(usdc?.uiAmount ?? 0);
-    } catch {
-      setUsdcBalance(null);
-    } finally {
-      setLoadingBalance(false);
-    }
-  }, [wallet?.address]);
-
-  useEffect(() => {
-    setAmount("");
-    subscribeMutation.reset();
-    fetchBalance();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchBalance]);
 
   const amountNum = parseFloat(amount);
   const isValidAmount = !isNaN(amountNum) && amountNum > 0;

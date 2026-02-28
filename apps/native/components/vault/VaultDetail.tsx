@@ -67,7 +67,6 @@ type VaultSection =
   | { type: "changes"; data: string[] }
   | { type: "holdings"; data: { vaultId: string } }
   | { type: "description"; data: string }
-  | { type: "info"; data: VaultData }
   | { type: "about"; data: { title: string; content: string } }
   | { type: "data-source"; data: { title: string; content: string } }
   | { type: "performance-calc"; data: { title: string; content: string } }
@@ -116,8 +115,6 @@ function buildSections(vault: VaultData): VaultSection[] {
   }
 
   sections.push({ type: "holdings", data: { vaultId: vault.id } });
-
-  sections.push({ type: "info", data: vault });
 
   if (vault.about) {
     sections.push({
@@ -239,15 +236,6 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             content={item.data.content}
           />
         );
-      // case "info":
-      //   return (
-      //     <VaultInfo
-      //       glamStatePda={item.data.glamStatePda}
-      //       glamVaultPda={item.data.glamVaultPda}
-      //       vaultSymbol={item.data.name}
-      //       kolBio={item.data.kol.bio}
-      //     />
-      //   );
       case "disclosure":
         return (
           <VaultTextSection

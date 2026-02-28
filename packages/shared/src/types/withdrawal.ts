@@ -3,7 +3,8 @@ export type WithdrawalStatus =
   | "PROCESSING"
   | "CLAIMABLE"
   | "CLAIMED"
-  | "FAILED";
+  | "FAILED"
+  | "REMOVED";
 
 export interface WithdrawalRequest {
   id: string;
@@ -17,11 +18,13 @@ export interface WithdrawalRequest {
   claimTxSignature: string | null;
   errorMessage: string | null;
   errorCount: number;
+  removedReason: string | null;
   requestedAt: string;
   processingAt: string | null;
   claimableAt: string | null;
   claimedAt: string | null;
   failedAt: string | null;
+  estimatedFulfillAt: string | null;
 }
 
 export interface WithdrawalStatusUpdate {

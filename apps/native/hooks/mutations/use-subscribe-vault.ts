@@ -2,10 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Transaction, Connection, type SendOptions } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
+import { SOLANA_RPC_URL } from "../../lib/solana";
 
 interface SubscribeParams {
   vaultId: string;
@@ -50,7 +47,7 @@ export function useSubscribeVault() {
       // Privy's internal RPC may not recognize the blockhash from our backend's RPC,
       // causing "Blockhash not found" during simulation. skipPreflight bypasses
       // simulation and sends directly to the leader.
-      const connection = new Connection(RPC_URL);
+      const connection = new Connection(SOLANA_RPC_URL);
       const result = await signAndSend(transaction, connection, {
         skipPreflight: true,
       });

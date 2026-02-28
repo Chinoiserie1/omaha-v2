@@ -1,4 +1,4 @@
-import { PublicKey, Transaction } from "@solana/web3.js";
+import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
 import { getGlamClient } from "../solana/client.js";
 import { getConnection } from "../solana/config.js";
 import * as vaultRepo from "../store/vault.repository.js";
@@ -13,11 +13,21 @@ export async function buildClaimTransaction(
   withdrawalId: string,
   signerPublicKey: string,
 ): Promise<{ transaction: string; withdrawalId: string }> {
+  logger.info(
+    { withdrawalId, signer: signerPublicKey },
+    "Building claim transaction",
+  );
+
   const withdrawal = await withdrawalRepo.findById(withdrawalId);
   if (!withdrawal) {
+    logger.error({ withdrawalId }, "Withdrawal request not found");
     throw new Error("Withdrawal request not found");
   }
   if (withdrawal.status !== "CLAIMABLE") {
+    logger.error(
+      { withdrawalId, status: withdrawal.status },
+      "Cannot claim withdrawal in current status",
+    );
     throw new Error(
       `Cannot claim withdrawal in status "${withdrawal.status}"`,
     );
@@ -25,6 +35,10 @@ export async function buildClaimTransaction(
 
   const vault = await vaultRepo.findVaultById(withdrawal.kolVaultId);
   if (!vault?.statePda) {
+    logger.error(
+      { withdrawalId, kolVaultId: withdrawal.kolVaultId },
+      "Vault not found or missing state PDA",
+    );
     throw new Error("Vault not found or missing state PDA");
   }
 
@@ -41,7 +55,11 @@ export async function buildClaimTransaction(
   const { blockhash } = await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction();
-  transaction.add(claimIx);
+  transaction.add(
+    ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+    claimIx,
+  );
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = signerPubkey;
 
@@ -52,7 +70,7 @@ export async function buildClaimTransaction(
 
   logger.info(
     { withdrawalId, signer: signerPublicKey },
-    "Claim transaction built",
+    "Claim transaction built successfully",
   );
 
   return { transaction: serialized, withdrawalId };
@@ -66,11 +84,21 @@ export async function confirmClaim(
   withdrawalId: string,
   txSignature: string,
 ): Promise<void> {
+  logger.info(
+    { withdrawalId, txSignature },
+    "Confirming claim transaction on-chain",
+  );
+
   const withdrawal = await withdrawalRepo.findById(withdrawalId);
   if (!withdrawal) {
+    logger.error({ withdrawalId }, "Withdrawal request not found for claim confirmation");
     throw new Error("Withdrawal request not found");
   }
   if (withdrawal.status !== "CLAIMABLE") {
+    logger.error(
+      { withdrawalId, status: withdrawal.status },
+      "Cannot confirm claim for current status",
+    );
     throw new Error(
       `Cannot confirm claim for status "${withdrawal.status}"`,
     );
@@ -84,9 +112,17 @@ export async function confirmClaim(
   });
 
   if (!txInfo) {
+    logger.error(
+      { withdrawalId, txSignature },
+      "Claim transaction not found on-chain",
+    );
     throw new Error("Transaction not found on-chain");
   }
   if (txInfo.meta?.err) {
+    logger.error(
+      { withdrawalId, txSignature, txError: txInfo.meta.err },
+      "Claim transaction failed on-chain",
+    );
     throw new Error(`Transaction failed on-chain: ${JSON.stringify(txInfo.meta.err)}`);
   }
 
@@ -95,5 +131,5 @@ export async function confirmClaim(
     claimedAt: new Date(),
   });
 
-  logger.info({ withdrawalId, txSignature }, "Withdrawal claimed");
+  logger.info({ withdrawalId, txSignature }, "Withdrawal claimed successfully");
 }

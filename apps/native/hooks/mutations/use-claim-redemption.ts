@@ -2,10 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { Transaction, Connection, type SendOptions } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
+import { SOLANA_RPC_URL } from "../../lib/solana";
 
 interface ClaimParams {
   vaultId: string;
@@ -35,7 +32,7 @@ export function useClaimRedemption() {
 
       const transaction = Transaction.from(Buffer.from(txBase64, "base64"));
 
-      const connection = new Connection(RPC_URL);
+      const connection = new Connection(SOLANA_RPC_URL);
       const result = await signAndSend(transaction, connection, {
         skipPreflight: true,
       });

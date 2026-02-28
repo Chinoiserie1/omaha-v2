@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
-import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
+import { useShareBalance } from "../../hooks/use-share-balance";
 import { useRequestWithdrawal } from "../../hooks/mutations/use-request-withdrawal";
 import { useWithdrawalStatus } from "../../hooks/queries/use-withdrawals";
 import { WithdrawalTimeline } from "./WithdrawalTimeline";
@@ -13,10 +13,6 @@ import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-
-const RPC_URL =
-  process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
-  "https://api.mainnet-beta.solana.com";
 
 const MAX_RETRIES = 3;
 
@@ -37,36 +33,17 @@ export function WithdrawScreen({
   const wallet = wallets?.[0];
 
   const [amount, setAmount] = useState("");
-  const [shareBalance, setShareBalance] = useState<number | null>(null);
-  const [loadingBalance, setLoadingBalance] = useState(false);
   const [activeWithdrawalId, setActiveWithdrawalId] = useState<
     string | undefined
   >();
 
+  const { balance: shareBalance, loading: loadingBalance } = useShareBalance(
+    mintAddress,
+    wallet?.address,
+  );
+
   const requestMutation = useRequestWithdrawal();
   const { data: activeWithdrawal } = useWithdrawalStatus(activeWithdrawalId);
-
-  const fetchBalance = useCallback(async () => {
-    if (!wallet?.address) return;
-    setLoadingBalance(true);
-    try {
-      const connection = getConnection(RPC_URL);
-      const tokens = await getTokenBalances(connection, wallet.address);
-      const share = tokens.find((t) => t.mint === mintAddress);
-      setShareBalance(share?.uiAmount ?? 0);
-    } catch {
-      setShareBalance(null);
-    } finally {
-      setLoadingBalance(false);
-    }
-  }, [wallet?.address, mintAddress]);
-
-  useEffect(() => {
-    setAmount("");
-    requestMutation.reset();
-    fetchBalance();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [fetchBalance]);
 
   const amountNum = parseFloat(amount);
   const isValidAmount = !isNaN(amountNum) && amountNum > 0;
@@ -82,19 +59,29 @@ export function WithdrawScreen({
   const handleWithdraw = async () => {
     if (!isValidAmount || exceedsBalance || !wallet) return;
 
+    const provider = await wallet.getProvider();
+    if (!provider) return;
+
     try {
       const result = await requestMutation.mutateAsync({
         vaultId,
         amount: amountNum,
         signerPublicKey: wallet.address,
+        signAndSend: (transaction, connection, options) =>
+          provider.request({
+            method: "signAndSendTransaction",
+            params: options
+              ? { transaction, connection, options }
+              : { transaction, connection },
+          }),
       });
 
-      setActiveWithdrawalId(result.id);
+      setActiveWithdrawalId(result.withdrawalId);
 
       Toast.show({
         type: "success",
-        text1: "Withdrawal Requested",
-        text2: "Your request has been queued for processing",
+        text1: "Withdrawal Submitted",
+        text2: "Your redeem transaction is being processed",
       });
     } catch (err) {
       console.error("[WithdrawScreen] Error:", err);
@@ -102,7 +89,7 @@ export function WithdrawScreen({
       Toast.show({
         type: "error",
         text1: "Request Failed",
-        text2: err instanceof Error ? err.message : "Could not queue withdrawal",
+        text2: err instanceof Error ? err.message : "Could not submit withdrawal",
       });
     }
   };
@@ -131,6 +118,7 @@ export function WithdrawScreen({
           claimedAt={activeWithdrawal.claimedAt}
           failedAt={activeWithdrawal.failedAt}
           errorMessage={activeWithdrawal.errorMessage}
+          estimatedFulfillAt={activeWithdrawal.estimatedFulfillAt}
         />
 
         {activeWithdrawal.status === "CLAIMABLE" && (

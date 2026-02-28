@@ -1,24 +1,21 @@
 import { Queue } from "bullmq";
 import { getRedisConnectionConfig } from "../infra/redis-config.js";
+import { logger } from "../utils/logger.js";
 
-export interface WithdrawalJobData {
-  batchId: string;
+export interface FulfillJobData {
   vaultId: string;
 }
 
-export interface WithdrawalJobResult {
+export interface FulfillJobResult {
   processedCount: number;
   failedCount: number;
 }
 
 const QUEUE_NAME = "withdrawal";
 
-let queue: Queue<WithdrawalJobData, WithdrawalJobResult> | null = null;
+let queue: Queue<FulfillJobData, FulfillJobResult> | null = null;
 
-export function getWithdrawalQueue(): Queue<
-  WithdrawalJobData,
-  WithdrawalJobResult
-> {
+export function getWithdrawalQueue(): Queue<FulfillJobData, FulfillJobResult> {
   if (!queue) {
     queue = new Queue(QUEUE_NAME, {
       connection: getRedisConnectionConfig(),
@@ -33,19 +30,21 @@ export function getWithdrawalQueue(): Queue<
   return queue;
 }
 
-export async function enqueueWithdrawalBatch(
-  batchId: string,
-  vaultId: string,
-  delayMs: number,
-): Promise<void> {
+/**
+ * Enqueue a fulfill job for a vault. The worker will call fulfillIx
+ * to transition PROCESSING → CLAIMABLE.
+ */
+export async function enqueueFulfillJob(vaultId: string): Promise<void> {
   const q = getWithdrawalQueue();
+  const jobId = `fulfill:${vaultId}:${Date.now()}`;
 
-  // Deduplicate: use batchId as jobId so duplicate enqueues are no-ops
-  await q.add(
-    `batch:${batchId}`,
-    { batchId, vaultId },
-    { delay: delayMs, jobId: batchId },
-  );
+  try {
+    await q.add(`fulfill:${vaultId}`, { vaultId }, { jobId });
+    logger.info({ vaultId, jobId }, "Fulfill job enqueued");
+  } catch (err) {
+    logger.error({ vaultId, jobId, err }, "Failed to enqueue fulfill job");
+    throw err;
+  }
 }
 
 export async function closeWithdrawalQueue(): Promise<void> {

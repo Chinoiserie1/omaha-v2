@@ -4,21 +4,10 @@ import type { VaultHoldingWithPct } from "@repo/shared";
 import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { formatUsd, formatTokenAmount } from "../../lib/format";
 
 interface VaultHoldingCardProps {
   holding: VaultHoldingWithPct;
-}
-
-function formatUsd(value: number): string {
-  return value >= 1
-    ? `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : `$${value.toFixed(4)}`;
-}
-
-function formatAmount(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
-  return value >= 1 ? value.toFixed(2) : value.toFixed(4);
 }
 
 export const VaultHoldingCard = memo(function VaultHoldingCard({
@@ -42,7 +31,7 @@ export const VaultHoldingCard = memo(function VaultHoldingCard({
         />
         <View className="flex-row items-center justify-between">
           <Text className="text-xs text-muted-foreground">
-            {formatAmount(holding.uiAmount)} tokens
+            {formatTokenAmount(holding.uiAmount)} tokens
           </Text>
           <Text className="text-xs text-muted-foreground">
             {formatUsd(holding.valueUsd)}

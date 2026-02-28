@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { PublicKey, Transaction } from "@solana/web3.js";
 import BN from "bn.js";
 import { getGlamClient } from "../../../solana/client.js";
-import { getConnection, getKeeper } from "../../../solana/config.js";
+import { getConnection, getKeeper, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -46,8 +46,8 @@ export async function redeemFromVault(
   const statePda = new PublicKey(vault.statePda);
   const glamClient = getGlamClient(statePda);
 
-  // Convert human-readable share amount to 9-decimal integer (share tokens use 9 decimals)
-  const amountBN = new BN(Math.round(amount * 1_000_000_000));
+  // Convert human-readable share amount to raw units (share tokens use 6 decimals)
+  const amountBN = new BN(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
 
   try {
     // Price all vault tokens first (required by GLAM before redeem)
