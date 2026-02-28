@@ -41,7 +41,7 @@ export default async function KolDetailPage({
     <main className="mx-auto max-w-4xl space-y-8 px-4 py-10 sm:px-6">
       <KolHeader kol={kol} />
 
-      {backtest && <BacktestSummary backtest={backtest} />}
+      <BacktestSummary backtest={backtest} />
 
       {portfolio && <PortfolioSection snapshot={portfolio.snapshot} />}
 

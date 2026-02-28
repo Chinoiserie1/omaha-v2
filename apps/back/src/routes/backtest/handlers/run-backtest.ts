@@ -15,6 +15,17 @@ export async function runBacktestHandler(
     return reply.status(404).send({ error: "KOL not found" });
   }
 
-  const result = await runBacktest(kol.id);
-  return result;
+  try {
+    const result = await runBacktest(kol.id);
+    return result;
+  } catch (err) {
+    request.log.error({ err, kolId: kol.id }, "Backtest computation failed");
+    return {
+      kolId: kol.id,
+      snapshotCount: 0,
+      periods: [],
+      totalReturn: 0,
+      latestCumulativeValue: 1,
+    };
+  }
 }

@@ -20,7 +20,23 @@ function StatCard({
   );
 }
 
-export function BacktestSummary({ backtest }: { backtest: BacktestResult }) {
+export function BacktestSummary({
+  backtest,
+}: {
+  backtest: BacktestResult | null;
+}) {
+  if (!backtest || backtest.snapshotCount === 0) {
+    return (
+      <section>
+        <h2 className="mb-3 text-lg font-semibold">Backtest Performance</h2>
+        <p className="text-sm text-zinc-500">
+          No backtest data yet. Data will appear once portfolio snapshots and
+          price history are available.
+        </p>
+      </section>
+    );
+  }
+
   const returnColor =
     backtest.totalReturn >= 0 ? "text-green-600" : "text-red-600";
 
