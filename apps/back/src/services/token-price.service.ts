@@ -42,7 +42,6 @@ export async function fetchAndStorePrices(): Promise<void> {
       const solToken = await tokenPriceRepo.findTokenByMint(SOL_MINT);
       if (solToken) {
         await tokenPriceRepo.insertPrice(solToken.id, price);
-        logger.debug({ solPrice: price }, "Stored SOL price");
       }
     }
   } catch (err) {

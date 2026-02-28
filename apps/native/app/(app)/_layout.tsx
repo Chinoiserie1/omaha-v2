@@ -7,6 +7,7 @@ import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
 import { useAuth } from "../../contexts/auth-context";
+import { useWithdrawalWebSocket } from "../../hooks/use-withdrawal-ws";
 
 export default function AppLayout() {
   const { colorScheme } = useColorScheme();
@@ -17,6 +18,7 @@ export default function AppLayout() {
   const wasIdentified = useRef(false);
 
   useTwitterSync();
+  useWithdrawalWebSocket();
 
   // PostHog identify/reset based on auth state
   const userId = user?.id;

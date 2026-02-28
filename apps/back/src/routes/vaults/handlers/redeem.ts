@@ -11,10 +11,12 @@ type RedeemRequest = FastifyRequest<{
   Body: { amount: number; signerPublicKey: string };
 }>;
 
+/** @deprecated Use POST /api/withdrawals/:vaultId/request instead */
 export async function redeemFromVault(
   request: RedeemRequest,
   reply: FastifyReply,
 ) {
+  logger.warn("DEPRECATED: POST /api/vaults/:id/redeem — use /api/withdrawals/:vaultId/request");
   const { id } = request.params;
   const { amount, signerPublicKey } = request.body;
 

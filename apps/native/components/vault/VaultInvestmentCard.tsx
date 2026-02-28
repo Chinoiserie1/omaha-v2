@@ -7,6 +7,9 @@ import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
 import { useInvestorStatus } from "../../hooks/queries/use-investor-status";
 import { useClaimRedemption } from "../../hooks/mutations/use-claim-redemption";
+import { useWithdrawals } from "../../hooks/queries/use-withdrawals";
+import { useClaimWithdrawal } from "../../hooks/mutations/use-claim-withdrawal";
+import type { WithdrawalRequest } from "@repo/shared";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -311,6 +314,101 @@ function PendingWithdrawalState({
   );
 }
 
+function QueuedWithdrawalState({
+  withdrawal,
+  wallet,
+}: {
+  withdrawal: WithdrawalRequest;
+  wallet: { address: string; getProvider: () => Promise<unknown> } | undefined;
+}) {
+  const claimMutation = useClaimWithdrawal();
+
+  const statusColor =
+    withdrawal.status === "CLAIMABLE"
+      ? "text-emerald-400"
+      : withdrawal.status === "FAILED"
+        ? "text-red-400"
+        : "text-amber-400";
+
+  const handleClaim = async () => {
+    if (!wallet) return;
+    try {
+      const provider = (await wallet.getProvider()) as {
+        request: (args: unknown) => Promise<{ signature: string }>;
+      };
+      const signature = await claimMutation.mutateAsync({
+        withdrawalId: withdrawal.id,
+        signerPublicKey: wallet.address,
+        signAndSend: (transaction, connection, options) =>
+          provider.request({
+            method: "signAndSendTransaction",
+            params: { transaction, connection, ...(options && { options }) },
+          }),
+      });
+
+      Toast.show({
+        type: "success",
+        text1: "Claim Successful",
+        text2: `Tx: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
+      });
+    } catch (err) {
+      captureError(err, { source: "queued-claim" });
+      Toast.show({
+        type: "error",
+        text1: "Claim Failed",
+        text2: err instanceof Error ? err.message : "Transaction failed",
+      });
+    }
+  };
+
+  return (
+    <Card className="mx-5 mt-4">
+      <CardHeader>
+        <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+          Active Withdrawal
+        </Text>
+      </CardHeader>
+      <CardContent className="gap-3">
+        <View className="flex-row items-center">
+          <View className="mr-2 h-2 w-2 rounded-full bg-amber-500" />
+          <Text className={`text-sm font-medium ${statusColor}`}>
+            {withdrawal.status}
+          </Text>
+        </View>
+
+        <Text className="text-xs text-muted-foreground">
+          {withdrawal.amount.toLocaleString(undefined, {
+            maximumFractionDigits: 6,
+          })}{" "}
+          shares
+        </Text>
+
+        {withdrawal.status === "CLAIMABLE" && (
+          <Button
+            variant="classic"
+            onPress={handleClaim}
+            disabled={claimMutation.isPending}
+            className={
+              claimMutation.isPending
+                ? "bg-muted"
+                : "bg-emerald-600 active:bg-emerald-700"
+            }
+            size="lg"
+          >
+            {claimMutation.isPending ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text className="text-base font-semibold text-white">
+                Claim Funds
+              </Text>
+            )}
+          </Button>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export const VaultInvestmentCard = memo(function VaultInvestmentCard({
   vaultId,
   mintAddress,
@@ -326,8 +424,18 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
   );
 
   const { data: investorStatus } = useInvestorStatus(vaultId, wallet?.address);
+  const { data: withdrawals } = useWithdrawals();
 
   const claimMutation = useClaimRedemption();
+
+  // Check for active queued withdrawals for this vault
+  const activeWithdrawal = withdrawals?.find(
+    (w: WithdrawalRequest) =>
+      w.kolVaultId === vaultId &&
+      (w.status === "REQUESTED" ||
+        w.status === "PROCESSING" ||
+        w.status === "CLAIMABLE"),
+  );
 
   const pendingRequest = investorStatus?.pendingRequest;
   const redeemNoticePeriod = investorStatus?.redeemNoticePeriod ?? 0;
@@ -379,6 +487,17 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
 
   const sharePrice = investorStatus?.sharePrice ?? null;
 
+  // Priority: show queued withdrawal if active
+  if (activeWithdrawal) {
+    return (
+      <QueuedWithdrawalState
+        withdrawal={activeWithdrawal}
+        wallet={wallet}
+      />
+    );
+  }
+
+  // Fallback: legacy on-chain pending request
   if (pendingRequest?.type === "REDEMPTION") {
     return (
       <PendingWithdrawalState

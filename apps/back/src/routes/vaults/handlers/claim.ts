@@ -10,10 +10,12 @@ type ClaimRequest = FastifyRequest<{
   Body: { signerPublicKey: string };
 }>;
 
+/** @deprecated Use POST /api/withdrawals/:withdrawalId/claim instead */
 export async function claimRedemption(
   request: ClaimRequest,
   reply: FastifyReply,
 ) {
+  logger.warn("DEPRECATED: POST /api/vaults/:id/claim — use /api/withdrawals/:withdrawalId/claim");
   const { id } = request.params;
   const { signerPublicKey } = request.body;
 

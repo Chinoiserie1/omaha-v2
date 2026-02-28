@@ -88,10 +88,5 @@ export async function getInvestorStatus(
     logger.debug("Could not compute share price");
   }
 
-  logger.info(
-    { vaultId: id, wallet, hasPending: !!pendingRequest, sharePrice },
-    "Investor status fetched",
-  );
-
   return { sharePrice, pendingRequest, redeemNoticePeriod };
 }

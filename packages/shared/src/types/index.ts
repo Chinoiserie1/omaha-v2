@@ -39,3 +39,4 @@ export * from "./asset.js";
 export * from "./follow.js";
 export * from "./wallet.js";
 export * from "./tweet-impact.js";
+export * from "./withdrawal.js";

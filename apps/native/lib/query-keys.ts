@@ -21,4 +21,10 @@ export const queryKeys = {
     portfolio: (address: string) =>
       ["wallet", "portfolio", address] as const,
   },
+  withdrawals: {
+    all: () => ["withdrawals"] as const,
+    byVault: (vaultId: string) => ["withdrawals", "vault", vaultId] as const,
+    detail: (withdrawalId: string) =>
+      ["withdrawals", withdrawalId] as const,
+  },
 };

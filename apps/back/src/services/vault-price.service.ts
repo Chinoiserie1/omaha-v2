@@ -25,10 +25,6 @@ export async function fetchAndStoreVaultPrices(): Promise<void> {
       }
 
       await tokenPriceRepo.insertPrice(token.id, sharePrice);
-      logger.debug(
-        { vaultId: vault.id, sharePrice },
-        "Stored vault share price",
-      );
     } catch (err) {
       logger.error({ err, vaultId: vault.id }, "Failed to store vault price");
     }

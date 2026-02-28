@@ -4,7 +4,11 @@ import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { getConnection, getTokenBalances } from "@repo/solana";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
-import { useRedeemVault } from "../../hooks/mutations/use-redeem-vault";
+import { useRequestWithdrawal } from "../../hooks/mutations/use-request-withdrawal";
+import { useWithdrawalStatus } from "../../hooks/queries/use-withdrawals";
+import { WithdrawalTimeline } from "./WithdrawalTimeline";
+import { WithdrawalClaimCard } from "./WithdrawalClaimCard";
+import { WithdrawalFailedCard } from "./WithdrawalFailedCard";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +17,8 @@ import { Label } from "@/components/ui/label";
 const RPC_URL =
   process.env.EXPO_PUBLIC_SOLANA_RPC_URL ??
   "https://api.mainnet-beta.solana.com";
+
+const MAX_RETRIES = 3;
 
 interface WithdrawScreenProps {
   vaultId: string;
@@ -33,8 +39,12 @@ export function WithdrawScreen({
   const [amount, setAmount] = useState("");
   const [shareBalance, setShareBalance] = useState<number | null>(null);
   const [loadingBalance, setLoadingBalance] = useState(false);
+  const [activeWithdrawalId, setActiveWithdrawalId] = useState<
+    string | undefined
+  >();
 
-  const redeemMutation = useRedeemVault();
+  const requestMutation = useRequestWithdrawal();
+  const { data: activeWithdrawal } = useWithdrawalStatus(activeWithdrawalId);
 
   const fetchBalance = useCallback(async () => {
     if (!wallet?.address) return;
@@ -53,7 +63,7 @@ export function WithdrawScreen({
 
   useEffect(() => {
     setAmount("");
-    redeemMutation.reset();
+    requestMutation.reset();
     fetchBalance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fetchBalance]);
@@ -73,39 +83,89 @@ export function WithdrawScreen({
     if (!isValidAmount || exceedsBalance || !wallet) return;
 
     try {
-      const provider = await wallet.getProvider();
-      const signature = await redeemMutation.mutateAsync({
+      const result = await requestMutation.mutateAsync({
         vaultId,
         amount: amountNum,
         signerPublicKey: wallet.address,
-        signAndSend: (transaction, connection, options) =>
-          provider.request({
-            method: "signAndSendTransaction",
-            params: { transaction, connection, ...(options && { options }) },
-          }),
       });
+
+      setActiveWithdrawalId(result.id);
 
       Toast.show({
         type: "success",
-        text1: "Withdrawal Queued",
-        text2: `Tx: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
+        text1: "Withdrawal Requested",
+        text2: "Your request has been queued for processing",
       });
-      onClose();
     } catch (err) {
       console.error("[WithdrawScreen] Error:", err);
-      captureError(err, { source: "withdraw" });
+      captureError(err, { source: "withdraw-request" });
       Toast.show({
         type: "error",
-        text1: "Withdrawal Failed",
-        text2: err instanceof Error ? err.message : "Transaction failed",
+        text1: "Request Failed",
+        text2: err instanceof Error ? err.message : "Could not queue withdrawal",
       });
     }
   };
 
+  // Show timeline + action cards when there's an active withdrawal
+  if (activeWithdrawal) {
+    return (
+      <View className="flex-1 pb-10 pt-6">
+        <View className="px-6">
+          <Text className="mb-1 text-xl font-bold">
+            Withdraw from {vaultName}
+          </Text>
+          <Text className="mb-2 text-sm text-muted-foreground">
+            {activeWithdrawal.amount.toLocaleString(undefined, {
+              maximumFractionDigits: 6,
+            })}{" "}
+            shares
+          </Text>
+        </View>
+
+        <WithdrawalTimeline
+          status={activeWithdrawal.status}
+          requestedAt={activeWithdrawal.requestedAt}
+          processingAt={activeWithdrawal.processingAt}
+          claimableAt={activeWithdrawal.claimableAt}
+          claimedAt={activeWithdrawal.claimedAt}
+          failedAt={activeWithdrawal.failedAt}
+          errorMessage={activeWithdrawal.errorMessage}
+        />
+
+        {activeWithdrawal.status === "CLAIMABLE" && (
+          <WithdrawalClaimCard withdrawal={activeWithdrawal} />
+        )}
+
+        {activeWithdrawal.status === "FAILED" && (
+          <WithdrawalFailedCard
+            withdrawal={activeWithdrawal}
+            maxRetries={MAX_RETRIES}
+          />
+        )}
+
+        {activeWithdrawal.status === "CLAIMED" && (
+          <View className="mx-5 mt-4">
+            <Button variant="classic" onPress={onClose} size="lg">
+              <Text className="text-base font-semibold text-white">Done</Text>
+            </Button>
+          </View>
+        )}
+
+        <View className="px-6">
+          <Button variant="ghost" onPress={onClose} className="mt-2">
+            <Text className="text-muted-foreground">Close</Text>
+          </Button>
+        </View>
+      </View>
+    );
+  }
+
+  // Request form (initial state)
   const isDisabled =
     !isValidAmount ||
     exceedsBalance ||
-    redeemMutation.isPending ||
+    requestMutation.isPending ||
     !wallet;
 
   return (
@@ -114,7 +174,7 @@ export function WithdrawScreen({
         Withdraw from {vaultName}
       </Text>
       <Text className="mb-6 text-sm text-muted-foreground">
-        Redeem your vault shares
+        Request a withdrawal from the vault
       </Text>
 
       <View className="mb-2 flex-row items-center justify-between">
@@ -148,7 +208,7 @@ export function WithdrawScreen({
         placeholder="0.00"
         placeholderTextColor="#A1A1AA"
         keyboardType="decimal-pad"
-        editable={!redeemMutation.isPending}
+        editable={!requestMutation.isPending}
         aria-labelledby="share-amount-label"
       />
 
@@ -169,7 +229,7 @@ export function WithdrawScreen({
         }
         size="lg"
       >
-        {redeemMutation.isPending ? (
+        {requestMutation.isPending ? (
           <ActivityIndicator color="white" />
         ) : (
           <Text className="text-base font-semibold text-white">
