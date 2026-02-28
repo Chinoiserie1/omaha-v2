@@ -122,13 +122,54 @@ function extractTweetsFromResponse(data: unknown): TweetResult[] {
   return tweets;
 }
 
-export async function fetchUserTweets(restId: string): Promise<TweetResult[]> {
-  try {
-    const response = await apiClient.get("/user-tweets", {
-      params: { user: restId, count: "40" },
-    });
+export interface FetchUserTweetsResult {
+  tweets: TweetResult[];
+  cursor: string | null;
+}
 
-    return extractTweetsFromResponse(response.data);
+function extractCursorFromResponse(data: unknown): string | null {
+  const timeline = (data as Record<string, unknown>)?.["result"] as
+    | Record<string, unknown>
+    | undefined;
+  const instructions = (
+    timeline?.["timeline"] as Record<string, unknown> | undefined
+  )?.["instructions"] as unknown[] | undefined;
+
+  if (!Array.isArray(instructions)) return null;
+
+  for (const instruction of instructions) {
+    const instr = instruction as Record<string, unknown>;
+    const entries = instr["entries"] as unknown[] | undefined;
+    if (!Array.isArray(entries)) continue;
+
+    for (const entry of entries) {
+      const e = entry as Record<string, unknown>;
+      const entryId = e["entryId"] as string | undefined;
+      if (entryId?.startsWith("cursor-bottom-")) {
+        const content = e["content"] as Record<string, unknown> | undefined;
+        const value = content?.["value"] as string | undefined;
+        return value ?? null;
+      }
+    }
+  }
+
+  return null;
+}
+
+export async function fetchUserTweets(
+  restId: string,
+  cursor?: string,
+): Promise<FetchUserTweetsResult> {
+  try {
+    const params: Record<string, string> = { user: restId, count: "40" };
+    if (cursor) params["cursor"] = cursor;
+
+    const response = await apiClient.get("/user-tweets", { params });
+
+    return {
+      tweets: extractTweetsFromResponse(response.data),
+      cursor: extractCursorFromResponse(response.data),
+    };
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 429) {
       throw new RateLimitError(

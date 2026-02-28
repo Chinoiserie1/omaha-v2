@@ -199,7 +199,7 @@ export async function syncKolTweets(kolId: string): Promise<number> {
   const freshKol = await kolRepo.findKolById(kolId);
   if (!freshKol?.restId) return 0;
 
-  const tweets = await twitterService.fetchUserTweets(freshKol.restId);
+  const { tweets } = await twitterService.fetchUserTweets(freshKol.restId);
   logger.info(
     { username: freshKol.username, count: tweets.length },
     "Fetched tweets from API",
