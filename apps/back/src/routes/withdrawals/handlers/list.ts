@@ -35,7 +35,7 @@ export async function listWithdrawals(
 
   const withdrawals = await withdrawalRepo.findByUser(user.id, {
     limit: limit + 1, // fetch one extra to detect next page
-    cursor,
+    ...(cursor !== undefined && { cursor }),
   });
 
   const hasMore = withdrawals.length > limit;
