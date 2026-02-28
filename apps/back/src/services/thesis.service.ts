@@ -1,6 +1,7 @@
 import type { Prisma } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import { llmComplete } from "../utils/llm.js";
+import { extractJson } from "../utils/extract-json.js";
 import {
   PortfolioOutputSchema,
   THESIS_SYSTEM_PROMPT,
@@ -182,8 +183,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
 
   let parsed: unknown;
   try {
-    const cleaned = rawResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "");
-    parsed = JSON.parse(cleaned);
+    parsed = extractJson(rawResponse);
   } catch {
     logger.error({ kolId, rawResponse }, "Failed to parse thesis JSON");
     return false;

@@ -3,6 +3,7 @@ import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { logger } from "../utils/logger.js";
 import { llmComplete } from "../utils/llm.js";
+import { extractJson } from "../utils/extract-json.js";
 import {
   ClassificationBatchSchema,
   CLASSIFICATION_SYSTEM_PROMPT,
@@ -106,8 +107,7 @@ export async function classifyUnclassifiedTweets(
 
     let parsed: unknown;
     try {
-      const cleaned = rawResponse.replace(/^```(?:json)?\s*\n?/m, "").replace(/\n?```\s*$/m, "");
-      parsed = JSON.parse(cleaned);
+      parsed = extractJson(rawResponse);
     } catch {
       logger.error({ kolId, batch: batchNum, rawResponse }, "Failed to parse LLM JSON response");
       continue;
