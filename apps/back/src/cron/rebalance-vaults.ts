@@ -1,5 +1,5 @@
-import axios from "axios";
 import { logger } from "../utils/logger.js";
+import { alertOnError } from "../utils/alert.js";
 import { env } from "../utils/env.js";
 import { rebalanceAllKolVaults } from "../services/rebalancer.service.js";
 
@@ -21,18 +21,6 @@ export async function rebalanceVaults(): Promise<void> {
     await rebalanceAllKolVaults();
     logger.info("Cron job completed: rebalance-vaults");
   } catch (error) {
-    if (axios.isAxiosError(error)) {
-      logger.error(
-        {
-          url: error.config?.url,
-          method: error.config?.method,
-          status: error.response?.status,
-          body: error.response?.data,
-        },
-        "Cron job failed: rebalance-vaults"
-      );
-    } else {
-      logger.error({ err: error }, "Cron job failed: rebalance-vaults");
-    }
+    await alertOnError("cron:rebalance-vaults", error);
   }
 }
