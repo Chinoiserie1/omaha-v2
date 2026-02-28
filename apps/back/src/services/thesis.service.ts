@@ -12,6 +12,7 @@ import { findActiveKols } from "../store/kol.repository.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
 import { classifyUnclassifiedTweets } from "./classifier.service.js";
 import { computeLatestPeriod } from "./backtest.service.js";
+import { computeTweetImpacts } from "./tweet-impact.service.js";
 
 export function applyConvictionDecay(
   allocations: Allocation[],
@@ -229,7 +230,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     logger.info({ kolId }, "No portfolio changes");
   }
 
-  await portfolioRepo.createSnapshot({
+  const savedSnapshot = await portfolioRepo.createSnapshot({
     kolId,
     thesisSummary: portfolio.thesisSummary,
     allocations: decayedAllocations as unknown as Prisma.InputJsonValue,
@@ -241,6 +242,22 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     { kolId, allocations: decayedAllocations.length, changes: portfolio.changes.length },
     "Portfolio snapshot saved"
   );
+
+  // Compute tweet impact scores (non-fatal)
+  try {
+    const oldAllocations = latestSnapshot
+      ? (latestSnapshot.allocations as unknown as Allocation[])
+      : null;
+    await computeTweetImpacts({
+      kolId,
+      snapshotId: savedSnapshot.id,
+      sourceTweetIds,
+      oldAllocations,
+      newAllocations: decayedAllocations as unknown as Allocation[],
+    });
+  } catch (err) {
+    logger.warn({ err, kolId }, "Failed to compute tweet impacts (non-fatal)");
+  }
 
   // Compute backtest performance for this new period (non-fatal)
   try {

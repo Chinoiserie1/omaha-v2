@@ -56,6 +56,11 @@ import type { walletAddressSchema } from "../schemas/index.js";
 
 export type WalletAddressDto = z.infer<typeof walletAddressSchema>;
 
+// Tweet Impact DTOs
+import type { significantTweetsQuerySchema } from "../schemas/index.js";
+
+export type SignificantTweetsQueryDto = z.infer<typeof significantTweetsQuerySchema>;
+
 // Holdings DTOs
 import type {
   vaultHoldingWithPctSchema,

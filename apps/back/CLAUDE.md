@@ -85,6 +85,14 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | PATCH | `/api/users/:id` | Update user |
 | DELETE | `/api/users/:id` | Delete user |
 
+### KOL Tweets API
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/api/kols/:kolId/tweets` | List tweets by KOL (paginated) |
+| GET | `/api/kols/:kolId/tweets/significant` | List significant tweets with impact scores |
+| GET | `/api/kols/:kolId/threads/:conversationId` | Get tweet thread |
+
 ## Using Shared Packages
 
 ### Prisma Client

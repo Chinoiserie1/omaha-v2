@@ -53,6 +53,7 @@ model Kol {
   tweets         Tweet[]
   portfolios     PortfolioSnapshot[]
   vault          KolVault?
+  tweetImpacts   TweetImpact[]
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
 }
@@ -75,6 +76,7 @@ model Tweet {
   conversationId String?
   rawJson        Json?
   classification ClassifiedTweet?
+  impacts        TweetImpact[]
   createdAt      DateTime         @default(now())
   fetchedAt      DateTime         @default(now())
 
@@ -107,6 +109,7 @@ model PortfolioSnapshot {
   sourceTweetIds  String[]
   createdAt       DateTime         @default(now())
   rebalanceEvents RebalanceEvent[]
+  tweetImpacts    TweetImpact[]
 
   // Backtest: this snapshot is the "from" side of a performance period
   perfFrom SnapshotPerformance[] @relation("PerfFrom")
@@ -114,6 +117,30 @@ model PortfolioSnapshot {
   perfTo   SnapshotPerformance[] @relation("PerfTo")
 
   @@index([kolId, createdAt])
+}
+
+model TweetImpact {
+  id                String            @id @default(cuid())
+  tweetId           String
+  tweet             Tweet             @relation(fields: [tweetId], references: [id], onDelete: Cascade)
+  kolId             String
+  kol               Kol               @relation(fields: [kolId], references: [id], onDelete: Cascade)
+  snapshotId        String
+  snapshot          PortfolioSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  assets            String[]
+  impactType        String
+  allocationDelta   Float
+  conviction        String
+  sentiment         String
+  category          String
+  engagementScore   Float
+  significanceScore Float
+  createdAt         DateTime          @default(now())
+
+  @@unique([tweetId, snapshotId])
+  @@index([kolId, significanceScore])
+  @@index([kolId, createdAt])
+  @@index([snapshotId])
 }
 
 model KolVault {
