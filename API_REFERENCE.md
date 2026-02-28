@@ -17,6 +17,20 @@ curl -X POST $API/api/tweets \
   -d '{"url": "https://x.com/username/status/1234567890"}'
 ```
 
+### Ingest external content (non-Twitter sources)
+```bash
+curl -X POST $API/api/content \
+  -H "Content-Type: application/json" \
+  -d '{"kolId":"<kolId>","text":"...","source":"telegram"}'
+```
+- **kolId** or **kolUsername** — at least one required (KOL must already exist)
+- **text** — required
+- **source** — required, one of: `x`, `reddit`, `substack`, `blog`, `dm`, `telegram`, `discord`
+- **sourceUrl** — optional URL to the original content
+- **postedAt** — optional ISO date, defaults to now
+
+Returns 201 with the created record. The record enters the classification + thesis pipeline automatically.
+
 ### Sync all KOL Twitter profiles (avatar, bio, followers)
 ```bash
 curl -X POST $API/api/kols/sync-profiles
