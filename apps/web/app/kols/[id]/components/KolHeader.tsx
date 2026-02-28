@@ -1,11 +1,20 @@
+import Link from "next/link";
 import type { KolItem } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
+import { ApiTryPanel } from "../../components/ApiTryPanel";
 
 export function KolHeader({ kol }: { kol: KolItem }) {
   const name = kol.displayName ?? kol.username;
 
   return (
-    <div className="flex items-start gap-4">
+    <div>
+      <Link
+        href="/kols"
+        className="mb-4 inline-flex items-center text-sm text-zinc-500 hover:text-zinc-700"
+      >
+        &larr; All KOLs
+      </Link>
+      <div className="flex items-start gap-4">
       {kol.avatarUrl ? (
         <img
           src={kol.avatarUrl}
@@ -42,6 +51,8 @@ export function KolHeader({ kol }: { kol: KolItem }) {
           <span>{formatNumber(kol.tweetCount)} tweets</span>
         </div>
       </div>
+      </div>
+      <ApiTryPanel kolId={kol.id} />
     </div>
   );
 }
