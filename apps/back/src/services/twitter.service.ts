@@ -155,11 +155,13 @@ export async function fetchUserTweets(restId: string): Promise<TweetResult[]> {
 
 function extractTweetsFromDetailResponse(data: unknown): TweetResult[] {
   const tweets: TweetResult[] = [];
-  const result = (data as Record<string, unknown>)?.["result"] as
+  const root = (data as Record<string, unknown>)?.["data"] as
     | Record<string, unknown>
     | undefined;
   const instructions = (
-    result?.["timeline"] as Record<string, unknown> | undefined
+    root?.["threaded_conversation_with_injections_v2"] as
+      | Record<string, unknown>
+      | undefined
   )?.["instructions"] as unknown[] | undefined;
 
   if (!Array.isArray(instructions)) return tweets;
@@ -215,11 +217,6 @@ export async function fetchTweetDetail(
     const response = await apiClient.get("/tweet", {
       params: { pid: tweetId },
     });
-
-    logger.info(
-      { tweetId, rawResponse: JSON.stringify(response.data).slice(0, 2000) },
-      "DEBUG: /tweet raw response",
-    );
 
     return extractTweetsFromDetailResponse(response.data);
   } catch (error) {
