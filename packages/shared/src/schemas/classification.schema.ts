@@ -41,6 +41,9 @@ Asset detection rules:
 - Detect common abbreviations and slang used in crypto twitter
 - Map everything to standard uppercase ticker symbols
 - If a tweet mentions "alts" generically without specific assets, assets = []
+- Slash-separated pairs are TRADING PAIRS — extract BOTH sides: "ZEC/BTC" → ["ZEC", "BTC"], "SOL/USDT" → ["SOL", "USDT"]
+- Multiple pairs separated by +, &, or commas: "ZEC/BTC + SOL/HYPE" → ["ZEC", "BTC", "SOL", "HYPE"]
+- Extract ALL assets mentioned in the tweet, not just the primary one
 
 Respond ONLY with valid JSON matching this schema:
 {

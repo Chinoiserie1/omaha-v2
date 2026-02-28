@@ -12,9 +12,9 @@ interface Endpoint {
 
 function getEndpoints(kolId: string): Endpoint[] {
   return [
-    { label: "Tweets", path: `/api/kols/${kolId}/tweets?limit=5` },
-    { label: "Significant", path: `/api/kols/${kolId}/tweets/significant?limit=5` },
-    { label: "Thesis", path: `/api/kols/${kolId}/portfolio` },
+    { label: "Try: Tweets", path: `/api/kols/${kolId}/tweets?limit=5` },
+    { label: "Try: Significant", path: `/api/kols/${kolId}/tweets/significant?limit=5` },
+    { label: "Try: Thesis", path: `/api/kols/${kolId}/portfolio` },
   ];
 }
 
@@ -51,7 +51,7 @@ export function ApiTryPanel({ kolId }: { kolId: string }) {
           <button
             key={ep.label}
             onClick={() => handleClick(ep)}
-            className="rounded bg-zinc-100 px-2 py-1 text-xs font-medium text-zinc-600 transition-colors hover:bg-zinc-200"
+            className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-700"
           >
             {ep.label}
           </button>
