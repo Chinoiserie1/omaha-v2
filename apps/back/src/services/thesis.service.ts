@@ -53,6 +53,51 @@ export function applyConvictionDecay(
   });
 }
 
+function formatClassificationsWithThreads(
+  classifications: Array<{
+    category: string;
+    sentiment: string | null;
+    conviction: string | null;
+    tweet: { postedAt: Date; fullText: string; conversationId: string | null };
+  }>
+): string {
+  type C = (typeof classifications)[number];
+  const threadGroups = new Map<string, C[]>();
+  const entries: { timestamp: Date; line: string }[] = [];
+
+  for (const c of classifications) {
+    if (c.tweet.conversationId) {
+      const group = threadGroups.get(c.tweet.conversationId);
+      if (group) {
+        group.push(c);
+      } else {
+        threadGroups.set(c.tweet.conversationId, [c]);
+      }
+    } else {
+      entries.push({
+        timestamp: c.tweet.postedAt,
+        line: `[${c.tweet.postedAt.toISOString()}] (${c.category}, ${c.sentiment}, ${c.conviction}) ${c.tweet.fullText}`,
+      });
+    }
+  }
+
+  for (const [, group] of threadGroups) {
+    const starter = group[0]!;
+    const threadText =
+      group.length > 1
+        ? `[THREAD - ${group.length} tweets]\n${group.map((c) => c.tweet.fullText).join("\n---\n")}`
+        : starter.tweet.fullText;
+
+    entries.push({
+      timestamp: starter.tweet.postedAt,
+      line: `[${starter.tweet.postedAt.toISOString()}] (${starter.category}, ${starter.sentiment}, ${starter.conviction}) ${threadText}`,
+    });
+  }
+
+  entries.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+  return entries.map((e) => e.line).join("\n\n");
+}
+
 export async function synthesizeThesis(kolId: string): Promise<boolean> {
   const latestSnapshot = await portfolioRepo.findLatestSnapshot(kolId);
   const tradeableAssets = await getTradeableAssetsMap();
@@ -86,12 +131,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
       "Found relevant tweets for cold start"
     );
 
-    const tweetsFormatted = allRelevant
-      .map(
-        (c) =>
-          `[${c.tweet.postedAt.toISOString()}] (${c.category}, ${c.sentiment}, ${c.conviction}) ${c.tweet.fullText}`
-      )
-      .join("\n\n");
+    const tweetsFormatted = formatClassificationsWithThreads(allRelevant);
 
     userContent = `ALL RELEVANT TWEETS (oldest to newest):\n${tweetsFormatted}\n\nBuild their current investment thesis from scratch.`;
   } else {
@@ -123,12 +163,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
       allocations: latestSnapshot.allocations,
     });
 
-    const tweetsFormatted = newRelevant
-      .map(
-        (c) =>
-          `[${c.tweet.postedAt.toISOString()}] (${c.category}, ${c.sentiment}, ${c.conviction}) ${c.tweet.fullText}`
-      )
-      .join("\n\n");
+    const tweetsFormatted = formatClassificationsWithThreads(newRelevant);
 
     userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
   }
