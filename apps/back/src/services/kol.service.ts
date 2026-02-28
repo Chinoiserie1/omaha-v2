@@ -45,30 +45,18 @@ export function mapTweetResultToInput(
 }
 
 /**
- * Finds tweets that are thread starters — where conversation_id matches
- * the tweet's own id and the tweet has self-replies in the batch.
+ * Finds potential thread starters from a timeline batch.
+ * A candidate is any tweet where conversation_id === id_str (it started a conversation)
+ * AND reply_count > 0 (it has replies — possibly self-replies forming a thread).
+ *
+ * Twitter's /user-tweets API collapses threads, only returning the starter tweet,
+ * so we can't rely on seeing self-replies in the same batch.
  */
-function detectThreadStarters(
-  tweets: TweetResult[],
-  userIdStr: string,
-): TweetResult[] {
-  // Collect all conversation IDs that have self-replies
-  const conversationsWithSelfReplies = new Set<string>();
-  for (const tweet of tweets) {
-    if (
-      tweet.legacy.in_reply_to_status_id_str &&
-      tweet.legacy.user_id_str === userIdStr &&
-      tweet.legacy.conversation_id_str
-    ) {
-      conversationsWithSelfReplies.add(tweet.legacy.conversation_id_str);
-    }
-  }
-
-  // Thread starters: own tweet where conversation_id === id_str and has self-replies
+function findThreadCandidates(tweets: TweetResult[]): TweetResult[] {
   return tweets.filter(
     (t) =>
       t.legacy.conversation_id_str === t.legacy.id_str &&
-      conversationsWithSelfReplies.has(t.legacy.id_str),
+      t.legacy.reply_count > 0,
   );
 }
 
@@ -113,17 +101,29 @@ async function syncKolThreads(
   tweets: TweetResult[],
   userIdStr: string,
 ): Promise<number> {
-  const threadStarters = detectThreadStarters(tweets, userIdStr);
-  if (threadStarters.length === 0) return 0;
+  const candidates = findThreadCandidates(tweets);
+  if (candidates.length === 0) return 0;
+
+  // Check which candidates already have thread data in the DB
+  const toFetch: TweetResult[] = [];
+  for (const candidate of candidates) {
+    const existing = await tweetRepo.findThreadByConversationId(
+      candidate.legacy.id_str,
+    );
+    if (existing.length >= 2) continue; // Already have thread data
+    toFetch.push(candidate);
+  }
 
   logger.info(
-    { kolId, threadCount: threadStarters.length },
-    "Detected threads, fetching details",
+    { kolId, candidates: candidates.length, fetching: toFetch.length },
+    "Fetching potential threads",
   );
+
+  if (toFetch.length === 0) return 0;
 
   let threadTweetCount = 0;
 
-  for (const starter of threadStarters) {
+  for (const starter of toFetch) {
     try {
       await delay(env.FETCH_DELAY_MS);
       const threadTweets = await twitterService.fetchTweetDetail(
@@ -134,6 +134,15 @@ async function syncKolThreads(
       const selfTweets = threadTweets.filter(
         (t) => t.legacy.user_id_str === userIdStr,
       );
+
+      // Skip false positives: if only 1 self-tweet (the starter itself), not a thread
+      if (selfTweets.length < 2) {
+        logger.debug(
+          { tweetId: starter.legacy.id_str },
+          "Not a self-thread, skipping",
+        );
+        continue;
+      }
 
       for (const tweet of selfTweets) {
         const input = mapTweetResultToInput(tweet, kolId, { isThread: true });
