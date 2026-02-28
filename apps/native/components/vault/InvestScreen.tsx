@@ -28,10 +28,11 @@ export function InvestScreen({
 
   const [amount, setAmount] = useState("");
 
-  const { balance: usdcBalance, loading: loadingBalance } = useShareBalance(
-    USDC_MINT,
-    wallet?.address,
-  );
+  const {
+    balance: usdcBalance,
+    loading: loadingBalance,
+    refetch: refetchBalance,
+  } = useShareBalance(USDC_MINT, wallet?.address);
 
   const subscribeMutation = useSubscribeVault();
 
@@ -51,7 +52,7 @@ export function InvestScreen({
 
     try {
       const provider = await wallet.getProvider();
-      const signature = await subscribeMutation.mutateAsync({
+      const { signature } = await subscribeMutation.mutateAsync({
         vaultId,
         amount: amountNum,
         signerPublicKey: wallet.address,
@@ -65,6 +66,9 @@ export function InvestScreen({
       });
 
       console.log("[InvestScreen] Signature:", signature);
+
+      // Refetch USDC balance (useState-based, not invalidated by React Query)
+      refetchBalance();
 
       Toast.show({
         type: "success",

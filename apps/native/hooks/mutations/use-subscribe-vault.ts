@@ -1,7 +1,8 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Transaction, Connection, type SendOptions } from "@solana/web3.js";
 import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
 import { SOLANA_RPC_URL } from "../../lib/solana";
 
 interface SubscribeParams {
@@ -19,40 +20,71 @@ interface SubscribeResponse {
   transaction: string;
 }
 
+/**
+ * Subscribe (invest) in a vault: backend builds unsigned deposit tx,
+ * user signs via Privy, submits to Solana, waits for on-chain confirmation,
+ * then confirms with backend to trigger rebalancing.
+ */
 export function useSubscribeVault() {
+  const queryClient = useQueryClient();
+
   return useMutation({
     mutationFn: async ({
       vaultId,
       amount,
       signerPublicKey,
       signAndSend,
-    }: SubscribeParams): Promise<string> => {
+    }: SubscribeParams): Promise<{
+      signature: string;
+      vaultId: string;
+      signerPublicKey: string;
+    }> => {
       // Step 1: Build unsigned transaction on backend
       const { transaction: txBase64 } = await apiClient.post<SubscribeResponse>(
         `/api/vaults/${vaultId}/subscribe`,
         { amount, signerPublicKey },
       );
 
-      console.log("[useSubscribeVault] Transaction:", txBase64);
-
       // Step 2: Deserialize the unsigned transaction
       const transaction = Transaction.from(Buffer.from(txBase64, "base64"));
-
-      console.log(
-        "[useSubscribeVault] Transaction:",
-        JSON.stringify(transaction, null, 2),
-      );
 
       // Step 3: Sign and send via Privy, skipping preflight simulation.
       // Privy's internal RPC may not recognize the blockhash from our backend's RPC,
       // causing "Blockhash not found" during simulation. skipPreflight bypasses
       // simulation and sends directly to the leader.
       const connection = new Connection(SOLANA_RPC_URL);
-      const result = await signAndSend(transaction, connection, {
+      const { signature } = await signAndSend(transaction, connection, {
         skipPreflight: true,
       });
 
-      return result.signature;
+      // Step 4: Wait for on-chain confirmation before notifying backend
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash("confirmed");
+      await connection.confirmTransaction(
+        { signature, blockhash, lastValidBlockHeight },
+        "confirmed",
+      );
+
+      // Step 5: Confirm the deposit with backend → triggers rebalancing
+      await apiClient.post(`/api/vaults/${vaultId}/confirm-subscribe`, {
+        txSignature: signature,
+      });
+
+      return { signature, vaultId, signerPublicKey };
+    },
+    onSuccess: ({ vaultId, signerPublicKey }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vaults.investorStatus(vaultId, signerPublicKey),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vaults.holdings(vaultId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vaults.detail(vaultId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.wallet.portfolio(signerPublicKey),
+      });
     },
   });
 }

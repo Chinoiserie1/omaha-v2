@@ -1,5 +1,6 @@
-import { useEffect, memo } from "react";
+import { useEffect, useCallback, memo } from "react";
 import { View, ActivityIndicator } from "react-native";
+import { useFocusEffect } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
@@ -225,9 +226,14 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
   const { wallets } = useEmbeddedSolanaWallet();
   const wallet = wallets?.[0];
 
-  const { balance, loading: balanceLoading } = useShareBalance(
-    mintAddress,
-    wallet?.address,
+  const { balance, loading: balanceLoading, refetch: refetchBalance } =
+    useShareBalance(mintAddress, wallet?.address);
+
+  // Refetch share balance when screen regains focus (after invest or withdraw)
+  useFocusEffect(
+    useCallback(() => {
+      refetchBalance();
+    }, [refetchBalance]),
   );
 
   const { data: investorStatus } = useInvestorStatus(vaultId, wallet?.address);
