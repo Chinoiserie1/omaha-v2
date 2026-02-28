@@ -43,6 +43,13 @@ export async function findUnclassifiedTweetsByKol(kolId: string) {
   });
 }
 
+export async function findClassificationsByTweetIds(tweetIds: string[]) {
+  return prisma.classifiedTweet.findMany({
+    where: { tweetId: { in: tweetIds } },
+    include: { tweet: true },
+  });
+}
+
 export async function findRelevantClassificationsSince(
   kolId: string,
   since: Date
