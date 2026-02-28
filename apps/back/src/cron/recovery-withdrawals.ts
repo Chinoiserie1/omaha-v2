@@ -1,4 +1,3 @@
-import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
 import { isRedisAvailable } from "../infra/redis.js";
 import * as withdrawalRepo from "../store/withdrawal.repository.js";
@@ -14,7 +13,8 @@ const PROCESSING_TIMEOUT_MS = 15 * 60_000; // 15 min — fulfill didn't happen
  */
 export async function recoverWithdrawals(): Promise<void> {
   // Expire stale REQUESTED records (user never signed the queuedRedeem tx)
-  const stuckRequested = await withdrawalRepo.findStuckRequested(REQUESTED_TIMEOUT_MS);
+  const stuckRequested =
+    await withdrawalRepo.findStuckRequested(REQUESTED_TIMEOUT_MS);
   if (stuckRequested.length > 0) {
     logger.warn(
       { count: stuckRequested.length },
@@ -31,7 +31,9 @@ export async function recoverWithdrawals(): Promise<void> {
   }
 
   // Re-enqueue stuck PROCESSING records (fulfill didn't happen)
-  const stuckProcessing = await withdrawalRepo.findStuckProcessing(PROCESSING_TIMEOUT_MS);
+  const stuckProcessing = await withdrawalRepo.findStuckProcessing(
+    PROCESSING_TIMEOUT_MS,
+  );
   if (stuckProcessing.length > 0) {
     logger.warn(
       { count: stuckProcessing.length },
