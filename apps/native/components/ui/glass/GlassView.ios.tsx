@@ -1,13 +1,17 @@
 import { View, StyleSheet } from "react-native";
 import {
-  LiquidGlassView,
-  LiquidGlassContainerView,
+  LiquidGlassView as RawLiquidGlassView,
+  LiquidGlassContainerView as RawLiquidGlassContainerView,
 } from "@callstack/liquid-glass";
 import { BlurView } from "@sbaiahmed1/react-native-blur";
-import { useColorScheme } from "nativewind";
+import { cssInterop, useColorScheme } from "nativewind";
 import { isNativeLiquidGlassSupported, GLASS_CONFIG } from "@/lib/glass";
 import { cn } from "@/lib/utils";
 import type { GlassViewProps, GlassContainerProps } from "./types";
+
+// Register native liquid glass components with NativeWind so className → style
+cssInterop(RawLiquidGlassView, { className: "style" });
+cssInterop(RawLiquidGlassContainerView, { className: "style" });
 
 export function GlassView({
   effect = "regular",
@@ -32,11 +36,7 @@ export function GlassView({
       ...(tintColor != null ? { tintColor } : {}),
     };
 
-    return (
-      <LiquidGlassView {...glassProps}>
-        {children}
-      </LiquidGlassView>
-    );
+    return <RawLiquidGlassView {...glassProps}>{children}</RawLiquidGlassView>;
   }
 
   // No effect requested: plain view
@@ -91,8 +91,8 @@ export function GlassContainer({
   }
 
   return (
-    <LiquidGlassContainerView spacing={spacing} className={cn(className)}>
+    <RawLiquidGlassContainerView spacing={spacing} className={cn(className)}>
       {children}
-    </LiquidGlassContainerView>
+    </RawLiquidGlassContainerView>
   );
 }

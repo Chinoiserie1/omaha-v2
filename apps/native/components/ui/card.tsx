@@ -16,7 +16,7 @@ function Card({ className, variant = "glass", ...props }: CardProps) {
       <TextClassContext.Provider value="text-card-foreground">
         <View
           className={cn(
-            "bg-card border-border flex flex-col gap-6 rounded-xl border py-6 shadow-sm shadow-black/5",
+            "flex flex-col gap-6 py-6 rounded-xl border shadow-sm bg-card border-border shadow-black/5",
             className,
           )}
           {...props}
@@ -28,7 +28,7 @@ function Card({ className, variant = "glass", ...props }: CardProps) {
   return (
     <TextClassContext.Provider value="text-card-foreground">
       <GlassView
-        className={cn("flex flex-col gap-6 rounded-xl py-6", className)}
+        className={cn("flex flex-col gap-6 py-6 rounded-xl border", className)}
         {...props}
       />
     </TextClassContext.Provider>
@@ -64,7 +64,7 @@ function CardDescription({
 }: React.ComponentProps<typeof Text> & React.RefAttributes<Text>) {
   return (
     <Text
-      className={cn("text-muted-foreground text-sm", className)}
+      className={cn("text-sm text-muted-foreground", className)}
       {...props}
     />
   );
