@@ -87,7 +87,8 @@
     "CRON_FETCH_TWEETS",
     "CRON_RUN_ALGO",
     "CRON_REBALANCE_VAULTS",
-    "BIRDEYE_API_KEY"
+    "BIRDEYE_API_KEY",
+    "NEXT_PUBLIC_API_URL"
   ],
   "globalPassThroughEnv": ["CI"]
 }
