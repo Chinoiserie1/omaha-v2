@@ -2,15 +2,15 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import * as kolRepo from "../../../store/kol.repository.js";
 
 type ListRequest = FastifyRequest<{
-  Querystring: { active?: string };
+  Querystring: { all?: string };
 }>;
 
 export async function listKols(
   request: ListRequest,
   _reply: FastifyReply
 ) {
-  const activeOnly = request.query.active === "true";
-  const kols = await kolRepo.findAllKols(activeOnly);
+  const includeAll = request.query.all === "true";
+  const kols = await kolRepo.findAllKols(!includeAll);
 
   return kols.map((kol) => ({
     id: kol.id,
