@@ -1,5 +1,6 @@
 import axios from "axios";
 import { prisma } from "@repo/database";
+import { UserDetailsResponseSchema } from "@repo/shared";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
 import { sendTelegramAlert } from "./telegram.service.js";
@@ -70,6 +71,10 @@ function buildProbes(): Array<{ name: string; fn: () => Promise<{ status?: numbe
         },
         timeout: PROBE_TIMEOUT_MS,
       });
+      const parsed = UserDetailsResponseSchema.safeParse(resp.data);
+      if (!parsed.success) {
+        throw new Error("Invalid response body (credits exhausted or API changed)");
+      }
       return { status: resp.status };
     },
   });
