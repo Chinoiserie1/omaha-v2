@@ -33,9 +33,10 @@ export async function retryWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Verify ownership
+  // Verify ownership and fetch wallet address
   const user = await prisma.user.findUnique({
     where: { privyId: request.privyUserId },
+    select: { id: true, walletAddress: true },
   });
   if (!user || withdrawal.userId !== user.id) {
     return reply.status(403).send({
@@ -58,12 +59,7 @@ export async function retryWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Look up wallet address from user
-  const user = await prisma.user.findUnique({
-    where: { id: withdrawal.userId },
-    select: { walletAddress: true },
-  });
-  if (!user?.walletAddress) {
+  if (!user.walletAddress) {
     return reply.status(400).send({
       success: false,
       error: "User has no wallet address on file",
