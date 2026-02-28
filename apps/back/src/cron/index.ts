@@ -1,42 +1,53 @@
 import type { FastifyInstance } from "fastify";
 import cron from "node-cron";
 import { env } from "../utils/env.js";
+import { alertOnError } from "../utils/alert.js";
+import { startTelegramBot, stopTelegramBot } from "../services/telegram.service.js";
 import { fetchTweets } from "./fetch-tweets.js";
 import { runAlgo } from "./run-algo.js";
 import { rebalanceVaults } from "./rebalance-vaults.js";
 import { fetchPrices } from "./fetch-prices.js";
 import { syncProfiles } from "./sync-profiles.js";
+import { healthCheck } from "./health-check.js";
 
 const tasks: cron.ScheduledTask[] = [];
 
 export async function cronPlugin(app: FastifyInstance): Promise<void> {
+  await startTelegramBot();
+
   tasks.push(
     cron.schedule(env.CRON_FETCH_TWEETS, () => {
-      fetchTweets().catch((err) => app.log.error(err, "fetchTweets cron error"));
+      fetchTweets().catch((err) => alertOnError("cron:fetch-tweets", err));
     })
   );
 
   tasks.push(
     cron.schedule(env.CRON_RUN_ALGO, () => {
-      runAlgo().catch((err) => app.log.error(err, "runAlgo cron error"));
+      runAlgo().catch((err) => alertOnError("cron:run-algo", err));
     })
   );
 
   tasks.push(
     cron.schedule(env.CRON_REBALANCE_VAULTS, () => {
-      rebalanceVaults().catch((err) => app.log.error(err, "rebalanceVaults cron error"));
+      rebalanceVaults().catch((err) => alertOnError("cron:rebalance-vaults", err));
     })
   );
 
   tasks.push(
     cron.schedule(env.CRON_FETCH_PRICES, () => {
-      fetchPrices().catch((err) => app.log.error(err, "fetchPrices cron error"));
+      fetchPrices().catch((err) => alertOnError("cron:fetch-prices", err));
     })
   );
 
   tasks.push(
     cron.schedule(env.CRON_SYNC_PROFILES, () => {
-      syncProfiles().catch((err) => app.log.error(err, "syncProfiles cron error"));
+      syncProfiles().catch((err) => alertOnError("cron:sync-profiles", err));
+    })
+  );
+
+  tasks.push(
+    cron.schedule(env.CRON_HEALTH_CHECK, () => {
+      healthCheck().catch((err) => alertOnError("cron:health-check", err));
     })
   );
 
@@ -46,6 +57,7 @@ export async function cronPlugin(app: FastifyInstance): Promise<void> {
     for (const task of tasks) {
       task.stop();
     }
+    await stopTelegramBot();
     app.log.info("Cron jobs stopped");
   });
 }

@@ -50,6 +50,11 @@ const envSchema = z.object({
 
   // Token prices — Cron schedule
   CRON_FETCH_PRICES: z.string().default("* * * * *"),
+
+  // Health monitor — Telegram alerts
+  TELEGRAM_BOT_TOKEN: z.string().optional(),
+  TELEGRAM_CHAT_ID: z.string().optional(),
+  CRON_HEALTH_CHECK: z.string().default("0 */6 * * *"),
 });
 
 export type Env = z.infer<typeof envSchema>;
