@@ -51,51 +51,41 @@ export function WithdrawalClaimCard({ withdrawal }: WithdrawalClaimCardProps) {
   };
 
   return (
-    <Card className="mx-5 mt-4">
-      <CardContent className="gap-4 pt-5">
-        <View className="items-center">
-          <Text className="text-lg font-bold text-emerald-400">
-            Ready to Claim
+    // <Card className="mx-5 mt-4">
+    //   <CardContent className="gap-4 pt-5">
+    //     <View className="items-center">
+    //       <Text className="text-lg font-bold text-emerald-400">
+    //         Ready to Claim
+    //       </Text>
+    //       <Text className="mt-1 text-sm text-muted-foreground">
+    //         {withdrawal.amount.toLocaleString(undefined, {
+    //           maximumFractionDigits: 6,
+    //         })}{" "}
+    //         shares
+    //       </Text>
+    //     </View>
+    <View className="p-4 px-5 pb-0">
+      <Button
+        variant="classic"
+        onPress={handleClaim}
+        disabled={claimMutation.isPending || !wallet}
+        className={
+          claimMutation.isPending || !wallet
+            ? "bg-muted"
+            : "bg-emerald-600 active:bg-emerald-700"
+        }
+        size="lg"
+      >
+        {claimMutation.isPending ? (
+          <ActivityIndicator color="white" />
+        ) : (
+          <Text className="text-base font-semibold text-white">
+            Claim Funds
           </Text>
-          <Text className="mt-1 text-sm text-muted-foreground">
-            {withdrawal.amount.toLocaleString(undefined, {
-              maximumFractionDigits: 6,
-            })}{" "}
-            shares
-          </Text>
-        </View>
-
-        <Button
-          variant="classic"
-          onPress={handleClaim}
-          disabled={claimMutation.isPending || !wallet}
-          className={
-            claimMutation.isPending || !wallet
-              ? "bg-muted"
-              : "bg-emerald-600 active:bg-emerald-700"
-          }
-          size="lg"
-        >
-          {claimMutation.isPending ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text className="text-base font-semibold text-white">
-              Claim Funds
-            </Text>
-          )}
-        </Button>
-
-        {withdrawal.redeemTxSignature && (
-          <Button
-            variant="ghost"
-            onPress={() => openTx(withdrawal.redeemTxSignature!)}
-          >
-            <Text className="text-xs text-muted-foreground underline">
-              View redeem tx on Solscan
-            </Text>
-          </Button>
         )}
-      </CardContent>
-    </Card>
+      </Button>
+    </View>
+    //   </CardContent>
+    // </Card>
   );
 }
