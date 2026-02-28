@@ -16,6 +16,8 @@ export interface CreateTweetInput {
   isThread?: boolean;
   conversationId?: string | undefined;
   rawJson?: unknown;
+  source?: string;
+  sourceUrl?: string;
 }
 
 export async function upsertTweet(input: CreateTweetInput): Promise<Tweet> {
@@ -34,6 +36,8 @@ export async function upsertTweet(input: CreateTweetInput): Promise<Tweet> {
     isThread: boolean;
     conversationId: string | null;
     rawJson?: Prisma.InputJsonValue;
+    source?: string;
+    sourceUrl?: string;
   } = {
     tweetId: input.tweetId,
     kolId: input.kolId,
@@ -52,6 +56,12 @@ export async function upsertTweet(input: CreateTweetInput): Promise<Tweet> {
 
   if (input.rawJson !== undefined) {
     createData.rawJson = input.rawJson as Prisma.InputJsonValue;
+  }
+  if (input.source !== undefined) {
+    createData.source = input.source;
+  }
+  if (input.sourceUrl !== undefined) {
+    createData.sourceUrl = input.sourceUrl;
   }
 
   return prisma.tweet.upsert({

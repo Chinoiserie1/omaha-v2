@@ -61,6 +61,11 @@ import type { significantTweetsQuerySchema } from "../schemas/index.js";
 
 export type SignificantTweetsQueryDto = z.infer<typeof significantTweetsQuerySchema>;
 
+// Content Ingestion DTOs
+import type { ingestContentSchema } from "../schemas/index.js";
+
+export type IngestContentDto = z.infer<typeof ingestContentSchema>;
+
 // Holdings DTOs
 import type {
   vaultHoldingWithPctSchema,

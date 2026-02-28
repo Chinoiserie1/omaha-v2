@@ -30,6 +30,12 @@ export async function findKolWithTweets(
   });
 }
 
+export async function findKolByUsername(
+  username: string
+): Promise<Kol | null> {
+  return prisma.kol.findUnique({ where: { username } });
+}
+
 export async function findActiveKols(): Promise<Kol[]> {
   return prisma.kol.findMany({ where: { isActive: true } });
 }

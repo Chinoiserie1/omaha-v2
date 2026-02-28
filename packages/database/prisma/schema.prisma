@@ -75,6 +75,8 @@ model Tweet {
   isThread       Boolean          @default(false)
   conversationId String?
   rawJson        Json?
+  source         String           @default("twitter")
+  sourceUrl      String?
   classification ClassifiedTweet?
   impacts        TweetImpact[]
   createdAt      DateTime         @default(now())

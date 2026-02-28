@@ -10,6 +10,7 @@ import { vaultRoutes } from "./routes/vaults/index.js";
 import { profileRoutes } from "./routes/profile/index.js";
 import { followRoutes } from "./routes/follows/index.js";
 import { walletRoutes } from "./routes/wallet/index.js";
+import { contentRoutes } from "./routes/content/index.js";
 import { cronPlugin } from "./cron/index.js";
 export async function buildApp() {
   const app = Fastify({
@@ -36,6 +37,9 @@ export async function buildApp() {
   await app.register(kolTweetRoutes, { prefix: "/api/kols" });
   await app.register(portfolioRoutes, { prefix: "/api/kols" });
   await app.register(backtestRoutes, { prefix: "/api/kols" });
+
+  // Content ingestion
+  await app.register(contentRoutes, { prefix: "/api/content" });
 
   // Vault routes
   await app.register(vaultRoutes, { prefix: "/api/vaults" });
