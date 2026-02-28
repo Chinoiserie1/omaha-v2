@@ -10,6 +10,8 @@ import { BacktestSummary } from "./components/BacktestSummary";
 import { PortfolioSection } from "./components/PortfolioSection";
 import { SignificantTweets } from "./components/SignificantTweets";
 
+export const dynamic = "force-dynamic";
+
 export default async function KolDetailPage({
   params,
 }: {

@@ -1,6 +1,8 @@
 import { fetchKols } from "@/lib/api";
 import { KolCard } from "./components/KolCard";
 
+export const dynamic = "force-dynamic";
+
 export default async function KolsPage() {
   let kols;
   try {

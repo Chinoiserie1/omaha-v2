@@ -1,5 +1,7 @@
 import Link from "next/link";
 
+export const dynamic = "force-dynamic";
+
 export default function Home() {
   return (
     <main className="flex min-h-[calc(100vh-57px)] flex-col items-center justify-center p-8">
