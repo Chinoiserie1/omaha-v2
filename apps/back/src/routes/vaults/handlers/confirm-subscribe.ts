@@ -1,0 +1,43 @@
+import type { FastifyReply, FastifyRequest } from "fastify";
+import * as vaultRepo from "../../../store/vault.repository.js";
+import { rebalanceKolVault } from "../../../services/rebalancer.service.js";
+import { logger } from "../../../utils/logger.js";
+
+type ConfirmSubscribeRequest = FastifyRequest<{
+  Params: { id: string };
+  Body: { txSignature: string };
+}>;
+
+export async function confirmSubscribe(
+  request: ConfirmSubscribeRequest,
+  reply: FastifyReply,
+) {
+  const { id } = request.params;
+  const { txSignature } = request.body;
+
+  if (!txSignature || typeof txSignature !== "string") {
+    return reply.status(400).send({ error: "txSignature is required" });
+  }
+
+  const vault = await vaultRepo.findVaultById(id);
+  if (!vault) {
+    return reply.status(404).send({ error: "Vault not found" });
+  }
+
+  logger.info(
+    { vaultId: id, kolId: vault.kolId, txSignature },
+    "Deposit confirmed, triggering rebalance",
+  );
+
+  // Fire rebalance asynchronously — don't block the response
+  setImmediate(() => {
+    rebalanceKolVault(vault.kolId).catch((err) => {
+      logger.error(
+        { err, vaultId: id, kolId: vault.kolId },
+        "Post-deposit rebalance failed",
+      );
+    });
+  });
+
+  return { success: true, message: "Rebalance triggered" };
+}
