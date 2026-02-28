@@ -216,6 +216,11 @@ export async function fetchTweetDetail(
       params: { pid: tweetId },
     });
 
+    logger.info(
+      { tweetId, rawResponse: JSON.stringify(response.data).slice(0, 2000) },
+      "DEBUG: /tweet raw response",
+    );
+
     return extractTweetsFromDetailResponse(response.data);
   } catch (error) {
     if (axios.isAxiosError(error) && error.response?.status === 429) {
