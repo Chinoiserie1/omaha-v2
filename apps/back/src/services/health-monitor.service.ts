@@ -97,7 +97,7 @@ function buildProbes(): Array<{ name: string; fn: () => Promise<{ status?: numbe
         params: {
           inputMint: SOL_MINT,
           outputMint: USDC_MINT,
-          amount: "1", // 1 lamport
+          amount: "1000000", // 0.001 SOL
         },
         headers: { "x-api-key": env.JUPITER_API_KEY },
         timeout: PROBE_TIMEOUT_MS,
