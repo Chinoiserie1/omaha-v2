@@ -8,7 +8,7 @@ export default function VaultLayout() {
 
   const sheetOptions = {
     presentation: "formSheet" as const,
-    sheetAllowedDetents: [0.35],
+    sheetAllowedDetents: [0.4, 0.6],
     sheetInitialDetentIndex: 0,
     sheetGrabberVisible: Platform.OS === "ios",
     contentStyle: {
