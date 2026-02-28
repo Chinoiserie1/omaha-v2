@@ -35,6 +35,7 @@
     "seed:kols": "turbo run seed:kols",
     "create-vault": "turbo run create-vault",
     "sync-tokens": "turbo run sync-tokens",
+    "sync-aliases": "turbo run sync-aliases",
     "seed-vaults": "turbo run seed-vaults",
     "start:back": "pnpm --filter @repo/back start",
     "native:clean": "pnpm --filter @repo/native clean"

@@ -62,6 +62,10 @@
     "seed-vaults": {
       "cache": false,
       "dependsOn": ["^db:generate"]
+    },
+    "sync-aliases": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
     }
   },
   "globalEnv": [
