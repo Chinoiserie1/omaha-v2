@@ -11,7 +11,7 @@ export default function Home() {
       <header className="absolute left-0 right-0 top-0 z-10">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
           <div className="flex items-center gap-2">
-            <OmahaLogo className="h-7 w-7 text-blue-400" />
+            <OmahaLogo className="h-10 w-10 text-white" />
             <span className="text-lg font-bold">Omaha</span>
           </div>
         </div>
