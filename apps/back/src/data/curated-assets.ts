@@ -13,7 +13,7 @@ export interface CuratedAsset {
   name: string;
   mint: string;
   decimals: number;
-  category: "crypto" | "stock";
+  category: "crypto" | "stock" | "index" | "commodity" | "fixed_income";
 }
 
 export const CURATED_ASSETS: CuratedAsset[] = [
@@ -26,10 +26,7 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "USDC", name: "USD Coin", mint: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", decimals: 6, category: "crypto" },
   { symbol: "USDT", name: "USDT", mint: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB", decimals: 6, category: "crypto" },
   { symbol: "ETH", name: "Ether (Portal)", mint: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs", decimals: 8, category: "crypto" },
-  { symbol: "zBTC", name: "zBTC", mint: "zBTCug3er3tLyffELcvDNrKkCymbPWysGcWihESYfLg", decimals: 8, category: "crypto" },
-  { symbol: "21BTC", name: "21.co Wrapped Bitcoin", mint: "21BTCo9hWHjGYYUQQLqjLgDBxjcn8vDt4Zic7TB3UbNE", decimals: 8, category: "crypto" },
   { symbol: "cbBTC", name: "Coinbase Wrapped BTC", mint: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij", decimals: 8, category: "crypto" },
-  { symbol: "WBTC", name: "Wrapped BTC", mint: "5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ", decimals: 8, category: "crypto" },
 
   // DeFi / Infrastructure (from aliases)
   { symbol: "JUP", name: "Jupiter", mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN", decimals: 6, category: "crypto" },
@@ -167,7 +164,6 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "CVXx", name: "Chevron", mint: "XsNNMt7WTNA2sV3jrb1NNfNgapxRF5i4i6GcnTRRHts", decimals: 8, category: "stock" },
   { symbol: "DFDVx", name: "DFDV", mint: "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy", decimals: 8, category: "stock" },
   { symbol: "DHRx", name: "Danaher", mint: "Xseo8tgCZfkHxWS9xbFYeKFyMSbWEvZGFV1Gh53GtCV", decimals: 8, category: "stock" },
-  { symbol: "GLDx", name: "Gold ETF", mint: "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re", decimals: 8, category: "stock" },
   { symbol: "GOOGLx", name: "Google", mint: "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN", decimals: 8, category: "stock" },
   { symbol: "HONx", name: "Honeywell", mint: "XsRbLZthfABAPAfumWNEJhPyiKDW6TvDVeAeW7oKqA2", decimals: 8, category: "stock" },
   { symbol: "HOODx", name: "Robinhood", mint: "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg", decimals: 8, category: "stock" },
@@ -184,9 +180,6 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "PEPx", name: "PepsiCo", mint: "Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF", decimals: 8, category: "stock" },
   { symbol: "PGx", name: "Procter & Gamble", mint: "XsYdjDjNUygZ7yGKfQaB6TxLh2gC6RRjzLtLAGJrhzV", decimals: 8, category: "stock" },
   { symbol: "PMx", name: "Philip Morris", mint: "Xsba6tUnSjDae2VcopDB6FGGDaxRrewFCDa5hKn5vT3", decimals: 8, category: "stock" },
-  { symbol: "QQQx", name: "Nasdaq 100 ETF", mint: "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ", decimals: 8, category: "stock" },
-  { symbol: "SPYx", name: "S&P 500 ETF", mint: "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W", decimals: 8, category: "stock" },
-  { symbol: "TBLLx", name: "US Treasury Bill ETF", mint: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp", decimals: 8, category: "stock" },
   { symbol: "TMOx", name: "Thermo Fisher", mint: "Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57", decimals: 8, category: "stock" },
   { symbol: "TSLAx", name: "Tesla", mint: "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB", decimals: 8, category: "stock" },
   { symbol: "UNHx", name: "UnitedHealth", mint: "XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe", decimals: 8, category: "stock" },
@@ -209,7 +202,6 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "HDon", name: "Home Depot", mint: "MtEXKVN3Pcggy8MPA3eJr15H6SK3RXheScqj9qtondo", decimals: 9, category: "stock" },
   { symbol: "IBMon", name: "IBM", mint: "C8bZkgSxXkyT1RgxByp2teJ24hgimPLoyEYoNa9ondo", decimals: 9, category: "stock" },
   { symbol: "INTCon", name: "Intel", mint: "cJpUMp5R7rZ6fGeLHbHhrRuJzK9mkyKDjZqNpT3ondo", decimals: 9, category: "stock" },
-  { symbol: "IWMon", name: "Russell 2000 ETF", mint: "dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo", decimals: 9, category: "stock" },
   { symbol: "JNJon", name: "Johnson & Johnson", mint: "KUXt7LzHWSQXp5eyqMZRxWjAP6yM8BUh4LRHwiwondo", decimals: 9, category: "stock" },
   { symbol: "JPMon", name: "JPMorgan", mint: "E5Gczsavxcomqf6Cw1sGCKLabL1xYD2FzKxVoB4ondo", decimals: 9, category: "stock" },
   { symbol: "KOon", name: "Coca-Cola", mint: "e6G4pfFcrdKxJuZ4YXixRFfMbpMvgXG2Mjcus71ondo", decimals: 9, category: "stock" },
@@ -224,15 +216,32 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "PLTRon", name: "Palantir", mint: "HfsnTS5qtdStwec9DfBrunRqnAMYMMz1kjv9Hu9ondo", decimals: 9, category: "stock" },
   { symbol: "PYPLon", name: "PayPal", mint: "hM7B3UQTTR81mS27SxDDPzBbjejmo8fnpFjzgv9ondo", decimals: 9, category: "stock" },
   { symbol: "SHOPon", name: "Shopify", mint: "ivdDracs2s7jCP698dJXKSEQdVrNj9hasJL1Uq1ondo", decimals: 9, category: "stock" },
-  { symbol: "SLVon", name: "Silver ETF", mint: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo", decimals: 9, category: "stock" },
   { symbol: "SNOWon", name: "Snowflake", mint: "JmFLCBwoNvcXy6B2VqABg6m784ubkXpaEx3p7S5ondo", decimals: 9, category: "stock" },
   { symbol: "SPOTon", name: "Spotify", mint: "jzCvs2Pk8tDcfsFRqnEMjurgaQW4iQfEkandUR8ondo", decimals: 9, category: "stock" },
-  { symbol: "TLTon", name: "Treasury Bond ETF", mint: "KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo", decimals: 9, category: "stock" },
-  { symbol: "TQQQon", name: "ProShares UltraPro QQQ", mint: "14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo", decimals: 9, category: "stock" },
   { symbol: "UBERon", name: "Uber", mint: "KJNeFW3kk3ycPjXpC6cbuyckjeYHacc2ekhtAi5ondo", decimals: 9, category: "stock" },
   { symbol: "Von", name: "Visa", mint: "kxEW4oJL75K37VeXaZF1ynbHQATQwhECQKN1374ondo", decimals: 9, category: "stock" },
-  { symbol: "VTIon", name: "Total Stock Market ETF", mint: "jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo", decimals: 9, category: "stock" },
   { symbol: "XOMon", name: "Exxon Mobil", mint: "qCYD74QnXzd9pzv6pGHQKJVwoibL6sNcPQDnpDiondo", decimals: 9, category: "stock" },
+
+  // ═══════════════════════════════════════════════
+  // INDEX ETFs
+  // ═══════════════════════════════════════════════
+  { symbol: "QQQx", name: "Nasdaq 100 ETF", mint: "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ", decimals: 8, category: "index" },
+  { symbol: "SPYx", name: "S&P 500 ETF", mint: "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W", decimals: 8, category: "index" },
+  { symbol: "IWMon", name: "Russell 2000 ETF", mint: "dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo", decimals: 9, category: "index" },
+  { symbol: "VTIon", name: "Total Stock Market ETF", mint: "jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo", decimals: 9, category: "index" },
+  { symbol: "TQQQon", name: "ProShares UltraPro QQQ", mint: "14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo", decimals: 9, category: "index" },
+
+  // ═══════════════════════════════════════════════
+  // COMMODITIES
+  // ═══════════════════════════════════════════════
+  { symbol: "GLDx", name: "Gold ETF", mint: "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re", decimals: 8, category: "commodity" },
+  { symbol: "SLVon", name: "Silver ETF", mint: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo", decimals: 9, category: "commodity" },
+
+  // ═══════════════════════════════════════════════
+  // FIXED INCOME
+  // ═══════════════════════════════════════════════
+  { symbol: "TBLLx", name: "US Treasury Bill ETF", mint: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp", decimals: 8, category: "fixed_income" },
+  { symbol: "TLTon", name: "Treasury Bond ETF", mint: "KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo", decimals: 9, category: "fixed_income" },
 ];
 
 export function getCuratedAssetSymbols(): string[] {

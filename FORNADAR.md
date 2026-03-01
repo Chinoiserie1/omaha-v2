@@ -199,3 +199,34 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 6. 24 major L1/DeFi tokens (LINK, DOGE, ONDO, etc.) remain as alias targets but are NOT in curated — not in TradeableAsset DB and mints need external verification
 
 **Result**: 543 alias entries → 287 unique targets. 187 curated assets (110 crypto + 77 stocks). All invariants pass: every curated symbol has ≥1 alias, no duplicate stock tickers.
+
+### Asset Category Expansion & BTC/Gold Dedup (Mar 2026)
+
+**Problem**: `CuratedAsset.category` only supported `"crypto" | "stock"`, but several assets were miscategorized — ETFs like QQQx/SPYx are indices, GLDx/SLVon are commodities, TBLLx/TLTon are fixed income. Additionally, 4 wrapped BTC tokens (21BTC, cbBTC, WBTC, zBTC) diluted Bitcoin exposure across the portfolio, and "bitcoin"/"btc" aliases mapped to non-existent "BTC" symbol (bug).
+
+**Changes**:
+
+1. **Category type expansion**: Added `"index" | "commodity" | "fixed_income"` to `CuratedAsset.category`. This field is metadata-only (not used in any runtime logic), making it a zero-risk change.
+
+2. **Recategorized 9 assets**:
+   - Index ETFs: QQQx, SPYx, IWMon, VTIon, TQQQon
+   - Commodities: GLDx (gold), SLVon (silver)
+   - Fixed Income: TBLLx (T-bills), TLTon (20+ year treasury)
+
+3. **BTC dedup (4 → 1)**: Jupiter liquidity comparison (swap/v1 quote, 10 SOL input):
+   - cbBTC: 0.01260841 BTC, 0% impact, 2 hops — **WINNER**
+   - zBTC: 0.01263943 BTC, 0% impact, 3 hops
+   - WBTC: 0.01262833 BTC, 0% impact, 3 hops
+   - 21BTC: 0.01272174 BTC, 0.006% impact, 3 hops
+   - cbBTC selected for: zero impact, fewest hops, Coinbase institutional backing
+   - Removed 21BTC, WBTC, zBTC from curated. All BTC-related aliases (bitcoin, btc, wbtc, zbtc, 21btc, wrapped btc) now → cbBTC
+
+4. **Gold evaluation**: GLDx (xStock gold ETF) vs $GOLD (Oro Finance) vs GLDon (Ondo):
+   - GLDon: not tradable on Jupiter (no route)
+   - $GOLD: microcap crypto token (~$0.00034/token), not gold-backed
+   - GLDx: real SPDR Gold Shares ETF — kept as winner
+   - Added `"gold"` alias → GLDx (previously only had `"gold etf"`)
+
+5. **Fixed "bitcoin"/"btc" alias bug**: These mapped to `"BTC"` which didn't exist in curated assets. Now correctly map to `"cbBTC"`.
+
+**Result**: 184 curated assets (107 crypto, 68 stock, 5 index, 2 commodity, 2 fixed_income). All invariants pass.

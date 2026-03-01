@@ -3,10 +3,7 @@ SOL,Wrapped SOL,So11111111111111111111111111111111111111112,9,crypto
 USDC,USD Coin,EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v,6,crypto
 USDT,USDT,Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB,6,crypto
 ETH,Ether (Portal),7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs,8,crypto
-zBTC,zBTC,zBTCug3er3tLyffELcvDNrKkCymbPWysGcWihESYfLg,8,crypto
-21BTC,21.co Wrapped Bitcoin,21BTCo9hWHjGYYUQQLqjLgDBxjcn8vDt4Zic7TB3UbNE,8,crypto
 cbBTC,Coinbase Wrapped BTC,cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij,8,crypto
-WBTC,Wrapped BTC,5XZw2LKTyrfvfiskJ78AMpackRjPcyCif1WhUsPDuVqQ,8,crypto
 JUP,Jupiter,JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN,6,crypto
 RAY,Raydium,4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R,6,crypto
 ORCA,Orca,orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE,6,crypto
@@ -122,7 +119,6 @@ CSCOx,Cisco,Xsr3pdLQyXvDJBFgpR5nexCEZwXvigb8wbPYp4YoNFf,8,stock
 CVXx,Chevron,XsNNMt7WTNA2sV3jrb1NNfNgapxRF5i4i6GcnTRRHts,8,stock
 DFDVx,DFDV,Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy,8,stock
 DHRx,Danaher,Xseo8tgCZfkHxWS9xbFYeKFyMSbWEvZGFV1Gh53GtCV,8,stock
-GLDx,Gold ETF,Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re,8,stock
 GOOGLx,Google,XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN,8,stock
 HONx,Honeywell,XsRbLZthfABAPAfumWNEJhPyiKDW6TvDVeAeW7oKqA2,8,stock
 HOODx,Robinhood,XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg,8,stock
@@ -139,9 +135,6 @@ ORCLx,Oracle,XsjFwUPiLofddX5cWFHW35GCbXcSu1BCUGfxoQAQjeL,8,stock
 PEPx,PepsiCo,Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF,8,stock
 PGx,Procter & Gamble,XsYdjDjNUygZ7yGKfQaB6TxLh2gC6RRjzLtLAGJrhzV,8,stock
 PMx,Philip Morris,Xsba6tUnSjDae2VcopDB6FGGDaxRrewFCDa5hKn5vT3,8,stock
-QQQx,Nasdaq 100 ETF,Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ,8,stock
-SPYx,S&P 500 ETF,XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W,8,stock
-TBLLx,US Treasury Bill ETF,XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp,8,stock
 TMOx,Thermo Fisher,Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57,8,stock
 TSLAx,Tesla,XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB,8,stock
 UNHx,UnitedHealth,XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe,8,stock
@@ -162,7 +155,6 @@ GSon,Goldman Sachs,BchJRy2snmhJZf3rQ9LJ3ePs2BGfYgfvQNo31d2ondo,9,stock
 HDon,Home Depot,MtEXKVN3Pcggy8MPA3eJr15H6SK3RXheScqj9qtondo,9,stock
 IBMon,IBM,C8bZkgSxXkyT1RgxByp2teJ24hgimPLoyEYoNa9ondo,9,stock
 INTCon,Intel,cJpUMp5R7rZ6fGeLHbHhrRuJzK9mkyKDjZqNpT3ondo,9,stock
-IWMon,Russell 2000 ETF,dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo,9,stock
 JNJon,Johnson & Johnson,KUXt7LzHWSQXp5eyqMZRxWjAP6yM8BUh4LRHwiwondo,9,stock
 JPMon,JPMorgan,E5Gczsavxcomqf6Cw1sGCKLabL1xYD2FzKxVoB4ondo,9,stock
 KOon,Coca-Cola,e6G4pfFcrdKxJuZ4YXixRFfMbpMvgXG2Mjcus71ondo,9,stock
@@ -177,12 +169,17 @@ PFEon,Pfizer,Gwh9fPsX1qWATXy63vNaJnAFfwebWQtZaVmPko6ondo,9,stock
 PLTRon,Palantir,HfsnTS5qtdStwec9DfBrunRqnAMYMMz1kjv9Hu9ondo,9,stock
 PYPLon,PayPal,hM7B3UQTTR81mS27SxDDPzBbjejmo8fnpFjzgv9ondo,9,stock
 SHOPon,Shopify,ivdDracs2s7jCP698dJXKSEQdVrNj9hasJL1Uq1ondo,9,stock
-SLVon,Silver ETF,iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo,9,stock
 SNOWon,Snowflake,JmFLCBwoNvcXy6B2VqABg6m784ubkXpaEx3p7S5ondo,9,stock
 SPOTon,Spotify,jzCvs2Pk8tDcfsFRqnEMjurgaQW4iQfEkandUR8ondo,9,stock
-TLTon,Treasury Bond ETF,KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo,9,stock
-TQQQon,ProShares UltraPro QQQ,14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo,9,stock
 UBERon,Uber,KJNeFW3kk3ycPjXpC6cbuyckjeYHacc2ekhtAi5ondo,9,stock
 Von,Visa,kxEW4oJL75K37VeXaZF1ynbHQATQwhECQKN1374ondo,9,stock
-VTIon,Total Stock Market ETF,jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo,9,stock
 XOMon,Exxon Mobil,qCYD74QnXzd9pzv6pGHQKJVwoibL6sNcPQDnpDiondo,9,stock
+QQQx,Nasdaq 100 ETF,Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ,8,index
+SPYx,S&P 500 ETF,XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W,8,index
+IWMon,Russell 2000 ETF,dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo,9,index
+VTIon,Total Stock Market ETF,jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo,9,index
+TQQQon,ProShares UltraPro QQQ,14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo,9,index
+GLDx,Gold ETF,Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re,8,commodity
+SLVon,Silver ETF,iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo,9,commodity
+TBLLx,US Treasury Bill ETF,XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp,8,fixed_income
+TLTon,Treasury Bond ETF,KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo,9,fixed_income
