@@ -26,7 +26,7 @@ import {
 } from "@expo-google-fonts/space-grotesk";
 
 // Set native root background to dark before React mounts (prevents white flash)
-SystemUI.setBackgroundColorAsync("#0A0F1E");
+SystemUI.setBackgroundColorAsync("#0F172A");
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -96,7 +96,7 @@ function RootNavigator() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#0A0F1E" },
+          contentStyle: { backgroundColor: "#0F172A" },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
@@ -129,8 +129,8 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#0A0F1E", alignItems: "center", justifyContent: "center" }}>
-        <ActivityIndicator size="large" color="#0070FF" />
+      <View style={{ flex: 1, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
   }

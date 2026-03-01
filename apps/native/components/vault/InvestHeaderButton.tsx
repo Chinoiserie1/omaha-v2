@@ -61,7 +61,7 @@ export function InvestHeaderButton({ onPress }: InvestHeaderButtonProps) {
             left: -4,
             right: -4,
             borderRadius: 14,
-            backgroundColor: "#34d399",
+            backgroundColor: "#14B8A6",
           },
           glowStyle,
         ]}
@@ -76,7 +76,7 @@ export function InvestHeaderButton({ onPress }: InvestHeaderButtonProps) {
             flexDirection: "row",
             alignItems: "center",
             gap: 4,
-            backgroundColor: "#059669",
+            backgroundColor: "#14B8A6",
             paddingHorizontal: 10,
             paddingVertical: 6,
             borderRadius: 10,
@@ -84,8 +84,8 @@ export function InvestHeaderButton({ onPress }: InvestHeaderButtonProps) {
           buttonStyle,
         ]}
       >
-        <Ionicons name="flash" size={12} color="#ffffff" />
-        <Text style={{ color: "#ffffff", fontWeight: "600", fontSize: 12 }}>
+        <Ionicons name="flash" size={12} color="#F8FAFC" />
+        <Text style={{ color: "#F8FAFC", fontWeight: "600", fontSize: 12 }}>
           Invest
         </Text>
       </AnimatedPressable>

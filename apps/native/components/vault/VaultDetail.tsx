@@ -149,7 +149,7 @@ function buildSections(vault: VaultData): VaultSection[] {
 function SectionHeader({ title }: { title: string }) {
   return (
     <View className="px-5 pt-4 pb-2">
-      <Text className="text-xs font-semibold tracking-wider uppercase text-zinc-500">
+      <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
         {title}
       </Text>
     </View>
@@ -159,7 +159,7 @@ function SectionHeader({ title }: { title: string }) {
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
   const queryClient = useQueryClient();
-  const iconColor = "#FAFAFA";
+  const iconColor = "#F8FAFC";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -188,7 +188,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         );
       case "description":
         return (
-          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-400">
+          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-muted-foreground">
             {item.data}
           </Text>
         );
@@ -253,16 +253,16 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={onBack}
-          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-900 active:bg-zinc-800"
+          className="justify-center items-center w-10 h-10 rounded-full bg-card active:bg-secondary"
         >
           <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
         <Text
-          className="flex-1 ml-3 text-base font-semibold text-white"
+          className="flex-1 ml-3 text-base font-semibold text-foreground"
           numberOfLines={1}
         >
           {vault?.name ?? ""}
@@ -276,14 +276,14 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         </View>
       ) : error ? (
         <View className="flex-1 justify-center items-center px-6">
-          <Text className="mb-4 text-base text-center text-zinc-400">
+          <Text className="mb-4 text-base text-center text-muted-foreground">
             {error.message}
           </Text>
           <Pressable
             className="px-6 py-3 bg-white rounded-lg active:opacity-80"
             onPress={() => refetch()}
           >
-            <Text className="font-semibold text-zinc-950">Try Again</Text>
+            <Text className="font-semibold text-background">Try Again</Text>
           </Pressable>
         </View>
       ) : (

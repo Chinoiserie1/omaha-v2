@@ -52,23 +52,23 @@ export function ExpandableTokenList({ items }: ExpandableTokenListProps) {
   if (items.length === 0) return null;
 
   return (
-    <View className="border-t border-zinc-800 pt-3">
+    <View className="border-t border-border pt-3">
       <Pressable
         onPress={toggleExpanded}
         className="flex-row items-center justify-between py-2"
       >
         <View className="flex-row items-center gap-2">
-          <Text className="text-xs uppercase tracking-wider text-zinc-400">
+          <Text className="text-xs uppercase tracking-wider text-muted-foreground">
             Tokens
           </Text>
-          <View className="bg-zinc-700 rounded-full px-2 py-0.5">
-            <Text className="text-[10px] font-semibold text-zinc-300">
+          <View className="bg-secondary rounded-full px-2 py-0.5">
+            <Text className="text-[10px] font-semibold text-muted-foreground">
               {items.length}
             </Text>
           </View>
         </View>
         <Animated.View style={chevronStyle}>
-          <Ionicons name="chevron-forward" size={14} color="#71717A" />
+          <Ionicons name="chevron-forward" size={14} color="#94A3B8" />
         </Animated.View>
       </Pressable>
 
@@ -78,7 +78,7 @@ export function ExpandableTokenList({ items }: ExpandableTokenListProps) {
             key={item.type === "vault" ? item.vaultId : item.mint}
             className={`flex-row items-center justify-between py-2.5 ${
               index < items.length - 1
-                ? "border-b border-zinc-800/50"
+                ? "border-b border-border/50"
                 : ""
             }`}
           >
@@ -87,21 +87,21 @@ export function ExpandableTokenList({ items }: ExpandableTokenListProps) {
                 className={`w-6 h-6 rounded-full items-center justify-center ${
                   item.type === "vault"
                     ? "bg-emerald-500/20"
-                    : "bg-zinc-700"
+                    : "bg-secondary"
                 }`}
               >
-                <Text className="text-[10px] font-bold text-zinc-300">
+                <Text className="text-[10px] font-bold text-muted-foreground">
                   {item.type === "vault" ? "V" : item.symbol.slice(0, 2)}
                 </Text>
               </View>
               <Text
-                className="text-sm text-white"
+                className="text-sm text-foreground"
                 numberOfLines={1}
               >
                 {getItemName(item)}
               </Text>
             </View>
-            <Text className="text-sm font-semibold text-white">
+            <Text className="text-sm font-semibold text-foreground">
               {formatUsd(item.valueUsd)}
             </Text>
           </View>

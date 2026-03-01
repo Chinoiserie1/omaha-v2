@@ -28,9 +28,9 @@ export function UserForm() {
   return (
     <>
       <View className="gap-3">
-        <Text className="text-base font-medium text-gray-900">Email</Text>
+        <Text className="text-base font-medium text-foreground">Email</Text>
         <TextInput
-          className="border border-gray-300 rounded-lg p-3 text-base"
+          className="border border-border rounded-lg p-3 text-base"
           value={email}
           onChangeText={setEmail}
           placeholder="user@example.com"
@@ -38,21 +38,21 @@ export function UserForm() {
           autoCapitalize="none"
         />
 
-        <Text className="text-base font-medium text-gray-900">
+        <Text className="text-base font-medium text-foreground">
           Name (optional)
         </Text>
         <TextInput
-          className="border border-gray-300 rounded-lg p-3 text-base"
+          className="border border-border rounded-lg p-3 text-base"
           value={name}
           onChangeText={setName}
           placeholder="John Doe"
         />
 
         <Pressable
-          className="bg-blue-600 p-4 rounded-lg items-center active:bg-blue-700"
+          className="bg-primary p-4 rounded-lg items-center active:opacity-80"
           onPress={handleValidate}
         >
-          <Text className="text-white font-semibold text-base">
+          <Text className="text-primary-foreground font-semibold text-base">
             Validate with Zod
           </Text>
         </Pressable>

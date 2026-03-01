@@ -17,14 +17,14 @@ export const VaultThesis = memo(function VaultThesis({
   });
 
   return (
-    <View className="mx-5 bg-zinc-900 border border-zinc-800 rounded-xl p-4">
+    <View className="mx-5 bg-card border border-border rounded-xl p-4">
       <View className="flex-row items-center justify-between mb-3">
-        <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           Investment Thesis
         </Text>
-        <Text className="text-[10px] text-zinc-600">{date}</Text>
+        <Text className="text-[10px] text-muted-foreground">{date}</Text>
       </View>
-      <Text className="text-sm text-zinc-300 leading-5">{thesisSummary}</Text>
+      <Text className="text-sm text-muted-foreground leading-5">{thesisSummary}</Text>
     </View>
   );
 });

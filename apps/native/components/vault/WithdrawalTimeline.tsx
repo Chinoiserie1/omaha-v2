@@ -59,10 +59,10 @@ function formatTimestamp(ts: string | null): string {
 }
 
 const ICON_MAP = {
-  done: { name: "checkmark-circle" as const, color: "#10b981" },
+  done: { name: "checkmark-circle" as const, color: "#14B8A6" },
   current: { name: "time" as const, color: "#f59e0b" },
-  pending: { name: "ellipse-outline" as const, color: "#71717a" },
-  failed: { name: "close-circle" as const, color: "#ef4444" },
+  pending: { name: "ellipse-outline" as const, color: "#94A3B8" },
+  failed: { name: "close-circle" as const, color: "#EF4444" },
 };
 
 export function WithdrawalTimeline({
@@ -111,7 +111,7 @@ export function WithdrawalTimeline({
                     className="my-1 w-[2px] flex-1"
                     style={{
                       backgroundColor:
-                        state === "done" ? "#10b981" : "#3f3f46",
+                        state === "done" ? "#14B8A6" : "#334155",
                       minHeight: 20,
                     }}
                   />
@@ -141,7 +141,7 @@ export function WithdrawalTimeline({
                     <Ionicons
                       name="hourglass-outline"
                       size={12}
-                      color="#f59e0b"
+                      color="#F59E0B"
                     />
                     <Text className="ml-1 text-xs font-medium text-amber-400">
                       Claimable in ~{formatCountdown(remaining)}

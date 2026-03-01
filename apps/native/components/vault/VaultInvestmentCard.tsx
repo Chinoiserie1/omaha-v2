@@ -42,7 +42,7 @@ function NotInvestedState({ onInvest }: { onInvest: () => void }) {
           className="bg-emerald-600 active:bg-emerald-700"
           size="lg"
         >
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-semibold text-foreground">
             Invest Now
           </Text>
         </Button>
@@ -103,7 +103,7 @@ function InvestedState({
             onPress={onInvest}
             className="flex-1 bg-emerald-600 active:bg-emerald-700"
           >
-            <Text className="text-sm font-semibold text-white">
+            <Text className="text-sm font-semibold text-foreground">
               Invest More
             </Text>
           </Button>
@@ -206,7 +206,7 @@ function QueuedWithdrawalState({
             {claimMutation.isPending ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-base font-semibold text-white">
+              <Text className="text-base font-semibold text-foreground">
                 Claim Funds
               </Text>
             )}
@@ -273,7 +273,7 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
     return (
       <Card className="mx-5 mt-4 items-center">
         <CardContent>
-          <ActivityIndicator size="small" color="#71717A" />
+          <ActivityIndicator size="small" color="#94A3B8" />
         </CardContent>
       </Card>
     );

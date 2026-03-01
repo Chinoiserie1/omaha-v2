@@ -104,7 +104,7 @@ export function InvestScreen({
         <Label nativeID="amount-label">Amount (USDC)</Label>
         <View className="flex-row items-center">
           {loadingBalance ? (
-            <ActivityIndicator size="small" color="#71717A" />
+            <ActivityIndicator size="small" color="#94A3B8" />
           ) : (
             <Text className="text-xs text-muted-foreground">
               Balance:{" "}
@@ -126,7 +126,7 @@ export function InvestScreen({
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
-        placeholderTextColor="#A1A1AA"
+        placeholderTextColor="#94A3B8"
         keyboardType="decimal-pad"
         editable={!subscribeMutation.isPending}
         aria-labelledby="amount-label"
@@ -152,7 +152,7 @@ export function InvestScreen({
         {subscribeMutation.isPending ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-semibold text-foreground">
             {!wallet
               ? "Wallet not ready"
               : !isValidAmount

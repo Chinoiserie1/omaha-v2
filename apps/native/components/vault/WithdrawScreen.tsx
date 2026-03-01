@@ -135,7 +135,7 @@ export function WithdrawScreen({
         {activeWithdrawal.status === "CLAIMED" && (
           <View className="mx-5 mt-4">
             <Button variant="classic" onPress={onClose} size="lg">
-              <Text className="text-base font-semibold text-white">Done</Text>
+              <Text className="text-base font-semibold text-foreground">Done</Text>
             </Button>
           </View>
         )}
@@ -169,7 +169,7 @@ export function WithdrawScreen({
         <Label nativeID="share-amount-label">Amount (Shares)</Label>
         <View className="flex-row items-center">
           {loadingBalance ? (
-            <ActivityIndicator size="small" color="#71717A" />
+            <ActivityIndicator size="small" color="#94A3B8" />
           ) : (
             <Text className="text-xs text-muted-foreground">
               Balance:{" "}
@@ -194,7 +194,7 @@ export function WithdrawScreen({
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
-        placeholderTextColor="#A1A1AA"
+        placeholderTextColor="#94A3B8"
         keyboardType="decimal-pad"
         editable={!requestMutation.isPending}
         aria-labelledby="share-amount-label"
@@ -220,7 +220,7 @@ export function WithdrawScreen({
         {requestMutation.isPending ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-semibold text-foreground">
             {!wallet
               ? "Wallet not ready"
               : !isValidAmount

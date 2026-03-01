@@ -126,7 +126,7 @@ export function WithdrawForm() {
         value={recipient}
         onChangeText={setRecipient}
         placeholder="Solana address..."
-        placeholderTextColor="#71717A"
+        placeholderTextColor="#94A3B8"
         autoCapitalize="none"
         autoCorrect={false}
         aria-labelledby="recipient-label"
@@ -140,7 +140,7 @@ export function WithdrawForm() {
         value={amount}
         onChangeText={setAmount}
         placeholder="0.00"
-        placeholderTextColor="#71717A"
+        placeholderTextColor="#94A3B8"
         keyboardType="decimal-pad"
         aria-labelledby="sol-amount-label"
       />

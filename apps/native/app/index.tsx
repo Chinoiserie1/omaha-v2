@@ -181,7 +181,7 @@ export default function LandingScreen() {
     return (
       <GradientBackground>
         <SafeAreaView style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0070FF" />
+          <ActivityIndicator size="large" color="#3B82F6" />
         </SafeAreaView>
       </GradientBackground>
     );
@@ -233,7 +233,7 @@ export default function LandingScreen() {
               activeOpacity={0.6}
             >
               {isCreatingGuest ? (
-                <ActivityIndicator color="#64748B" />
+                <ActivityIndicator color="#94A3B8" />
               ) : (
                 <Text style={styles.guestButtonText}>Continue as Guest</Text>
               )}
@@ -270,14 +270,14 @@ const styles = StyleSheet.create({
     marginBottom: 28,
   },
   heading: {
-    color: "#FFFFFF",
+    color: "#F8FAFC",
     fontSize: 32,
     fontFamily: "SpaceGrotesk_700Bold",
     textAlign: "center",
     lineHeight: 40,
   },
   description: {
-    color: "#CBD5E1",
+    color: "#94A3B8",
     fontSize: 16,
     fontFamily: "SpaceGrotesk_400Regular",
     textAlign: "center",
@@ -292,13 +292,13 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     padding: 16,
-    backgroundColor: "rgba(127,29,29,0.5)",
+    backgroundColor: "rgba(239,68,68,0.1)",
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: "rgba(239,68,68,0.3)",
+    borderColor: "rgba(239,68,68,0.2)",
   },
   errorText: {
-    color: "#FCA5A5",
+    color: "#EF4444",
     fontSize: 14,
     fontFamily: "SpaceGrotesk_400Regular",
     textAlign: "center",
@@ -309,10 +309,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 12,
-    backgroundColor: "#0070FF",
+    backgroundColor: "#3B82F6",
   },
   retryButtonText: {
-    color: "#FFFFFF",
+    color: "#F8FAFC",
     fontSize: 14,
     fontFamily: "SpaceGrotesk_600SemiBold",
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
     textAlign: "center",
   },
   footerText: {
-    color: "#64748B",
+    color: "#94A3B8",
     fontSize: 12,
     fontFamily: "SpaceGrotesk_400Regular",
     textAlign: "center",

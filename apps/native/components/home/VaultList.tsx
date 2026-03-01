@@ -43,7 +43,7 @@ export function VaultList() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <ActivityIndicator size="large" color="#FAFAFA" />
+        <ActivityIndicator size="large" color="#F8FAFC" />
       </View>
     );
   }
@@ -51,14 +51,14 @@ export function VaultList() {
   if (error) {
     return (
       <View className="flex-1 items-center justify-center py-20 px-6">
-        <Text className="text-base text-zinc-400 text-center mb-4">
+        <Text className="text-base text-muted-foreground text-center mb-4">
           {error.message}
         </Text>
         <TouchableOpacity
-          className="bg-white py-3 px-6 rounded-lg"
+          className="bg-primary py-3 px-6 rounded-lg"
           onPress={() => refetch()}
         >
-          <Text className="text-zinc-950 font-semibold">
+          <Text className="text-primary-foreground font-semibold">
             Try Again
           </Text>
         </TouchableOpacity>
@@ -69,7 +69,7 @@ export function VaultList() {
   if (!vaults || vaults.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Text className="text-base text-zinc-400 text-center">
+        <Text className="text-base text-muted-foreground text-center">
           No vaults available
         </Text>
       </View>

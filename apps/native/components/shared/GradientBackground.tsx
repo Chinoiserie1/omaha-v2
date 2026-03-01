@@ -14,7 +14,7 @@ export function GradientBackground({
   return (
     <View style={[styles.container, style]}>
       <LinearGradient
-        colors={["#0F172A", "#111827", "#2563EB"]}
+        colors={["#0F172A", "#1E293B", "#3B82F6"]}
         locations={[0, 0.4, 1]}
         style={StyleSheet.absoluteFill}
       />

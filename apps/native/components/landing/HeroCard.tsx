@@ -13,7 +13,7 @@ export function HeroCard() {
 
       {/* Blue gradient overlay */}
       <LinearGradient
-        colors={["rgba(0,112,255,0.7)", "rgba(30,64,175,0.3)"]}
+        colors={["rgba(59,130,246,0.7)", "rgba(30,64,175,0.3)"]}
         start={{ x: 0, y: 0 }}
         end={{ x: 1, y: 1 }}
         style={StyleSheet.absoluteFill}
@@ -47,12 +47,12 @@ const styles = StyleSheet.create({
   card: {
     width: 320,
     height: 320,
-    backgroundColor: "#0F172A",
+    backgroundColor: "#1E293B",
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.1)",
+    borderColor: "#334155",
     overflow: "hidden",
-    shadowColor: "#0070FF",
+    shadowColor: "#3B82F6",
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 20,
@@ -68,7 +68,7 @@ const styles = StyleSheet.create({
     bottom: 16,
     left: 16,
     right: 16,
-    backgroundColor: "rgba(15,23,42,0.9)",
+    backgroundColor: "rgba(30,41,59,0.9)",
     borderRadius: 16,
     padding: 14,
     gap: 10,
@@ -82,15 +82,15 @@ const styles = StyleSheet.create({
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: "rgba(0,112,255,0.3)",
+    backgroundColor: "rgba(59,130,246,0.2)",
     borderWidth: 1,
-    borderColor: "rgba(0,112,255,0.5)",
+    borderColor: "rgba(59,130,246,0.4)",
   },
   infoText: {
     flex: 1,
   },
   kolName: {
-    color: "#FFFFFF",
+    color: "#F8FAFC",
     fontSize: 14,
     fontFamily: "SpaceGrotesk_600SemiBold",
   },
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   statValue: {
-    color: "#FFFFFF",
+    color: "#F8FAFC",
     fontSize: 14,
     fontFamily: "SpaceGrotesk_700Bold",
   },

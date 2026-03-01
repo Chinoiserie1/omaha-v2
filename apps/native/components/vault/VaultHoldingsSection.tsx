@@ -13,7 +13,7 @@ export function VaultHoldingsSection({ vaultId }: VaultHoldingsSectionProps) {
   if (isLoading) {
     return (
       <View className="items-center py-6">
-        <ActivityIndicator size="small" color="#a1a1aa" />
+        <ActivityIndicator size="small" color="#94A3B8" />
       </View>
     );
   }
@@ -21,7 +21,7 @@ export function VaultHoldingsSection({ vaultId }: VaultHoldingsSectionProps) {
   if (error || !data) {
     return (
       <View className="mx-5 py-4">
-        <Text className="text-sm text-zinc-500">
+        <Text className="text-sm text-muted-foreground">
           Unable to load on-chain holdings.
         </Text>
       </View>
@@ -35,10 +35,10 @@ export function VaultHoldingsSection({ vaultId }: VaultHoldingsSectionProps) {
   return (
     <View>
       <View className="flex-row items-center justify-between px-5 pb-2 pt-4">
-        <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500">
+        <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
           On-Chain Holdings
         </Text>
-        <Text className="text-xs text-zinc-500">
+        <Text className="text-xs text-muted-foreground">
           {formatUsd(data.totalEquityUsd)}
         </Text>
       </View>
