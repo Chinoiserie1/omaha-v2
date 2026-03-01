@@ -15,7 +15,8 @@
     "sync-tokens": "tsx src/scripts/sync-jupiter-tokens.ts",
     "seed-vaults": "tsx src/scripts/seed-vaults.ts",
     "sync-aliases": "tsx --env-file=../../.env src/scripts/sync-asset-aliases.ts",
-    "seed-stocks": "tsx --env-file=../../.env src/scripts/seed-stock-tokens.ts"
+    "seed-stocks": "tsx --env-file=../../.env src/scripts/seed-stock-tokens.ts",
+    "backfill-algo-all": "tsx --env-file=../../.env src/scripts/backfill-and-run-algo-all.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

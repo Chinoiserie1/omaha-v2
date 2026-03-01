@@ -70,6 +70,10 @@
     "seed-stocks": {
       "cache": false,
       "dependsOn": ["^db:generate"]
+    },
+    "backfill-algo-all": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
     }
   },
   "globalEnv": [

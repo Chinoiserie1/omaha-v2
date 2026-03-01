@@ -270,6 +270,92 @@ export async function addTweetByUrl(
   return { kol: freshKol ?? kol, tweet };
 }
 
+export async function backfillKolTweets(
+  kolId: string,
+  maxPages: number,
+): Promise<{ totalUpserted: number; oldestDate: Date | null }> {
+  const kol = await kolRepo.findKolById(kolId);
+  if (!kol) {
+    throw new Error(`KOL "${kolId}" not found`);
+  }
+
+  if (!kol.restId) {
+    await syncKolProfile(kolId);
+    const updated = await kolRepo.findKolById(kolId);
+    if (!updated?.restId) {
+      throw new Error(
+        `KOL "${kol.username}" has no restId and profile sync failed`,
+      );
+    }
+    kol.restId = updated.restId;
+  }
+
+  logger.info(
+    { username: kol.username, restId: kol.restId, maxPages },
+    "Starting tweet backfill",
+  );
+
+  let cursor: string | null = null;
+  let totalUpserted = 0;
+  let oldestDate: Date | null = null;
+
+  for (let page = 1; page <= maxPages; page++) {
+    if (page > 1) {
+      await delay(env.FETCH_DELAY_MS);
+    }
+
+    const result = await twitterService.fetchUserTweets(
+      kol.restId,
+      cursor ?? undefined,
+    );
+
+    if (result.tweets.length === 0) {
+      logger.info({ page }, "No tweets returned, stopping backfill");
+      break;
+    }
+
+    let pageUpserted = 0;
+    for (const tweet of result.tweets) {
+      const input = mapTweetResultToInput(tweet, kol.id);
+      await tweetRepo.upsertTweet(input);
+      pageUpserted++;
+
+      const tweetDate = new Date(tweet.legacy.created_at);
+      if (!oldestDate || tweetDate < oldestDate) {
+        oldestDate = tweetDate;
+      }
+    }
+
+    totalUpserted += pageUpserted;
+    logger.info(
+      {
+        page,
+        pageUpserted,
+        totalUpserted,
+        oldest: oldestDate?.toISOString(),
+      },
+      "Backfill page complete",
+    );
+
+    cursor = result.cursor;
+    if (!cursor) {
+      logger.info("No more pages (cursor exhausted)");
+      break;
+    }
+  }
+
+  logger.info(
+    {
+      username: kol.username,
+      totalUpserted,
+      oldest: oldestDate?.toISOString() ?? "N/A",
+    },
+    "Backfill complete",
+  );
+
+  return { totalUpserted, oldestDate };
+}
+
 export async function syncAllKols(): Promise<void> {
   const kols = await kolRepo.findActiveKols();
   logger.info({ count: kols.length }, "Starting sync for all active KOLs");

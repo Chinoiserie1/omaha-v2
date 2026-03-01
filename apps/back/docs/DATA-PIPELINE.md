@@ -217,6 +217,51 @@ CRON_SYNC_PROFILES=0 0 * * *        # Daily
 CRON_HEALTH_CHECK=*/5 * * * *        # Every 5 minutes
 ```
 
+## One-Off Scripts
+
+### Backfill + Run Algo for All KOLs
+
+Backfills historical tweets and runs the full algo (classify + synthesize thesis) for every active Twitter KOL. Processes KOLs sequentially so if interrupted, earlier KOLs are fully done.
+
+```bash
+# From repo root — load env then run
+set -a && source .env && set +a && cd apps/back && npx tsx src/scripts/backfill-and-run-algo-all.ts
+
+# Custom page count (default: 10)
+npx tsx src/scripts/backfill-and-run-algo-all.ts 20
+
+# Skip backfill (only classify + thesis on existing tweets)
+npx tsx src/scripts/backfill-and-run-algo-all.ts --skip-backfill
+
+# Skip algo (only backfill tweets, no classification/thesis)
+npx tsx src/scripts/backfill-and-run-algo-all.ts --skip-algo
+```
+
+**How pages work**: The Twitter241 API requests 40 tweets per page, but after filtering out retweets and replies, each page yields ~15-21 original tweets. Pagination uses a cursor — each response includes a cursor to the next page of older tweets.
+
+| Pages | Estimated tweets per KOL | Time per KOL |
+|-------|--------------------------|--------------|
+| 5     | ~80-100                  | ~2-3 min     |
+| 10    | ~150-200                 | ~4-5 min     |
+| 20    | ~300-400                 | ~8-10 min    |
+| 50    | ~700-1000                | ~20-25 min   |
+
+Total time scales with number of KOLs × pages. The algo phase (classify + thesis) adds ~1-2 min per KOL on top of backfill time.
+
+**Error handling**: Errors are isolated per KOL (one failure doesn't stop the batch), except rate limits which abort immediately. A summary is printed at the end.
+
+### Backfill Tweets for One KOL
+
+```bash
+set -a && source .env && set +a && cd apps/back && npx tsx src/scripts/backfill-tweets.ts <username> [maxPages]
+```
+
+### Run Algo for One KOL
+
+```bash
+set -a && source .env && set +a && cd apps/back && npx tsx src/scripts/run-algo-one-kol.ts <username>
+```
+
 ## Failure Modes
 
 | Failure | Impact | Recovery |
