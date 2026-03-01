@@ -74,3 +74,16 @@ import type {
 
 export type VaultHoldingWithPctDto = z.infer<typeof vaultHoldingWithPctSchema>;
 export type VaultHoldingsResponseDto = z.infer<typeof vaultHoldingsResponseSchema>;
+
+// Withdrawal DTOs
+import type {
+  createWithdrawalSchema,
+  claimWithdrawalSchema,
+  confirmClaimSchema,
+  retryWithdrawalSchema,
+} from "../schemas/index.js";
+
+export type CreateWithdrawalDto = z.infer<typeof createWithdrawalSchema>;
+export type ClaimWithdrawalDto = z.infer<typeof claimWithdrawalSchema>;
+export type ConfirmClaimDto = z.infer<typeof confirmClaimSchema>;
+export type RetryWithdrawalDto = z.infer<typeof retryWithdrawalSchema>;

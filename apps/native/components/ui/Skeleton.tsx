@@ -1,42 +1,18 @@
+import { cn } from "@/lib/utils";
+import { memo } from "react";
 import { View } from "react-native";
-import { memo, useEffect } from "react";
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withRepeat,
-  withTiming,
-} from "react-native-reanimated";
 
-interface SkeletonProps {
-  width?: number | `${number}%`;
-  height?: number | `${number}%`;
-  borderRadius?: number;
-  className?: string;
-}
-
-export const Skeleton = memo(function Skeleton({
-  width = "100%",
-  height = 20,
-  borderRadius = 8,
-  className = "bg-zinc-800",
-}: SkeletonProps) {
-  const opacity = useSharedValue(0.3);
-
-  useEffect(() => {
-    opacity.value = withRepeat(withTiming(1, { duration: 1000 }), -1, true);
-  }, [opacity]);
-
-  const animatedStyle = useAnimatedStyle(() => ({
-    opacity: opacity.value,
-  }));
-
+function Skeleton({
+  className,
+  ...props
+}: React.ComponentProps<typeof View> & React.RefAttributes<View>) {
   return (
-    <Animated.View
-      style={[{ width, height, borderRadius }, animatedStyle]}
-      className={className}
+    <View
+      className={cn("bg-accent animate-pulse rounded-md", className)}
+      {...props}
     />
   );
-});
+}
 
 interface ChartSkeletonProps {
   width?: number;
@@ -44,7 +20,7 @@ interface ChartSkeletonProps {
   className?: string;
 }
 
-export const ChartSkeleton = memo(function ChartSkeleton({
+const ChartSkeleton = memo(function ChartSkeleton({
   width,
   height = 200,
   className = "",
@@ -52,13 +28,21 @@ export const ChartSkeleton = memo(function ChartSkeleton({
   return (
     <View
       className={className}
-      style={[{ width: width ?? "100%", height, justifyContent: "flex-end" }]}
+      style={[
+        { width: width ?? "100%", height, justifyContent: "flex-end" },
+      ]}
     >
-      <View style={{ flex: 1, justifyContent: "center", paddingHorizontal: 8 }}>
-        <Skeleton width="85%" height={2} borderRadius={1} className="bg-zinc-700 mb-4" />
-        <Skeleton width="60%" height={2} borderRadius={1} className="bg-zinc-700 mb-4" />
-        <Skeleton width="75%" height={2} borderRadius={1} className="bg-zinc-700 mb-4" />
-        <Skeleton width="50%" height={2} borderRadius={1} className="bg-zinc-700" />
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          paddingHorizontal: 8,
+        }}
+      >
+        <Skeleton className="bg-muted mb-4 h-[2px] w-[85%]" />
+        <Skeleton className="bg-muted mb-4 h-[2px] w-[60%]" />
+        <Skeleton className="bg-muted mb-4 h-[2px] w-[75%]" />
+        <Skeleton className="bg-muted h-[2px] w-[50%]" />
       </View>
 
       <View
@@ -69,11 +53,13 @@ export const ChartSkeleton = memo(function ChartSkeleton({
           paddingTop: 12,
         }}
       >
-        <Skeleton width={28} height={10} borderRadius={4} className="bg-zinc-700" />
-        <Skeleton width={28} height={10} borderRadius={4} className="bg-zinc-700" />
-        <Skeleton width={28} height={10} borderRadius={4} className="bg-zinc-700" />
-        <Skeleton width={28} height={10} borderRadius={4} className="bg-zinc-700" />
+        <Skeleton className="bg-muted h-[10px] w-[28px] rounded" />
+        <Skeleton className="bg-muted h-[10px] w-[28px] rounded" />
+        <Skeleton className="bg-muted h-[10px] w-[28px] rounded" />
+        <Skeleton className="bg-muted h-[10px] w-[28px] rounded" />
       </View>
     </View>
   );
 });
+
+export { ChartSkeleton, Skeleton };

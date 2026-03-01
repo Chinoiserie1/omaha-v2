@@ -11,7 +11,15 @@ import { profileRoutes } from "./routes/profile/index.js";
 import { followRoutes } from "./routes/follows/index.js";
 import { walletRoutes } from "./routes/wallet/index.js";
 import { contentRoutes } from "./routes/content/index.js";
+import { withdrawalRoutes } from "./routes/withdrawals/index.js";
 import { cronPlugin } from "./cron/index.js";
+import { registerWebSocket } from "./infra/websocket.js";
+import { connectRedis, closeRedis } from "./infra/redis.js";
+import {
+  startWithdrawalWorker,
+  stopWithdrawalWorker,
+} from "./queue/withdrawal-worker.js";
+import { closeWithdrawalQueue } from "./queue/withdrawal-queue.js";
 export async function buildApp() {
   const app = Fastify({
     logger: { level: "info" },
@@ -51,8 +59,29 @@ export async function buildApp() {
   // Wallet routes
   await app.register(walletRoutes, { prefix: "/api/wallet" });
 
+  // Withdrawal routes (queued)
+  await app.register(withdrawalRoutes, { prefix: "/api/withdrawals" });
+
+  // WebSocket for real-time withdrawal updates
+  await registerWebSocket(app);
+
+  // Redis + BullMQ withdrawal worker
+  const redisConnected = await connectRedis();
+  if (redisConnected) {
+    startWithdrawalWorker();
+  } else {
+    app.log.warn("Redis not available — withdrawal worker not started");
+  }
+
   // Cron jobs
   await app.register(cronPlugin);
+
+  // Graceful shutdown
+  app.addHook("onClose", async () => {
+    await stopWithdrawalWorker();
+    await closeWithdrawalQueue();
+    await closeRedis();
+  });
 
   return app;
 }

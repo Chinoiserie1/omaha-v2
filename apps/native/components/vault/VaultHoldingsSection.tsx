@@ -1,13 +1,10 @@
 import { View, Text, ActivityIndicator } from "react-native";
 import { useVaultHoldings } from "../../hooks/queries/use-vault-holdings";
 import { VaultHoldingCard } from "./VaultHoldingCard";
+import { formatUsd } from "../../lib/format";
 
 interface VaultHoldingsSectionProps {
   vaultId: string;
-}
-
-function formatUsd(value: number): string {
-  return `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function VaultHoldingsSection({ vaultId }: VaultHoldingsSectionProps) {

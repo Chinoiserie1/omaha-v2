@@ -1,17 +1,13 @@
 import { useState } from "react";
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-} from "react-native";
+import { View, ActivityIndicator } from "react-native";
 import { useLoginWithEmail, useLinkEmail } from "@privy-io/expo";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 
 type EmailStep = "email" | "code";
 
 interface EmailLinkFormProps {
-  /** If true, uses useLinkEmail (for already-authenticated Twitter users) */
   fromTwitter: boolean;
   onSuccess: (email: string) => void;
 }
@@ -21,13 +17,11 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
   const [code, setCode] = useState("");
   const [step, setStep] = useState<EmailStep>("email");
 
-  // Login with email (for non-Twitter users)
   const loginEmail = useLoginWithEmail({
     onSendCodeSuccess: () => setStep("code"),
     onLoginSuccess: () => onSuccess(email.trim()),
   });
 
-  // Link email (for Twitter-authenticated users)
   const linkEmail = useLinkEmail({
     onSendCodeSuccess: () => setStep("code"),
     onLinkSuccess: () => onSuccess(email.trim()),
@@ -35,16 +29,19 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
 
   const activeFlow = fromTwitter ? linkEmail : loginEmail;
   const sendCode = fromTwitter ? linkEmail.sendCode : loginEmail.sendCode;
-  const submitCode = fromTwitter ? linkEmail.linkWithCode : loginEmail.loginWithCode;
+  const submitCode = fromTwitter
+    ? linkEmail.linkWithCode
+    : loginEmail.loginWithCode;
 
   const flowState = activeFlow.state;
   const isLoading =
     flowState.status === "sending-code" ||
     flowState.status === "submitting-code";
   const hasError = flowState.status === "error";
-  const errorMessage = hasError && "error" in flowState
-    ? (flowState.error as Error)?.message
-    : null;
+  const errorMessage =
+    hasError && "error" in flowState
+      ? (flowState.error as Error)?.message
+      : null;
 
   const handleSendCode = async () => {
     if (!email.trim()) return;
@@ -75,8 +72,8 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
     <View className="w-full">
       {step === "email" ? (
         <View>
-          <TextInput
-            className="w-full border border-zinc-300 rounded-xl px-4 py-3 text-lg bg-white text-zinc-900"
+          <Input
+            className="text-lg"
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
@@ -88,35 +85,34 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
           />
 
           {errorMessage && (
-            <Text className="text-red-500 text-sm mt-2">
+            <Text className="mt-2 text-sm text-destructive">
               {errorMessage}
             </Text>
           )}
 
-          <TouchableOpacity
-            className={`mt-4 py-4 rounded-xl ${
-              isLoading || !email.trim() ? "bg-zinc-400" : "bg-zinc-900"
-            }`}
+          <Button
+            variant="classic"
+            className="mt-4"
             onPress={handleSendCode}
             disabled={isLoading || !email.trim()}
-            activeOpacity={0.8}
+            size="lg"
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white text-center font-semibold text-lg">
+              <Text className="text-lg font-semibold text-primary-foreground">
                 Send Code
               </Text>
             )}
-          </TouchableOpacity>
+          </Button>
         </View>
       ) : (
         <View>
-          <Text className="text-base text-zinc-600 mb-3">
+          <Text className="mb-3 text-base text-muted-foreground">
             Enter the code sent to {email}
           </Text>
-          <TextInput
-            className="w-full border border-zinc-300 rounded-xl px-4 py-3 text-lg bg-white text-center tracking-widest text-zinc-900"
+          <Input
+            className="text-center text-lg tracking-widest"
             value={code}
             onChangeText={setCode}
             placeholder="000000"
@@ -127,37 +123,37 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
           />
 
           {errorMessage && (
-            <Text className="text-red-500 text-sm mt-2">
+            <Text className="mt-2 text-sm text-destructive">
               {errorMessage}
             </Text>
           )}
 
-          <TouchableOpacity
-            className={`mt-4 py-4 rounded-xl ${
-              isLoading || !code.trim() ? "bg-zinc-400" : "bg-zinc-900"
-            }`}
+          <Button
+            variant="classic"
+            className="mt-4"
             onPress={handleSubmitCode}
             disabled={isLoading || !code.trim()}
-            activeOpacity={0.8}
+            size="lg"
           >
             {isLoading ? (
               <ActivityIndicator color="white" />
             ) : (
-              <Text className="text-white text-center font-semibold text-lg">
+              <Text className="text-lg font-semibold text-primary-foreground">
                 Verify Code
               </Text>
             )}
-          </TouchableOpacity>
+          </Button>
 
-          <TouchableOpacity
-            className="mt-3 py-2"
+          <Button
+            variant="ghost"
+            className="mt-3"
             onPress={handleBack}
             disabled={isLoading}
           >
-            <Text className="text-zinc-600 text-center text-base underline">
+            <Text className="text-base text-muted-foreground underline">
               Use a different email
             </Text>
-          </TouchableOpacity>
+          </Button>
         </View>
       )}
     </View>

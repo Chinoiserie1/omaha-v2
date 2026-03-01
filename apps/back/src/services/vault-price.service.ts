@@ -6,31 +6,34 @@ import { getSharePrice } from "../solana/vault-holdings.js";
 
 export async function fetchAndStoreVaultPrices(): Promise<void> {
   const vaults = await vaultRepo.findAllActiveVaults();
+  const eligible = vaults.filter((v) => v.mintAddress);
 
-  for (const vault of vaults) {
-    if (!vault.mintAddress) continue;
-
-    try {
+  const results = await Promise.allSettled(
+    eligible.map(async (vault) => {
       const token = await tokenPriceRepo.upsertVaultToken({
         name: vault.vaultName,
         symbol: vault.vaultSymbol,
         decimals: 9,
-        mint: vault.mintAddress,
+        mint: vault.mintAddress!,
       });
 
       const sharePrice = await getSharePrice(new PublicKey(vault.statePda));
       if (sharePrice === null) {
         logger.warn({ vaultId: vault.id }, "Share price unavailable, skipping");
-        continue;
+        return;
       }
 
       await tokenPriceRepo.insertPrice(token.id, sharePrice);
-      logger.debug(
-        { vaultId: vault.id, sharePrice },
-        "Stored vault share price",
+    }),
+  );
+
+  for (let i = 0; i < results.length; i++) {
+    const result = results[i];
+    if (result && result.status === "rejected") {
+      logger.error(
+        { err: result.reason, vaultId: eligible[i]?.id },
+        "Failed to store vault price",
       );
-    } catch (err) {
-      logger.error({ err, vaultId: vault.id }, "Failed to store vault price");
     }
   }
 }

@@ -2,14 +2,14 @@
 
 ## Overview
 
-This is the **Expo SDK 52** React Native application using Expo Router for navigation. It provides the mobile experience for the Autopilot platform.
+This is the **Expo SDK 54** React Native application using Expo Router for navigation. It provides the mobile experience for the Autopilot platform.
 
 ## Technology Stack
 
-- **Framework**: Expo SDK 52
-- **React Native**: 0.76.x
-- **React**: 18.3.x
-- **Navigation**: Expo Router 4.x
+- **Framework**: Expo SDK 54
+- **React Native**: 0.81.x
+- **React**: 19.1.x
+- **Navigation**: Expo Router 6.x
 - **TypeScript**: 5.7.x (strict mode)
 - **Validation**: Zod via `@repo/shared`
 
@@ -32,6 +32,44 @@ apps/native/
 ├── eslint.config.js        # ESLint config (uses @repo/config-eslint/react)
 └── package.json
 ```
+
+## Liquid Glass UI Components
+
+The app uses a "liquid glass" design system via platform-specific components:
+
+- **iOS 26+**: Native `UIGlassEffect` via `@callstack/liquid-glass`
+- **Android**: Blur fallback via `@sbaiahmed1/react-native-blur`
+- **Web/other**: Semi-transparent background fallback
+
+### Glass Components (`components/ui/glass/`)
+
+```typescript
+import { GlassView, GlassContainer } from "@/components/ui/glass";
+
+// Basic glass surface
+<GlassView effect="regular" interactive>
+  <Text>Content</Text>
+</GlassView>
+
+// Merge adjacent glass views on iOS
+<GlassContainer spacing={8}>
+  <GlassView>...</GlassView>
+  <GlassView>...</GlassView>
+</GlassContainer>
+```
+
+Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (fallback)
+
+### Card & Button Variants
+
+- `<Card>` defaults to glass. Use `<Card variant="classic">` for the old solid style.
+- `<Button>` defaults to glass. Use `<Button variant="classic">` for solid CTAs.
+- All authentication, financial, and primary CTA buttons use `variant="classic"`.
+
+### Config: `lib/glass.ts`
+
+- `isNativeLiquidGlassSupported` — boolean, true on iOS 26+
+- `GLASS_CONFIG` — blur amounts, fallback colors, blur types
 
 ## Component Organization (Parallel Structure)
 

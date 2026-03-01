@@ -1,52 +1,43 @@
-import { View, Text } from "react-native";
+import { View } from "react-native";
 import { memo } from "react";
 import type { VaultHoldingWithPct } from "@repo/shared";
+import { Text } from "@/components/ui/text";
+import { Card, CardContent } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
+import { formatUsd, formatTokenAmount } from "../../lib/format";
 
 interface VaultHoldingCardProps {
   holding: VaultHoldingWithPct;
 }
 
-function formatUsd(value: number): string {
-  return value >= 1
-    ? `$${value.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-    : `$${value.toFixed(4)}`;
-}
-
-function formatAmount(value: number): string {
-  if (value >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
-  if (value >= 1_000) return `${(value / 1_000).toFixed(2)}K`;
-  return value >= 1 ? value.toFixed(2) : value.toFixed(4);
-}
-
 export const VaultHoldingCard = memo(function VaultHoldingCard({
   holding,
 }: VaultHoldingCardProps) {
-  const barWidth = Math.min(holding.percentage, 100);
+  const barValue = Math.min(holding.percentage, 100);
 
   return (
-    <View className="mx-5 mb-2 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-      <View className="mb-2 flex-row items-center justify-between">
-        <Text className="text-base font-semibold text-zinc-900 dark:text-white">
-          {holding.symbol}
-        </Text>
-        <Text className="text-base font-bold text-zinc-900 dark:text-white">
-          {holding.percentage.toFixed(1)}%
-        </Text>
-      </View>
-      <View className="mb-3 h-1.5 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-800">
-        <View
-          style={{ width: `${barWidth}%`, backgroundColor: "#818cf8" }}
-          className="h-full rounded-full"
+    <Card className="mx-5 mb-2 gap-3 p-4 py-4">
+      <CardContent className="gap-3">
+        <View className="flex-row items-center justify-between">
+          <Text className="text-base font-semibold">{holding.symbol}</Text>
+          <Text className="text-base font-bold">
+            {holding.percentage.toFixed(1)}%
+          </Text>
+        </View>
+        <Progress
+          value={barValue}
+          className="h-1.5"
+          indicatorClassName="bg-indigo-400"
         />
-      </View>
-      <View className="flex-row items-center justify-between">
-        <Text className="text-xs text-zinc-600 dark:text-zinc-400">
-          {formatAmount(holding.uiAmount)} tokens
-        </Text>
-        <Text className="text-xs text-zinc-600 dark:text-zinc-400">
-          {formatUsd(holding.valueUsd)}
-        </Text>
-      </View>
-    </View>
+        <View className="flex-row items-center justify-between">
+          <Text className="text-xs text-muted-foreground">
+            {formatTokenAmount(holding.uiAmount)} tokens
+          </Text>
+          <Text className="text-xs text-muted-foreground">
+            {formatUsd(holding.valueUsd)}
+          </Text>
+        </View>
+      </CardContent>
+    </Card>
   );
 });

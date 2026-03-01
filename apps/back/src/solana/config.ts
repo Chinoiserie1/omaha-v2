@@ -2,6 +2,9 @@ import { Connection, Keypair, PublicKey } from "@solana/web3.js";
 import { env } from "../utils/env.js";
 
 // ── Constants ──────────────────────────────────────────────────
+export const SHARE_TOKEN_DECIMALS = 6;
+export const SHARE_TOKEN_MULTIPLIER = 10 ** SHARE_TOKEN_DECIMALS; // 1_000_000
+
 export const USDC_MINT = new PublicKey(
   "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
 );

@@ -1,9 +1,10 @@
-import { View, Text, ActivityIndicator, Pressable } from "react-native";
+import { View, Text, ActivityIndicator, Pressable, RefreshControl } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useMemo } from "react";
-import { useColorScheme } from "nativewind";
+import { useCallback, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "../../lib/query-keys";
 import { VaultHeader } from "./VaultHeader";
 import { VaultThesis } from "./VaultThesis";
 import { VaultAllocationCard } from "./VaultAllocationCard";
@@ -65,7 +66,6 @@ type VaultSection =
   | { type: "changes"; data: string[] }
   | { type: "holdings"; data: { vaultId: string } }
   | { type: "description"; data: string }
-  | { type: "info"; data: VaultData }
   | { type: "about"; data: { title: string; content: string } }
   | { type: "data-source"; data: { title: string; content: string } }
   | { type: "performance-calc"; data: { title: string; content: string } }
@@ -115,8 +115,6 @@ function buildSections(vault: VaultData): VaultSection[] {
 
   sections.push({ type: "holdings", data: { vaultId: vault.id } });
 
-  sections.push({ type: "info", data: vault });
-
   if (vault.about) {
     sections.push({
       type: "about",
@@ -160,8 +158,18 @@ function SectionHeader({ title }: { title: string }) {
 
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
-  const { colorScheme } = useColorScheme();
-  const iconColor = colorScheme === "dark" ? "#FAFAFA" : "#18181B";
+  const queryClient = useQueryClient();
+  const iconColor = "#FAFAFA";
+
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const onRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await queryClient.invalidateQueries({
+      queryKey: queryKeys.vaults.detail(vaultId),
+    });
+    setIsRefreshing(false);
+  }, [queryClient, vaultId]);
 
   const sections = useMemo(
     () => (vault ? buildSections(vault as VaultData) : []),
@@ -180,7 +188,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         );
       case "description":
         return (
-          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-600 dark:text-zinc-400">
+          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-400">
             {item.data}
           </Text>
         );
@@ -226,15 +234,6 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             content={item.data.content}
           />
         );
-      // case "info":
-      //   return (
-      //     <VaultInfo
-      //       glamStatePda={item.data.glamStatePda}
-      //       glamVaultPda={item.data.glamVaultPda}
-      //       vaultSymbol={item.data.name}
-      //       kolBio={item.data.kol.bio}
-      //     />
-      //   );
       case "disclosure":
         return (
           <VaultTextSection
@@ -254,16 +253,16 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top"]}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={onBack}
-          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-900 active:bg-zinc-300 dark:active:bg-zinc-800"
+          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-900 active:bg-zinc-800"
         >
           <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
         <Text
-          className="flex-1 ml-3 text-base font-semibold text-zinc-900 dark:text-white"
+          className="flex-1 ml-3 text-base font-semibold text-white"
           numberOfLines={1}
         >
           {vault?.name ?? ""}
@@ -277,7 +276,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         </View>
       ) : error ? (
         <View className="flex-1 justify-center items-center px-6">
-          <Text className="mb-4 text-base text-center text-zinc-600 dark:text-zinc-400">
+          <Text className="mb-4 text-base text-center text-zinc-400">
             {error.message}
           </Text>
           <Pressable
@@ -295,6 +294,9 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
           keyExtractor={keyExtractor}
           contentContainerStyle={{ paddingBottom: 40 }}
           showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
+          }
         />
       )}
 

@@ -12,14 +12,14 @@ export default function ProfileScreen() {
 
   if (isLoading) {
     return (
-      <SafeAreaView className="flex-1 justify-center items-center bg-white dark:bg-zinc-950">
+      <SafeAreaView className="flex-1 justify-center items-center bg-zinc-950">
         <ActivityIndicator size="large" color="#71717A" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-zinc-950">
       <ScrollView className="flex-1 p-5" showsVerticalScrollIndicator={false}>
         <ProfileHeader
           profileImageUrl={profile?.profileImageUrl}

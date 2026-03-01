@@ -28,7 +28,9 @@ const envSchema = z.object({
   // KOL Pipeline — Solana (optional — crons work without these)
   SOLANA_RPC_URL: z.string().optional(),
   KEEPER_PRIVATE_KEY: z.string().optional(),
-  GLAM_PROGRAM_ID: z.string().default("GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"),
+  GLAM_PROGRAM_ID: z
+    .string()
+    .default("GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"),
 
   // KOL Pipeline — Rebalancing
   REBALANCE_DRY_RUN: z
@@ -55,6 +57,12 @@ const envSchema = z.object({
   TELEGRAM_BOT_TOKEN: z.string().optional(),
   TELEGRAM_CHAT_ID: z.string().optional(),
   CRON_HEALTH_CHECK: z.string().default("0 */6 * * *"),
+
+  // Withdrawal queue
+  REDIS_URL: z.string().default("redis://localhost:6379"),
+  WITHDRAWAL_BATCH_WINDOW_MS: z.coerce.number().default(600_000), // 10 min
+  WITHDRAWAL_MAX_RETRIES: z.coerce.number().default(3),
+  CRON_RECOVERY_WITHDRAWALS: z.string().default("*/5 * * * *"),
 });
 
 export type Env = z.infer<typeof envSchema>;
@@ -64,7 +72,10 @@ function validateEnv(): Env {
 
   if (!parsed.success) {
     const formatted = parsed.error.issues
-      .map((issue: { path: (string | number)[]; message: string }) => `  ${issue.path.join(".")}: ${issue.message}`)
+      .map(
+        (issue: { path: (string | number)[]; message: string }) =>
+          `  ${issue.path.join(".")}: ${issue.message}`,
+      )
       .join("\n");
     throw new Error(`Missing or invalid environment variables:\n${formatted}`);
   }

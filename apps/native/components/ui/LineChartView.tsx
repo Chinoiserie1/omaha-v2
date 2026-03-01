@@ -2,7 +2,6 @@ import { View, type LayoutChangeEvent } from "react-native";
 import { memo, useCallback, useMemo, useState } from "react";
 import { LineChart } from "react-native-wagmi-charts";
 import * as Haptics from "expo-haptics";
-import { useColorScheme } from "nativewind";
 import { ChartSkeleton } from "./Skeleton";
 
 interface DataPoint {
@@ -37,11 +36,7 @@ export const LineChartView = memo(function LineChartView({
 }: LineChartViewProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const chartHeight = height;
-  const { colorScheme } = useColorScheme();
-  const tooltipTextStyle = useMemo(
-    () => ({ color: colorScheme === "dark" ? "#ffffff" : "#000000" }),
-    [colorScheme],
-  );
+  const tooltipTextStyle = useMemo(() => ({ color: "#ffffff" }), []);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setContainerWidth(Math.round(e.nativeEvent.layout.width));
@@ -71,9 +66,9 @@ export const LineChartView = memo(function LineChartView({
   }
 
   return (
-    <View className={className} onLayout={onLayout} style={{ height: chartHeight }}>
+    <View className={className} onLayout={onLayout} style={{ height: chartHeight, backgroundColor: "transparent" }}>
       <LineChart.Provider data={data} onCurrentIndexChange={onCurrentIndexChange}>
-        <LineChart height={chartHeight} width={containerWidth}>
+        <LineChart height={chartHeight} width={containerWidth} style={{ backgroundColor: "transparent" }}>
           <LineChart.Path color={color}>
             {showGradient && <LineChart.Gradient />}
           </LineChart.Path>

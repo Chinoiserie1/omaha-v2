@@ -14,6 +14,7 @@ model User {
   email               String?  @unique
   username            String?  @unique
   name                String?
+  walletAddress       String?  @unique
   twitterId           String?  @unique
   twitterUsername     String?
   profileImageUrl     String?
@@ -22,6 +23,7 @@ model User {
   updatedAt           DateTime @updatedAt
   followers           Follow[] @relation("Following")
   following           Follow[] @relation("Followers")
+  withdrawalRequests  WithdrawalRequest[]
 }
 
 model Follow {
@@ -169,8 +171,9 @@ model KolVault {
   lastRebalancedAt DateTime?
   createdAt        DateTime         @default(now())
   updatedAt        DateTime         @updatedAt
-  rebalanceEvents    RebalanceEvent[]
-  holdingsSnapshots  HoldingsSnapshot[]
+  rebalanceEvents      RebalanceEvent[]
+  holdingsSnapshots    HoldingsSnapshot[]
+  withdrawalRequests   WithdrawalRequest[]
 
   @@index([kolId])
 }
@@ -273,4 +276,36 @@ model TokenPrice {
   date     DateTime @default(now())
 
   @@index([tokenId, date])
+}
+
+// ── Withdrawal Queue Models ─────────────────────────────────────
+
+model WithdrawalRequest {
+  id                 String    @id @default(cuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kolVaultId         String
+  kolVault           KolVault  @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  amount             Float
+  status             String    @default("REQUESTED")
+  idempotencyKey     String    @unique
+  batchId            String
+  redeemTxSignature  String?
+  claimTxSignature   String?
+  errorMessage       String?
+  errorCount         Int       @default(0)
+  removedReason      String?
+  requestedAt        DateTime  @default(now())
+  processingAt       DateTime?
+  claimableAt        DateTime?
+  claimedAt          DateTime?
+  failedAt           DateTime?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  @@index([userId, status])
+  @@index([kolVaultId, status])
+  @@index([batchId])
+  @@index([status, requestedAt])
+  @@index([status, processingAt])
 }

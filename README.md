@@ -131,6 +131,24 @@ pnpm seed-vaults    # Seed vault data
 pnpm sync-aliases   # Sync asset aliases from Birdeye/Jupiter
 ```
 
+### Worktree Management
+
+Run multiple worktrees simultaneously without Metro port conflicts. Each worktree gets a deterministic port (8081-8199) based on its directory name.
+
+```bash
+# Create a new worktree with a branch
+pnpm wt:create feat/my-feature ../my-feature
+cd ../my-feature && pnpm install
+
+# Run Expo from any worktree (port auto-assigned)
+pnpm wt:ios         # Start iOS with auto-port
+pnpm wt:android     # Start Android with auto-port
+pnpm wt:start       # Defaults to iOS
+
+# Clean up (from the main repo)
+pnpm wt:clean ../my-feature   # Removes worktree + deletes branch
+```
+
 ## Architecture
 
 ### KOL Trading Pipeline

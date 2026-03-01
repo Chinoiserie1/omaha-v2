@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
-import { View, Text, TextInput, ActivityIndicator } from "react-native";
+import { View, TextInput, ActivityIndicator } from "react-native";
 import { useCheckUsername } from "../../hooks/queries/use-onboarding";
+import { Text } from "@/components/ui/text";
 
 interface UsernameInputProps {
   value: string;
@@ -17,7 +18,6 @@ export function UsernameInput({
   const [localError, setLocalError] = useState<string | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
 
-  // Local validation + debounce
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
@@ -53,12 +53,15 @@ export function UsernameInput({
     };
   }, [value, onAvailabilityChange]);
 
-  const { data, isFetching, error: queryError } = useCheckUsername(debouncedValue);
+  const {
+    data,
+    isFetching,
+    error: queryError,
+  } = useCheckUsername(debouncedValue);
 
   const available = data?.available ?? null;
   const checking = isFetching;
 
-  // Sync availability to parent
   useEffect(() => {
     onAvailabilityChange(available === true);
   }, [available, onAvailabilityChange]);
@@ -70,10 +73,10 @@ export function UsernameInput({
 
   return (
     <View className="w-full">
-      <View className="flex-row items-center border border-zinc-300 rounded-xl px-4 py-3 bg-white">
-        <Text className="text-zinc-400 text-lg mr-1">@</Text>
+      <View className="flex-row items-center rounded-xl border border-input bg-background px-4 py-3">
+        <Text className="mr-1 text-lg text-muted-foreground">@</Text>
         <TextInput
-          className="flex-1 text-lg text-zinc-900"
+          className="flex-1 text-lg text-foreground"
           value={value}
           onChangeText={onChangeText}
           placeholder="username"
@@ -84,19 +87,21 @@ export function UsernameInput({
         />
         {checking && <ActivityIndicator size="small" color="#71717A" />}
         {!checking && available === true && (
-          <Text className="text-green-500 text-lg">&#10003;</Text>
+          <Text className="text-lg text-green-500">&#10003;</Text>
         )}
         {!checking && available === false && (
-          <Text className="text-red-500 text-lg">&#10007;</Text>
+          <Text className="text-lg text-destructive">&#10007;</Text>
         )}
       </View>
 
       {displayError && (
-        <Text className="text-red-500 text-sm mt-2 ml-1">{displayError}</Text>
+        <Text className="ml-1 mt-2 text-sm text-destructive">
+          {displayError}
+        </Text>
       )}
 
       {available === true && !displayError && (
-        <Text className="text-green-600 text-sm mt-2 ml-1">
+        <Text className="ml-1 mt-2 text-sm text-green-600">
           Username is available
         </Text>
       )}

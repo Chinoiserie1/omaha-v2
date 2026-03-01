@@ -1,39 +1,23 @@
 import { Tabs } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useColorScheme } from "nativewind";
+import { FloatingGlassTabBar } from "@/components/navigation/FloatingGlassTabBar";
 
 export default function TabsLayout() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   return (
     <Tabs
+      tabBar={(props) => <FloatingGlassTabBar {...props} />}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: isDark ? "#FAFAFA" : "#18181B",
-        tabBarInactiveTintColor: isDark ? "#71717A" : "#A1A1AA",
         tabBarStyle: {
-          backgroundColor: isDark ? "#09090B" : "#FFFFFF",
-          borderTopColor: isDark ? "#27272A" : "#E4E4E7",
-          borderTopWidth: 1,
+          display: "none",
         },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: "600",
+        sceneStyle: {
+          backgroundColor: "#09090B",
         },
       }}
     >
       <Tabs.Screen
         name="(home)"
-        options={{
-          title: "Home",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="home-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="(tracker)"
         options={{
           title: "Tracker",
           tabBarIcon: ({ color, size }) => (

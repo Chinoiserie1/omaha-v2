@@ -15,6 +15,11 @@ import { toastConfig } from "../components/ui/toasts/toastConfig";
 import { posthogClient, posthogAutocapture } from "../lib/posthog";
 import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary";
 import { PostHogScreenTracker } from "../components/shared/PostHogScreenTracker";
+import { PortalHost } from "@rn-primitives/portal";
+import * as SystemUI from "expo-system-ui";
+
+// Set native root background to dark before React mounts (prevents white flash)
+SystemUI.setBackgroundColorAsync("#09090B");
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -59,8 +64,6 @@ function FlushOnBackground() {
 
 /** Inner navigator — lives inside AuthProvider so it can consume useAuth. */
 function RootNavigator() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { status } = useAuth();
   const rootNav = useNavigationContainerRef();
   const prevStatus = useRef(status);
@@ -86,7 +89,7 @@ function RootNavigator() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+          contentStyle: { backgroundColor: "#09090B" },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
@@ -97,13 +100,20 @@ function RootNavigator() {
         <Stack.Screen name="(app)" options={{ animation: "fade" }} />
       </Stack>
       <PostHogScreenTracker />
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style="light" />
       <Toast config={toastConfig} />
     </>
   );
 }
 
 export default function RootLayout() {
+  const { setColorScheme } = useColorScheme();
+
+  // Ensure NativeWind applies dark: classes across all components
+  useEffect(() => {
+    setColorScheme("dark");
+  }, [setColorScheme]);
+
   if (!PRIVY_APP_ID || !PRIVY_CLIENT_ID) {
     console.error("[_layout] Privy credentials are missing!");
   }
@@ -132,6 +142,7 @@ export default function RootLayout() {
           </QueryClientProvider>
         </PostHogErrorBoundary>
       </PostHogProvider>
+      <PortalHost />
     </GestureHandlerRootView>
   );
 }

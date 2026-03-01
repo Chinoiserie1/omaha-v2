@@ -1,6 +1,5 @@
 import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useColorScheme } from "nativewind";
 import { useCallback } from "react";
 import { useRouter } from "expo-router";
 import { VaultCard } from "../ui/VaultCard";
@@ -22,8 +21,6 @@ interface VaultSummary {
 }
 
 export function VaultList() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const router = useRouter();
   const { data: vaults, isLoading, error, refetch, isRefetching } = useVaults();
 
@@ -46,10 +43,7 @@ export function VaultList() {
   if (isLoading) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <ActivityIndicator
-          size="large"
-          color={isDark ? "#FAFAFA" : "#18181B"}
-        />
+        <ActivityIndicator size="large" color="#FAFAFA" />
       </View>
     );
   }
@@ -57,14 +51,14 @@ export function VaultList() {
   if (error) {
     return (
       <View className="flex-1 items-center justify-center py-20 px-6">
-        <Text className="text-base text-zinc-500 dark:text-zinc-400 text-center mb-4">
+        <Text className="text-base text-zinc-400 text-center mb-4">
           {error.message}
         </Text>
         <TouchableOpacity
-          className="bg-zinc-900 dark:bg-white py-3 px-6 rounded-lg"
+          className="bg-white py-3 px-6 rounded-lg"
           onPress={() => refetch()}
         >
-          <Text className="text-white dark:text-zinc-950 font-semibold">
+          <Text className="text-zinc-950 font-semibold">
             Try Again
           </Text>
         </TouchableOpacity>
@@ -75,7 +69,7 @@ export function VaultList() {
   if (!vaults || vaults.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Text className="text-base text-zinc-500 dark:text-zinc-400 text-center">
+        <Text className="text-base text-zinc-400 text-center">
           No vaults available
         </Text>
       </View>

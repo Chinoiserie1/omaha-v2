@@ -39,7 +39,12 @@
     "seed-stocks": "turbo run seed-stocks",
     "seed-vaults": "turbo run seed-vaults",
     "start:back": "pnpm --filter @repo/back start",
-    "native:clean": "pnpm --filter @repo/native clean"
+    "native:clean": "pnpm --filter @repo/native clean",
+    "wt:ios": "bash scripts/worktree-dev.sh ios",
+    "wt:android": "bash scripts/worktree-dev.sh android",
+    "wt:start": "bash scripts/worktree-dev.sh",
+    "wt:create": "bash scripts/worktree-create.sh",
+    "wt:clean": "bash scripts/worktree-clean.sh"
   },
   "devDependencies": {
     "turbo": "^2.7.1",
@@ -47,8 +52,18 @@
   },
   "version": "1.0.0",
   "dependencies": {
-    "expo": "~52.0.49",
-    "react": "18.3.1",
-    "react-native": "0.76.9"
+    "expo": "~54.0.33",
+    "react": "19.1.0",
+    "react-native": "0.81.5"
+  },
+  "pnpm": {
+    "overrides": {
+      "react": "19.1.0",
+      "react-native-css-interop": "0.2.2"
+    },
+    "patchedDependencies": {
+      "posthog-react-native-session-replay@1.4.0": "patches/posthog-react-native-session-replay@1.4.0.patch",
+      "react-native-css-interop@0.2.2": "patches/react-native-css-interop@0.2.2.patch"
+    }
   }
 }

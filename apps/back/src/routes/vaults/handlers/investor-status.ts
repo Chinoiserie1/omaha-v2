@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { PublicKey } from "@solana/web3.js";
 import { getGlamClient } from "../../../solana/client.js";
+import { SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
 import { getSharePrice } from "../../../solana/vault-holdings.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { logger } from "../../../utils/logger.js";
@@ -62,7 +63,7 @@ export async function getInvestorStatus(
       const rawAmount = isRedemption
         ? pending.outgoing.toNumber()
         : pending.incoming.toNumber();
-      const decimals = isRedemption ? 1e9 : 1e6;
+      const decimals = isRedemption ? SHARE_TOKEN_MULTIPLIER : 1e6;
 
       pendingRequest = {
         type: isRedemption ? "REDEMPTION" : "SUBSCRIPTION",
@@ -87,11 +88,6 @@ export async function getInvestorStatus(
   } catch {
     logger.debug("Could not compute share price");
   }
-
-  logger.info(
-    { vaultId: id, wallet, hasPending: !!pendingRequest, sharePrice },
-    "Investor status fetched",
-  );
 
   return { sharePrice, pendingRequest, redeemNoticePeriod };
 }

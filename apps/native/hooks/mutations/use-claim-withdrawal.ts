@@ -1,0 +1,80 @@
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { Transaction, Connection, type SendOptions } from "@solana/web3.js";
+import { Buffer } from "buffer";
+import { apiClient } from "../../lib/api-client";
+import { queryKeys } from "../../lib/query-keys";
+import { SOLANA_RPC_URL } from "../../lib/solana";
+
+interface ClaimWithdrawalParams {
+  withdrawalId: string;
+  signerPublicKey: string;
+  signAndSend: (
+    transaction: Transaction,
+    connection: Connection,
+    options?: SendOptions,
+  ) => Promise<{ signature: string }>;
+}
+
+interface ClaimResponse {
+  transaction: string;
+  withdrawalId: string;
+}
+
+export function useClaimWithdrawal() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      withdrawalId,
+      signerPublicKey,
+      signAndSend,
+    }: ClaimWithdrawalParams): Promise<string> => {
+      // Step 1: Get unsigned claim tx from backend
+      const { transaction: txBase64 } =
+        await apiClient.post<ClaimResponse>(
+          `/api/withdrawals/${withdrawalId}/claim`,
+          { signerPublicKey },
+        );
+
+      // Step 2: Deserialize
+      const transaction = Transaction.from(Buffer.from(txBase64, "base64"));
+
+      // Step 3: User signs + sends via Privy
+      const connection = new Connection(SOLANA_RPC_URL);
+      const result = await signAndSend(transaction, connection, {
+        skipPreflight: true,
+      });
+
+      // Step 3.5: Wait for on-chain confirmation before notifying backend
+      const { blockhash, lastValidBlockHeight } =
+        await connection.getLatestBlockhash("confirmed");
+      const confirmation = await connection.confirmTransaction(
+        {
+          signature: result.signature,
+          blockhash,
+          lastValidBlockHeight,
+        },
+        "confirmed",
+      );
+
+      if (confirmation.value.err) {
+        throw new Error(
+          `Claim transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`,
+        );
+      }
+
+      // Step 4: Confirm claim on backend
+      await apiClient.post(
+        `/api/withdrawals/${withdrawalId}/confirm-claim`,
+        { txSignature: result.signature },
+      );
+
+      return result.signature;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.withdrawals.all(),
+      });
+    },
+  });
+}

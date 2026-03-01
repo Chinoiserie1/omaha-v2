@@ -1,5 +1,7 @@
-import { View, Text, TouchableOpacity } from "react-native";
+import { View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Text } from "@/components/ui/text";
+import { Button } from "@/components/ui/button";
 
 interface ErrorScreenProps {
   error: Error;
@@ -8,22 +10,21 @@ interface ErrorScreenProps {
 
 export function ErrorScreen({ error, onRetry }: ErrorScreenProps) {
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 items-center justify-center px-6">
-        <Text className="text-6xl mb-4 text-gray-900 dark:text-white">!</Text>
-        <Text className="text-xl font-semibold text-gray-900 dark:text-white mb-2 text-center">
+        <Text className="mb-4 text-6xl">!</Text>
+        <Text className="mb-2 text-center text-xl font-semibold">
           Something went wrong
         </Text>
-        <Text className="text-base text-gray-600 dark:text-zinc-400 text-center mb-6">
+        <Text className="mb-6 text-center text-base text-muted-foreground">
           {error.message}
         </Text>
         {onRetry && (
-          <TouchableOpacity
-            className="bg-gray-900 dark:bg-white py-3 px-6 rounded-lg"
-            onPress={onRetry}
-          >
-            <Text className="text-white dark:text-zinc-950 font-semibold">Try Again</Text>
-          </TouchableOpacity>
+          <Button variant="classic" onPress={onRetry}>
+            <Text className="font-semibold text-primary-foreground">
+              Try Again
+            </Text>
+          </Button>
         )}
       </View>
     </SafeAreaView>
