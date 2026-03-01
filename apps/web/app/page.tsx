@@ -5,12 +5,7 @@ export const dynamic = "force-dynamic";
 
 export default function Home() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a0e1a] px-4 text-white">
-      {/* Background glow effects */}
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute left-1/2 top-1/4 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-blue-600/10 blur-[120px]" />
-        <div className="absolute bottom-1/4 right-1/4 h-[400px] w-[400px] rounded-full bg-indigo-600/8 blur-[100px]" />
-      </div>
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[#0a0e1a] bg-cover bg-center px-4 text-white" style={{ backgroundImage: "url('/hero-bg.jpg')" }}>
 
       {/* Header */}
       <header className="absolute left-0 right-0 top-0 z-10">
@@ -19,14 +14,6 @@ export default function Home() {
             <OmahaLogo className="h-7 w-7 text-blue-400" />
             <span className="text-lg font-bold">Omaha</span>
           </div>
-          <nav className="flex items-center gap-6 text-sm text-zinc-400">
-            <a href="#features" className="transition hover:text-white">
-              Features
-            </a>
-            <a href="#roadmap" className="transition hover:text-white">
-              Roadmap
-            </a>
-          </nav>
         </div>
       </header>
 
@@ -37,13 +24,13 @@ export default function Home() {
         </span>
 
         <h1 className="mb-4 text-4xl font-bold leading-tight sm:text-5xl">
-          Invest on the Signals of the{" "}
-          <span className="text-blue-400">Top 1%</span>
+          Invest like the{" "}
+          <span className="text-blue-400">Top 0.1%</span>
         </h1>
 
         <p className="mb-8 max-w-lg text-lg text-zinc-400">
-          Track the most influential crypto voices, decode their alpha, and act
-          before the crowd.
+          Track the best investors, instant notif of their alpha, seamless
+          exposure.
         </p>
 
         <WaitlistForm />

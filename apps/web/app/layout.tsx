@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "Omaha",
-  description: "Invest on the Signals of the Top 1%",
+  description: "Invest like the Top 0.1%",
 };
 
 export default function RootLayout({
