@@ -15,8 +15,8 @@ export function GlassView({
   children,
   ...props
 }: GlassViewProps) {
-  const { colorScheme: systemScheme } = useColorScheme();
-  const isDark = systemScheme === "dark";
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   if (effect === "none") {
     return (

@@ -23,8 +23,8 @@ export function GlassView({
   children,
   ...props
 }: GlassViewProps) {
-  const { colorScheme: systemScheme } = useColorScheme();
-  const isDark = systemScheme === "dark";
+  const { colorScheme } = useColorScheme();
+  const isDark = colorScheme === "dark";
 
   // iOS 26+: native liquid glass
   if (isNativeLiquidGlassSupported && effect !== "none") {
