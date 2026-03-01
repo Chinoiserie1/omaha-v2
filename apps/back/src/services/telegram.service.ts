@@ -70,6 +70,45 @@ export async function startTelegramBot(): Promise<void> {
   // Lazy import to avoid circular dependency at module load
   const { runProbes } = await import("./health-monitor.service.js");
 
+  const { fetchRapidApiQuota } = await import("./twitter.service.js");
+
+  bot.command("credits", async (ctx) => {
+    try {
+      await ctx.reply("Checking RapidAPI credits...");
+      const quota = await fetchRapidApiQuota();
+
+      const remainingNum = parseInt(quota.remaining, 10);
+      const limitNum = parseInt(quota.limit, 10);
+      let progressBar = "";
+      let pct = "";
+
+      if (!isNaN(remainingNum) && !isNaN(limitNum) && limitNum > 0) {
+        const usedPct = ((limitNum - remainingNum) / limitNum) * 100;
+        const filled = Math.round(usedPct / 6.67); // 15 chars total
+        progressBar = "\u2588".repeat(filled) + "\u2591".repeat(15 - filled);
+        pct = `${Math.round(usedPct)}%`;
+      }
+
+      const lines = [
+        "\u{1F4CA} <b>RapidAPI Credits</b>",
+        "",
+        `<b>Remaining:</b> ${quota.remaining} / ${quota.limit}`,
+        `<b>Used:</b> ${quota.used}`,
+      ];
+
+      if (progressBar) {
+        lines.push(`<b>Usage:</b> ${progressBar} ${pct}`);
+      }
+
+      lines.push("", `<b>Time:</b> ${new Date().toISOString()}`);
+
+      await ctx.reply(lines.join("\n"), { parse_mode: "HTML" });
+    } catch (error) {
+      logger.error({ err: error }, "Error handling /credits command");
+      await ctx.reply("Failed to fetch RapidAPI credits. Check server logs.");
+    }
+  });
+
   bot.command("health", async (ctx) => {
     try {
       await ctx.reply("Running health checks...");

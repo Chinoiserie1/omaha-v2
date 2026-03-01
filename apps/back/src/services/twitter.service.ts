@@ -251,6 +251,29 @@ function extractTweetsFromDetailResponse(data: unknown): TweetResult[] {
   return tweets;
 }
 
+export interface RapidApiQuota {
+  remaining: string;
+  limit: string;
+  used: string;
+}
+
+export async function fetchRapidApiQuota(): Promise<RapidApiQuota> {
+  const response = await apiClient.get("/user", {
+    params: { username: "elonmusk" },
+  });
+
+  const remaining = String(response.headers["x-ratelimit-requests-remaining"] ?? "unknown");
+  const limit = String(response.headers["x-ratelimit-requests-limit"] ?? "unknown");
+
+  const remainingNum = parseInt(remaining, 10);
+  const limitNum = parseInt(limit, 10);
+  const used = !isNaN(remainingNum) && !isNaN(limitNum)
+    ? String(limitNum - remainingNum)
+    : "unknown";
+
+  return { remaining, limit, used };
+}
+
 export async function fetchTweetDetail(
   tweetId: string,
 ): Promise<TweetResult[]> {

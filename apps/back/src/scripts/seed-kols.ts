@@ -20,6 +20,8 @@ const KOLS: { username: string; hasTwitter?: boolean }[] = [
   { username: "LynAldenContact" },
   { username: "jussy_world" },
   { username: "SBC7H7La", hasTwitter: false },
+  { username: "Citrini7" },
+  { username: "NancyPelosiTracker", hasTwitter: false },
 ];
 
 async function seed(): Promise<void> {
