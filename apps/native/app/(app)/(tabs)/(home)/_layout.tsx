@@ -5,7 +5,7 @@ export default function HomeStack() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#09090B" },
+        contentStyle: { backgroundColor: "#0F172A" },
       }}
     />
   );

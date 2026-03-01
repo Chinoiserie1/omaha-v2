@@ -6,7 +6,7 @@ export function FullScreenLoader() {
   return (
     <SafeAreaView className="flex-1 bg-background">
       <View className="flex-1 items-center justify-center">
-        <ActivityIndicator size="large" color="#FAFAFA" />
+        <ActivityIndicator size="large" color="#F8FAFC" />
         <Text className="mt-4 text-muted-foreground">Loading...</Text>
       </View>
     </SafeAreaView>

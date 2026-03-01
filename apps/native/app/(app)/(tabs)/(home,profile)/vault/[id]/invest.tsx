@@ -9,7 +9,7 @@ export default function InvestRoute() {
   const { data: vault } = useVault(id);
 
   return (
-    <View className="flex-1 bg-zinc-950">
+    <View className="flex-1 bg-background">
       <InvestScreen
         vaultId={id}
         vaultName={vault?.name ?? ""}

@@ -32,7 +32,7 @@ export function WalletOverview() {
       <Card className="mb-4">
         <CardContent>
           <View className="flex-row items-center">
-            <ActivityIndicator size="small" color="#71717A" />
+            <ActivityIndicator size="small" color="#94A3B8" />
             <Text className="ml-3 text-sm text-muted-foreground">
               Setting up wallet...
             </Text>
@@ -51,7 +51,7 @@ export function WalletOverview() {
         {isLoading ? (
           <ActivityIndicator
             size="small"
-            color="#71717A"
+            color="#94A3B8"
             className="my-2 self-start"
           />
         ) : (

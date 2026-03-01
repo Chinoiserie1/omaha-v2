@@ -66,7 +66,7 @@ export function WithdrawalFailedCard({
           {retryMutation.isPending ? (
             <ActivityIndicator color="white" />
           ) : (
-            <Text className="text-base font-semibold text-white">
+            <Text className="text-base font-semibold text-foreground">
               {canRetry ? "Retry Withdrawal" : "Max retries reached"}
             </Text>
           )}

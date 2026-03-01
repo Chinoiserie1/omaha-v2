@@ -22,35 +22,35 @@ export function DepositSheet() {
 
   return (
     <View className="flex-1 items-center justify-center px-6">
-      <Text className="text-xl font-bold text-white mb-2">
+      <Text className="text-xl font-bold text-foreground mb-2">
         Deposit SOL
       </Text>
-      <Text className="text-sm text-zinc-400 mb-8 text-center">
+      <Text className="text-sm text-muted-foreground mb-8 text-center">
         Send SOL to your wallet address below
       </Text>
 
-      <View className="bg-zinc-800 p-6 rounded-2xl mb-6">
+      <View className="bg-secondary p-6 rounded-2xl mb-6">
         <QRCode
           value={wallet.address}
           size={200}
           backgroundColor="transparent"
-          color="#FAFAFA"
+          color="#F8FAFC"
         />
       </View>
 
       <TouchableOpacity
-        className="w-full bg-zinc-900 rounded-xl p-4 mb-4"
+        className="w-full bg-card rounded-xl p-4 mb-4"
         onPress={handleCopy}
         activeOpacity={0.7}
       >
         <Text
-          className="text-sm text-zinc-300 font-mono text-center"
+          className="text-sm text-muted-foreground font-mono text-center"
           numberOfLines={1}
           ellipsizeMode="middle"
         >
           {wallet.address}
         </Text>
-        <Text className="text-xs text-zinc-400 text-center mt-1">
+        <Text className="text-xs text-muted-foreground text-center mt-1">
           {copied ? "Copied!" : "Tap to copy"}
         </Text>
       </TouchableOpacity>
@@ -60,7 +60,7 @@ export function DepositSheet() {
         onPress={() => router.back()}
         activeOpacity={0.8}
       >
-        <Text className="text-zinc-950 text-center font-semibold text-base">
+        <Text className="text-background text-center font-semibold text-base">
           Done
         </Text>
       </TouchableOpacity>

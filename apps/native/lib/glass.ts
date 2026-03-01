@@ -18,5 +18,5 @@ export const GLASS_CONFIG = {
   androidBlurTypeDark: "dark" as const,
 
   /** Fallback background for web / reduce-transparency */
-  fallbackBgDark: "rgba(39, 39, 42, 0.45)",
+  fallbackBgDark: "rgba(30, 41, 59, 0.45)",
 } as const;

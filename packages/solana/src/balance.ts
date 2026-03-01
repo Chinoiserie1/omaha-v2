@@ -8,11 +8,15 @@ const TOKEN_2022_PROGRAM_ID = new PublicKey(
   "TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb",
 );
 
+export const SPL_TOKEN_PROGRAM_ID = TOKEN_PROGRAM_ID.toBase58();
+export const SPL_TOKEN_2022_PROGRAM_ID = TOKEN_2022_PROGRAM_ID.toBase58();
+
 export interface TokenBalance {
   mint: string;
   decimals: number;
   amount: string;
   uiAmount: number;
+  programId: string;
 }
 
 export interface WalletBalances {
@@ -44,28 +48,30 @@ export async function getTokenBalances(
     }),
   ]);
 
-  const allAccounts = [...splAccounts.value, ...token2022Accounts.value];
-
-  return allAccounts
-    .map((account) => {
-      const info = account.account.data.parsed as {
-        info: {
-          mint: string;
-          tokenAmount: {
-            amount: string;
-            uiAmount: number | null;
-            decimals: number;
-          };
+  const mapAccount = (programId: string) => (account: (typeof splAccounts.value)[number]) => {
+    const info = account.account.data.parsed as {
+      info: {
+        mint: string;
+        tokenAmount: {
+          amount: string;
+          uiAmount: number | null;
+          decimals: number;
         };
       };
-      return {
-        mint: info.info.mint,
-        decimals: info.info.tokenAmount.decimals,
-        amount: info.info.tokenAmount.amount,
-        uiAmount: info.info.tokenAmount.uiAmount ?? 0,
-      };
-    })
-    .filter((token) => token.uiAmount > 0);
+    };
+    return {
+      mint: info.info.mint,
+      decimals: info.info.tokenAmount.decimals,
+      amount: info.info.tokenAmount.amount,
+      uiAmount: info.info.tokenAmount.uiAmount ?? 0,
+      programId,
+    };
+  };
+
+  return [
+    ...splAccounts.value.map(mapAccount(SPL_TOKEN_PROGRAM_ID)),
+    ...token2022Accounts.value.map(mapAccount(SPL_TOKEN_2022_PROGRAM_ID)),
+  ].filter((token) => token.uiAmount > 0);
 }
 
 export async function getWalletBalances(

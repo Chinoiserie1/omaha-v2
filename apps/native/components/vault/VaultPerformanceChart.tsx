@@ -39,14 +39,14 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
   const currentPrice = data?.currentPrice ?? null;
   const percentChange = data?.percentChange ?? null;
   const isPositive = percentChange !== null && percentChange >= 0;
-  const lineColor = isPositive ? "#10b981" : "#ef4444";
+  const lineColor = isPositive ? "#14B8A6" : "#EF4444";
 
   return (
     <View className="px-5 mb-2">
-      <View className="px-4 pt-4 pb-3 rounded-xl border bg-zinc-900 border-zinc-800">
+      <View className="px-4 pt-4 pb-3 rounded-xl border bg-card border-border">
         {/* Price + change */}
         <View className="flex-row gap-2 items-baseline mb-3">
-          <Text className="text-xl font-bold text-white">
+          <Text className="text-xl font-bold text-foreground">
             {formatPrice(currentPrice)}
           </Text>
           {percentChange !== null && (
@@ -56,7 +56,7 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
               {formatPercent(percentChange)}
             </Text>
           )}
-          <Text className="text-xs text-zinc-500">share price</Text>
+          <Text className="text-xs text-muted-foreground">share price</Text>
         </View>
 
         {/* Chart */}
@@ -79,12 +79,12 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
                 key={p.value}
                 onPress={() => setPeriod(p.value)}
                 className={`flex-1 items-center py-1.5 rounded-lg ${
-                  active ? "bg-zinc-700" : "bg-zinc-800"
+                  active ? "bg-secondary" : "bg-card"
                 }`}
               >
                 <Text
                   className={`text-xs font-semibold ${
-                    active ? "text-white" : "text-zinc-500"
+                    active ? "text-foreground" : "text-muted-foreground"
                   }`}
                 >
                   {p.label}

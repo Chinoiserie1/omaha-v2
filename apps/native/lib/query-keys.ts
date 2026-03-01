@@ -6,7 +6,7 @@ export const queryKeys = {
     me: () => ["profile", "me"] as const,
   },
   vaults: {
-    all: () => ["vaults"] as const,
+    all: (search?: string) => ["vaults", "list", { search }] as const,
     detail: (id: string) => ["vaults", id] as const,
     investorStatus: (id: string, wallet: string) =>
       ["vaults", id, "investor-status", wallet] as const,

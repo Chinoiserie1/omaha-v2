@@ -1,7 +1,10 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { PortfolioSnapshot } from "@repo/database";
+import { vaultListQuerySchema } from "@repo/shared";
+import type { PaginatedResponse } from "@repo/shared";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
+import * as tokenPriceRepo from "../../../store/token-price.repository.js";
 
 function formatVaultSummary(
   vault: {
@@ -15,7 +18,8 @@ function formatVaultSummary(
     mintAddress: string | null;
     isActive: boolean;
   },
-  portfolio: PortfolioSnapshot | null
+  portfolio: PortfolioSnapshot | null,
+  performancePercent: number | null
 ) {
   return {
     id: vault.id,
@@ -27,6 +31,7 @@ function formatVaultSummary(
     glamVaultPda: vault.glamVaultPda,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
+    performancePercent,
     portfolio: portfolio
       ? {
           thesisSummary: portfolio.thesisSummary,
@@ -38,17 +43,48 @@ function formatVaultSummary(
 }
 
 export async function listVaults(
-  _request: FastifyRequest,
-  _reply: FastifyReply
+  request: FastifyRequest,
+  reply: FastifyReply
 ) {
-  const vaults = await vaultRepo.findAllActiveVaults();
+  const parsed = vaultListQuerySchema.safeParse(request.query);
+  if (!parsed.success) {
+    return reply.status(400).send({
+      success: false,
+      error: parsed.error.errors.map((e) => e.message).join(", "),
+    });
+  }
 
-  const results = await Promise.all(
+  const { page, pageSize, search } = parsed.data;
+  const skip = (page - 1) * pageSize;
+
+  const { vaults, total } = await vaultRepo.findActiveVaultsPaginated({
+    skip,
+    take: pageSize,
+    ...(search ? { search } : {}),
+  });
+
+  const mints = vaults
+    .map((v) => v.mintAddress)
+    .filter((m): m is string => m !== null);
+  const perfMap = await tokenPriceRepo.getVaultPerformanceByMints(mints);
+
+  const items = await Promise.all(
     vaults.map(async (vault) => {
       const portfolio = await portfolioRepo.findLatestSnapshot(vault.kolId);
-      return formatVaultSummary(vault, portfolio);
+      const perf = vault.mintAddress
+        ? (perfMap.get(vault.mintAddress) ?? null)
+        : null;
+      return formatVaultSummary(vault, portfolio, perf);
     })
   );
 
-  return results;
+  const response: PaginatedResponse<ReturnType<typeof formatVaultSummary>> = {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+
+  return response;
 }

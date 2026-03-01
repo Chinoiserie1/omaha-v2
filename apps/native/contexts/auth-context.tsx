@@ -42,12 +42,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   console.log("[AuthContext] status:", status, { isReady, hasUser: !!user });
 
-  // Wire token provider when authenticated
+  // Wire token provider once at mount via a stable closure that always
+  // delegates to the latest getAccessToken through the ref. This avoids
+  // a race condition where child effects (e.g. onboarding) fire API calls
+  // before the parent effect has set the token provider.
   useEffect(() => {
-    if (status === "authenticated") {
-      setTokenProvider(getAccessTokenRef.current);
-    }
-  }, [status]);
+    setTokenProvider(() => getAccessTokenRef.current());
+    return () => resetTokenProvider();
+  }, []);
 
   // Validate session once after authentication
   useEffect(() => {

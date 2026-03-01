@@ -58,6 +58,7 @@ export async function getPortfolio(
         symbol: "SOL",
         mint: SOL_MINT,
         amount: walletBalances.sol,
+        decimals: 9,
         usdPrice: solPrice,
         valueUsd: walletBalances.sol * solPrice,
       });
@@ -104,6 +105,8 @@ export async function getPortfolio(
           symbol: tokenRecord?.symbol ?? token.mint.slice(0, 6),
           mint: token.mint,
           amount: token.uiAmount,
+          decimals: token.decimals,
+          programId: token.programId,
           usdPrice,
           valueUsd: token.uiAmount * usdPrice,
         });

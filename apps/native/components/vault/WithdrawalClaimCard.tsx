@@ -79,7 +79,7 @@ export function WithdrawalClaimCard({ withdrawal }: WithdrawalClaimCardProps) {
         {claimMutation.isPending ? (
           <ActivityIndicator color="white" />
         ) : (
-          <Text className="text-base font-semibold text-white">
+          <Text className="text-base font-semibold text-foreground">
             Claim Funds
           </Text>
         )}

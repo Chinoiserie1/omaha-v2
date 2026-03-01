@@ -36,6 +36,10 @@ export const paginationSchema = z.object({
   pageSize: z.coerce.number().int().positive().max(100).default(10),
 });
 
+export const vaultListQuerySchema = paginationSchema.extend({
+  search: z.string().trim().max(100).optional().default(""),
+});
+
 export const idParamSchema = z.object({
   id: z.string().min(1, "ID is required"),
 });

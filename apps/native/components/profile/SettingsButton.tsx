@@ -6,11 +6,11 @@ export function SettingsButton() {
 
   return (
     <TouchableOpacity
-      className="bg-zinc-800 py-4 rounded-xl"
+      className="bg-secondary py-4 rounded-xl"
       onPress={signOut}
       activeOpacity={0.8}
     >
-      <Text className="text-zinc-300 text-center font-semibold text-base">
+      <Text className="text-muted-foreground text-center font-semibold text-base">
         Sign Out
       </Text>
     </TouchableOpacity>

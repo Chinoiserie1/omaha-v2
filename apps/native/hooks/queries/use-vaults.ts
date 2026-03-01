@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 
@@ -7,14 +7,23 @@ interface Allocation {
   percentage: number;
 }
 
-interface VaultSummary {
+export interface VaultSummary {
   id: string;
   name: string;
   description: string;
   kolUsername: string;
+  performancePercent: number | null;
   portfolio: {
     allocations: Allocation[];
   } | null;
+}
+
+interface PaginatedVaults {
+  items: VaultSummary[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
 }
 
 interface VaultAllocation {
@@ -56,10 +65,22 @@ interface VaultData {
   } | null;
 }
 
-export function useVaults() {
-  return useQuery({
-    queryKey: queryKeys.vaults.all(),
-    queryFn: () => apiClient.get<VaultSummary[]>("/api/vaults"),
+const VAULTS_PAGE_SIZE = 10;
+
+export function useVaults(search?: string) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.vaults.all(search),
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({
+        page: String(pageParam),
+        pageSize: String(VAULTS_PAGE_SIZE),
+      });
+      if (search) params.set("search", search);
+      return apiClient.get<PaginatedVaults>(`/api/vaults?${params.toString()}`);
+    },
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,
   });
 }
 

@@ -16,6 +16,8 @@ export interface PortfolioTokenItem {
   symbol: string;
   mint: string;
   amount: number;
+  decimals: number;
+  programId?: string;
   usdPrice: number;
   valueUsd: number;
 }

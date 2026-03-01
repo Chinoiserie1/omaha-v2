@@ -12,7 +12,7 @@ export default function TabsLayout() {
           display: "none",
         },
         sceneStyle: {
-          backgroundColor: "#09090B",
+          backgroundColor: "#0F172A",
         },
       }}
     >

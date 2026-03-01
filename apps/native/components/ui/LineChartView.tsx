@@ -27,7 +27,7 @@ function invokeHaptic() {
 export const LineChartView = memo(function LineChartView({
   data,
   height = 100,
-  color = "#10b981",
+  color = "#14B8A6",
   loading = false,
   showCursor = true,
   showTooltip = true,
@@ -36,7 +36,7 @@ export const LineChartView = memo(function LineChartView({
 }: LineChartViewProps) {
   const [containerWidth, setContainerWidth] = useState(0);
   const chartHeight = height;
-  const tooltipTextStyle = useMemo(() => ({ color: "#ffffff" }), []);
+  const tooltipTextStyle = useMemo(() => ({ color: "#F8FAFC" }), []);
 
   const onLayout = useCallback((e: LayoutChangeEvent) => {
     setContainerWidth(Math.round(e.nativeEvent.layout.width));

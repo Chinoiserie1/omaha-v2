@@ -77,7 +77,7 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
             value={email}
             onChangeText={setEmail}
             placeholder="you@example.com"
-            placeholderTextColor="#A1A1AA"
+            placeholderTextColor="#94A3B8"
             keyboardType="email-address"
             autoCapitalize="none"
             autoComplete="email"
@@ -116,7 +116,7 @@ export function EmailLinkForm({ fromTwitter, onSuccess }: EmailLinkFormProps) {
             value={code}
             onChangeText={setCode}
             placeholder="000000"
-            placeholderTextColor="#A1A1AA"
+            placeholderTextColor="#94A3B8"
             keyboardType="number-pad"
             maxLength={6}
             editable={!isLoading}

@@ -7,6 +7,7 @@ import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
 import { useAuth } from "../../contexts/auth-context";
 import { useWithdrawalWebSocket } from "../../hooks/use-withdrawal-ws";
+import { TabBarVisibilityProvider } from "../../contexts/tab-bar-visibility";
 
 export default function AppLayout() {
   const { status } = useAuth();
@@ -68,17 +69,19 @@ export default function AppLayout() {
     onboardingData !== undefined &&
     !onboardingData.onboardingCompleted
   ) {
-    return <Redirect href="/(onboarding)/connect-twitter" />;
+    return <Redirect href="/" />;
   }
 
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-        contentStyle: { backgroundColor: "#09090B" },
-      }}
-    >
-      <Stack.Screen name="(tabs)" />
-    </Stack>
+    <TabBarVisibilityProvider>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: "#0F172A" },
+        }}
+      >
+        <Stack.Screen name="(tabs)" />
+      </Stack>
+    </TabBarVisibilityProvider>
   );
 }

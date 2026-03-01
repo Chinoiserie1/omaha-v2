@@ -27,7 +27,7 @@ export function WalletInfo() {
   if (!user) {
     return (
       <View className="items-center justify-center py-8">
-        <ActivityIndicator size="large" color="#FAFAFA" />
+        <ActivityIndicator size="large" color="#F8FAFC" />
       </View>
     );
   }
@@ -35,26 +35,26 @@ export function WalletInfo() {
   return (
     <View className="w-full">
       {twitter && "username" in twitter && (
-        <View className="bg-zinc-900 rounded-lg p-4 mb-4 border border-zinc-700">
-          <Text className="text-sm text-zinc-400 mb-1">Username</Text>
-          <Text className="text-base font-medium text-white">
+        <View className="bg-card rounded-lg p-4 mb-4 border border-border">
+          <Text className="text-sm text-muted-foreground mb-1">Username</Text>
+          <Text className="text-base font-medium text-foreground">
             @{String(twitter.username)}
           </Text>
         </View>
       )}
 
-      <View className="bg-zinc-900 rounded-lg p-4 mb-4 border border-zinc-700">
-        <Text className="text-sm text-zinc-400 mb-1">Signed in as</Text>
-        <Text className="text-base font-medium text-white">
+      <View className="bg-card rounded-lg p-4 mb-4 border border-border">
+        <Text className="text-sm text-muted-foreground mb-1">Signed in as</Text>
+        <Text className="text-base font-medium text-foreground">
           {email?.address ?? "Unknown"}
         </Text>
       </View>
 
       {solanaWallet && (
-        <View className="bg-zinc-800 rounded-lg p-4 mb-4 border border-zinc-700">
-          <Text className="text-sm text-zinc-400 mb-1">Solana Wallet</Text>
+        <View className="bg-secondary rounded-lg p-4 mb-4 border border-border">
+          <Text className="text-sm text-muted-foreground mb-1">Solana Wallet</Text>
           <Text
-            className="text-sm font-mono text-zinc-200"
+            className="text-sm font-mono text-foreground"
             numberOfLines={1}
             ellipsizeMode="middle"
           >
@@ -64,19 +64,19 @@ export function WalletInfo() {
       )}
 
       {!solanaWallet && (
-        <View className="bg-zinc-800 rounded-lg p-4 mb-4 border border-zinc-700">
-          <Text className="text-sm text-zinc-400">
+        <View className="bg-secondary rounded-lg p-4 mb-4 border border-border">
+          <Text className="text-sm text-muted-foreground">
             Creating your Solana wallet...
           </Text>
-          <ActivityIndicator size="small" color="#A1A1AA" className="mt-2" />
+          <ActivityIndicator size="small" color="#94A3B8" className="mt-2" />
         </View>
       )}
 
       <TouchableOpacity
-        className="mt-4 py-3 rounded-lg bg-zinc-800"
+        className="mt-4 py-3 rounded-lg bg-secondary"
         onPress={handleSignOut}
       >
-        <Text className="text-zinc-300 text-center font-semibold text-base">
+        <Text className="text-muted-foreground text-center font-semibold text-base">
           Sign Out
         </Text>
       </TouchableOpacity>

@@ -80,12 +80,12 @@ export function UsernameInput({
           value={value}
           onChangeText={onChangeText}
           placeholder="username"
-          placeholderTextColor="#A1A1AA"
+          placeholderTextColor="#94A3B8"
           autoCapitalize="none"
           autoCorrect={false}
           maxLength={15}
         />
-        {checking && <ActivityIndicator size="small" color="#71717A" />}
+        {checking && <ActivityIndicator size="small" color="#94A3B8" />}
         {!checking && available === true && (
           <Text className="text-lg text-green-500">&#10003;</Text>
         )}

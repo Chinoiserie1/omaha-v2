@@ -35,22 +35,22 @@ export function VaultPosition({ mintAddress }: VaultPositionProps) {
   }, [fetchBalance]);
 
   return (
-    <View className="mx-5 mt-4 p-4 rounded-2xl bg-zinc-900 border border-zinc-800">
-      <Text className="text-xs font-semibold uppercase tracking-wider text-zinc-500 mb-3">
+    <View className="mx-5 mt-4 p-4 rounded-2xl bg-card border border-border">
+      <Text className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
         Your Position
       </Text>
       {loading ? (
-        <ActivityIndicator size="small" color="#71717A" />
+        <ActivityIndicator size="small" color="#94A3B8" />
       ) : balance === null ? (
-        <Text className="text-sm text-zinc-500">Unable to load balance</Text>
+        <Text className="text-sm text-muted-foreground">Unable to load balance</Text>
       ) : balance === 0 ? (
-        <Text className="text-sm text-zinc-500">No position</Text>
+        <Text className="text-sm text-muted-foreground">No position</Text>
       ) : (
         <View className="flex-row items-baseline">
-          <Text className="text-2xl font-bold text-white">
+          <Text className="text-2xl font-bold text-foreground">
             {balance.toLocaleString(undefined, { maximumFractionDigits: 6 })}
           </Text>
-          <Text className="text-sm text-zinc-400 ml-2">shares</Text>
+          <Text className="text-sm text-muted-foreground ml-2">shares</Text>
         </View>
       )}
     </View>

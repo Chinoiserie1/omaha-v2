@@ -31,7 +31,7 @@ export const ProfilePicture = memo(function ProfilePicture({
           height: size,
           borderRadius: size / 2,
           borderWidth: 2,
-          borderColor: "#52525b",
+          borderColor: "#334155",
         }}
         contentFit="cover"
         transition={200}
@@ -48,14 +48,14 @@ export const ProfilePicture = memo(function ProfilePicture({
       style={{
         width: size,
         height: size,
-        backgroundColor: "#3f3f46",
+        backgroundColor: "#1E293B",
         borderWidth: 2,
-        borderColor: "#52525b",
+        borderColor: "#334155",
       }}
     >
       <Text
         style={{ fontSize, lineHeight: fontSize * 1.2 }}
-        className="font-bold text-zinc-300"
+        className="font-bold text-muted-foreground"
       >
         {initials}
       </Text>

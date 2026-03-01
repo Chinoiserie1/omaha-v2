@@ -9,7 +9,7 @@ export default function VaultLayout() {
     sheetGrabberVisible: Platform.OS === "ios",
     contentStyle: {
       flex: 1,
-      backgroundColor: "#09090B",
+      backgroundColor: "#0F172A",
     },
   };
 
@@ -17,7 +17,7 @@ export default function VaultLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: "#09090B" },
+        contentStyle: { backgroundColor: "#0F172A" },
       }}
     >
       <Stack.Screen name="index" />

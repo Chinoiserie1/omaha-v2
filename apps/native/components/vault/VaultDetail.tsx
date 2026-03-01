@@ -13,7 +13,6 @@ import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
-import { VaultHoldingsSection } from "./VaultHoldingsSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -61,10 +60,9 @@ type VaultSection =
   | { type: "performance"; data: { vaultId: string } }
   | { type: "investment"; data: VaultData }
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
-  | { type: "allocations-header" }
+  | { type: "allocations-header"; data: { count: number } }
   | { type: "allocation"; data: Allocation }
   | { type: "changes"; data: string[] }
-  | { type: "holdings"; data: { vaultId: string } }
   | { type: "description"; data: string }
   | { type: "about"; data: { title: string; content: string } }
   | { type: "data-source"; data: { title: string; content: string } }
@@ -81,16 +79,6 @@ interface VaultDetailProps {
 function buildSections(vault: VaultData): VaultSection[] {
   const sections: VaultSection[] = [{ type: "header", data: vault }];
 
-  if (vault.description) {
-    sections.push({ type: "description", data: vault.description });
-  }
-
-  sections.push(
-    { type: "stats", data: vault },
-    { type: "performance", data: { vaultId: vault.id } },
-    { type: "investment", data: vault },
-  );
-
   if (vault.portfolio?.thesisSummary) {
     sections.push({
       type: "thesis",
@@ -101,9 +89,15 @@ function buildSections(vault: VaultData): VaultSection[] {
     });
   }
 
+  sections.push(
+    { type: "stats", data: vault },
+    { type: "performance", data: { vaultId: vault.id } },
+    { type: "investment", data: vault },
+  );
+
   const allocations = vault.portfolio?.allocations ?? [];
   if (allocations.length > 0) {
-    sections.push({ type: "allocations-header" });
+    sections.push({ type: "allocations-header", data: { count: allocations.length } });
     for (const alloc of allocations) {
       sections.push({ type: "allocation", data: alloc });
     }
@@ -113,7 +107,6 @@ function buildSections(vault: VaultData): VaultSection[] {
     sections.push({ type: "changes", data: vault.portfolio.changes });
   }
 
-  sections.push({ type: "holdings", data: { vaultId: vault.id } });
 
   if (vault.about) {
     sections.push({
@@ -146,20 +139,11 @@ function buildSections(vault: VaultData): VaultSection[] {
   return sections;
 }
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <View className="px-5 pt-4 pb-2">
-      <Text className="text-xs font-semibold tracking-wider uppercase text-zinc-500">
-        {title}
-      </Text>
-    </View>
-  );
-}
 
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
   const queryClient = useQueryClient();
-  const iconColor = "#FAFAFA";
+  const iconColor = "#F8FAFC";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -177,25 +161,31 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   const renderItem = useCallback(({ item }: { item: VaultSection }) => {
+    let content: React.ReactNode = null;
+
     switch (item.type) {
       case "header":
-        return (
+        content = (
           <VaultHeader
             name={item.data.name}
             kolUsername={item.data.kolUsername}
             isActive={item.data.isActive}
+            avatarUrl={item.data.kol.avatarUrl}
+            updatedAt={item.data.portfolio?.updatedAt}
           />
         );
+        break;
       case "description":
-        return (
-          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-400">
+        content = (
+          <Text className="px-5 mx-4 text-sm leading-5 text-center text-muted-foreground">
             {item.data}
           </Text>
         );
+        break;
       case "performance":
         return <VaultPerformanceChart vaultId={item.data.vaultId} />;
       case "investment":
-        return (
+        content = (
           <VaultInvestmentCard
             vaultId={item.data.id}
             mintAddress={item.data.mintAddress}
@@ -203,17 +193,38 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             onWithdraw={onWithdraw}
           />
         );
+        break;
       case "thesis":
-        return (
+        content = (
           <VaultThesis
             thesisSummary={item.data.thesisSummary}
             updatedAt={item.data.updatedAt}
           />
         );
+        break;
       case "allocations-header":
-        return <SectionHeader title="Portfolio Allocation" />;
+        content = (
+          <View className="px-5 flex-row items-center">
+            <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+              Assets Involved
+            </Text>
+            <View
+              className="ml-2 rounded-full items-center justify-center"
+              style={{
+                backgroundColor: "rgba(59, 130, 246, 0.15)",
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+              }}
+            >
+              <Text style={{ color: "#3B82F6", fontSize: 10, fontWeight: "600" }}>
+                {item.data.count}
+              </Text>
+            </View>
+          </View>
+        );
+        break;
       case "allocation":
-        return (
+        content = (
           <VaultAllocationCard
             asset={item.data.asset}
             percentage={item.data.percentage}
@@ -221,29 +232,26 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             reasoning={item.data.reasoning}
           />
         );
+        break;
       case "changes":
-        return <VaultChanges changes={item.data} />;
-      case "holdings":
-        return <VaultHoldingsSection vaultId={item.data.vaultId} />;
+        content = <VaultChanges changes={item.data} />;
+        break;
       case "about":
       case "data-source":
       case "performance-calc":
-        return (
-          <VaultTextSection
-            title={item.data.title}
-            content={item.data.content}
-          />
-        );
       case "disclosure":
-        return (
+        content = (
           <VaultTextSection
             title={item.data.title}
             content={item.data.content}
           />
         );
+        break;
       default:
         return null;
     }
+
+    return <View className="mb-4">{content}</View>;
   }, [onInvest, onWithdraw]);
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);
@@ -253,16 +261,16 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={onBack}
-          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-900 active:bg-zinc-800"
+          className="justify-center items-center w-10 h-10 rounded-full bg-card active:bg-secondary"
         >
           <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
         <Text
-          className="flex-1 ml-3 text-base font-semibold text-white"
+          className="flex-1 ml-3 text-base font-semibold text-foreground"
           numberOfLines={1}
         >
           {vault?.name ?? ""}
@@ -276,14 +284,14 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         </View>
       ) : error ? (
         <View className="flex-1 justify-center items-center px-6">
-          <Text className="mb-4 text-base text-center text-zinc-400">
+          <Text className="mb-4 text-base text-center text-muted-foreground">
             {error.message}
           </Text>
           <Pressable
             className="px-6 py-3 bg-white rounded-lg active:opacity-80"
             onPress={() => refetch()}
           >
-            <Text className="font-semibold text-zinc-950">Try Again</Text>
+            <Text className="font-semibold text-background">Try Again</Text>
           </Pressable>
         </View>
       ) : (
@@ -292,7 +300,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
           renderItem={renderItem}
           getItemType={getItemType}
           keyExtractor={keyExtractor}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />

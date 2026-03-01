@@ -1,5 +1,5 @@
 import "../global.css";
-import { AppState, type AppStateStatus } from "react-native";
+import { ActivityIndicator, AppState, type AppStateStatus, View } from "react-native";
 import { useEffect, useRef } from "react";
 import { Stack, useNavigationContainerRef } from "expo-router";
 import { StatusBar } from "expo-status-bar";
@@ -17,9 +17,16 @@ import { PostHogErrorBoundary } from "../components/shared/PostHogErrorBoundary"
 import { PostHogScreenTracker } from "../components/shared/PostHogScreenTracker";
 import { PortalHost } from "@rn-primitives/portal";
 import * as SystemUI from "expo-system-ui";
+import {
+  useFonts,
+  SpaceGrotesk_400Regular,
+  SpaceGrotesk_500Medium,
+  SpaceGrotesk_600SemiBold,
+  SpaceGrotesk_700Bold,
+} from "@expo-google-fonts/space-grotesk";
 
 // Set native root background to dark before React mounts (prevents white flash)
-SystemUI.setBackgroundColorAsync("#09090B");
+SystemUI.setBackgroundColorAsync("#0F172A");
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -89,14 +96,10 @@ function RootNavigator() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: "#09090B" },
+          contentStyle: { backgroundColor: "#0F172A" },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
-        <Stack.Screen
-          name="(onboarding)"
-          options={{ animation: "fade_from_bottom" }}
-        />
         <Stack.Screen name="(app)" options={{ animation: "fade" }} />
       </Stack>
       <PostHogScreenTracker />
@@ -108,6 +111,12 @@ function RootNavigator() {
 
 export default function RootLayout() {
   const { setColorScheme } = useColorScheme();
+  const [fontsLoaded] = useFonts({
+    SpaceGrotesk_400Regular,
+    SpaceGrotesk_500Medium,
+    SpaceGrotesk_600SemiBold,
+    SpaceGrotesk_700Bold,
+  });
 
   // Ensure NativeWind applies dark: classes across all components
   useEffect(() => {
@@ -116,6 +125,14 @@ export default function RootLayout() {
 
   if (!PRIVY_APP_ID || !PRIVY_CLIENT_ID) {
     console.error("[_layout] Privy credentials are missing!");
+  }
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center" }}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+      </View>
+    );
   }
 
   return (
