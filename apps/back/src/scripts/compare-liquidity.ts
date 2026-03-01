@@ -192,7 +192,7 @@ async function fetchBirdeyeOverview(mint: string): Promise<BirdeyeData> {
     }
 
     const json = (await res.json()) as Record<string, any>;
-    const d = json.data;
+    const d = json['data'];
 
     if (!d) {
       return {
@@ -272,9 +272,9 @@ async function fetchJupiterQuote(
     // - Negative = price moved in your favor (good, common with RFQ quotes)
     // - Missing  = RFQ quote with no on-chain routing (treat as 0 impact)
     let impact: number | null = null;
-    if (data.priceImpactPct !== undefined && data.priceImpactPct !== null) {
-      impact = parseFloat(data.priceImpactPct);
-    } else if (data.swapType === "rfq") {
+    if (data['priceImpactPct'] !== undefined && data['priceImpactPct'] !== null) {
+      impact = parseFloat(data['priceImpactPct']);
+    } else if (data['swapType'] === "rfq") {
       // Pure RFQ quotes don't route through AMMs, so no on-chain price impact
       impact = 0;
     }
@@ -282,10 +282,10 @@ async function fetchJupiterQuote(
     return {
       mint: outputMint,
       amountUsd,
-      outAmount: data.outAmount ?? data.outputAmount ?? "0",
+      outAmount: data['outAmount'] ?? data['outputAmount'] ?? "0",
       priceImpactPct: impact,
       routeFound: true,
-      swapType: data.swapType ?? "unknown",
+      swapType: data['swapType'] ?? "unknown",
     };
   } catch (err: any) {
     return {
