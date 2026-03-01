@@ -43,7 +43,7 @@ export const VaultAllocationCard = memo(function VaultAllocationCard({
   const initial = asset.charAt(0).toUpperCase();
 
   return (
-    <View className="mx-5 mb-2 bg-card border border-border rounded-xl p-4 flex-row items-center">
+    <View className="mx-5 bg-card border border-border rounded-xl p-4 flex-row items-center">
       <View
         style={{
           width: 40,

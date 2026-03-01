@@ -13,7 +13,6 @@ import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
-import { VaultHoldingsSection } from "./VaultHoldingsSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -64,7 +63,6 @@ type VaultSection =
   | { type: "allocations-header"; data: { count: number } }
   | { type: "allocation"; data: Allocation }
   | { type: "changes"; data: string[] }
-  | { type: "holdings"; data: { vaultId: string } }
   | { type: "description"; data: string }
   | { type: "about"; data: { title: string; content: string } }
   | { type: "data-source"; data: { title: string; content: string } }
@@ -109,7 +107,6 @@ function buildSections(vault: VaultData): VaultSection[] {
     sections.push({ type: "changes", data: vault.portfolio.changes });
   }
 
-  sections.push({ type: "holdings", data: { vaultId: vault.id } });
 
   if (vault.about) {
     sections.push({
@@ -164,9 +161,11 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   const renderItem = useCallback(({ item }: { item: VaultSection }) => {
+    let content: React.ReactNode = null;
+
     switch (item.type) {
       case "header":
-        return (
+        content = (
           <VaultHeader
             name={item.data.name}
             kolUsername={item.data.kolUsername}
@@ -175,16 +174,18 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             updatedAt={item.data.portfolio?.updatedAt}
           />
         );
+        break;
       case "description":
-        return (
-          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-muted-foreground">
+        content = (
+          <Text className="px-5 mx-4 text-sm leading-5 text-center text-muted-foreground">
             {item.data}
           </Text>
         );
+        break;
       case "performance":
         return <VaultPerformanceChart vaultId={item.data.vaultId} />;
       case "investment":
-        return (
+        content = (
           <VaultInvestmentCard
             vaultId={item.data.id}
             mintAddress={item.data.mintAddress}
@@ -192,16 +193,18 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             onWithdraw={onWithdraw}
           />
         );
+        break;
       case "thesis":
-        return (
+        content = (
           <VaultThesis
             thesisSummary={item.data.thesisSummary}
             updatedAt={item.data.updatedAt}
           />
         );
+        break;
       case "allocations-header":
-        return (
-          <View className="px-5 pt-4 pb-2 flex-row items-center">
+        content = (
+          <View className="px-5 flex-row items-center">
             <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
               Assets Involved
             </Text>
@@ -219,8 +222,9 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             </View>
           </View>
         );
+        break;
       case "allocation":
-        return (
+        content = (
           <VaultAllocationCard
             asset={item.data.asset}
             percentage={item.data.percentage}
@@ -228,29 +232,26 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             reasoning={item.data.reasoning}
           />
         );
+        break;
       case "changes":
-        return <VaultChanges changes={item.data} />;
-      case "holdings":
-        return <VaultHoldingsSection vaultId={item.data.vaultId} />;
+        content = <VaultChanges changes={item.data} />;
+        break;
       case "about":
       case "data-source":
       case "performance-calc":
-        return (
-          <VaultTextSection
-            title={item.data.title}
-            content={item.data.content}
-          />
-        );
       case "disclosure":
-        return (
+        content = (
           <VaultTextSection
             title={item.data.title}
             content={item.data.content}
           />
         );
+        break;
       default:
         return null;
     }
+
+    return <View className="mb-4">{content}</View>;
   }, [onInvest, onWithdraw]);
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);

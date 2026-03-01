@@ -17,7 +17,7 @@ export const VaultThesis = memo(function VaultThesis({
   });
 
   return (
-    <View className="mx-5 mb-4 bg-card border border-border rounded-xl overflow-hidden">
+    <View className="mx-5 bg-card border border-border rounded-xl overflow-hidden">
       <View className="flex-row">
         <View
           style={{
