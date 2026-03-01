@@ -4,6 +4,7 @@ import type {
   updateUserSchema,
   userResponseSchema,
   paginationSchema,
+  vaultListQuerySchema,
   checkUsernameSchema,
   completeOnboardingSchema,
   updateUsernameSchema,
@@ -14,6 +15,7 @@ export type CreateUserDto = z.infer<typeof createUserSchema>;
 export type UpdateUserDto = z.infer<typeof updateUserSchema>;
 export type UserResponseDto = z.infer<typeof userResponseSchema>;
 export type PaginationDto = z.infer<typeof paginationSchema>;
+export type VaultListQueryDto = z.infer<typeof vaultListQuerySchema>;
 export type CheckUsernameDto = z.infer<typeof checkUsernameSchema>;
 export type CompleteOnboardingDto = z.infer<typeof completeOnboardingSchema>;
 export type UpdateUsernameDto = z.infer<typeof updateUsernameSchema>;

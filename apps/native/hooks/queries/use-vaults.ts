@@ -67,13 +67,17 @@ interface VaultData {
 
 const VAULTS_PAGE_SIZE = 10;
 
-export function useVaults() {
+export function useVaults(search?: string) {
   return useInfiniteQuery({
-    queryKey: queryKeys.vaults.all(),
-    queryFn: ({ pageParam }) =>
-      apiClient.get<PaginatedVaults>(
-        `/api/vaults?page=${pageParam}&pageSize=${VAULTS_PAGE_SIZE}`
-      ),
+    queryKey: queryKeys.vaults.all(search),
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({
+        page: String(pageParam),
+        pageSize: String(VAULTS_PAGE_SIZE),
+      });
+      if (search) params.set("search", search);
+      return apiClient.get<PaginatedVaults>(`/api/vaults?${params.toString()}`);
+    },
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
       lastPage.page < lastPage.totalPages ? lastPage.page + 1 : undefined,

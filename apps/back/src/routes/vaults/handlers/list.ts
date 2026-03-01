@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { PortfolioSnapshot } from "@repo/database";
-import { paginationSchema } from "@repo/shared";
+import { vaultListQuerySchema } from "@repo/shared";
 import type { PaginatedResponse } from "@repo/shared";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
@@ -46,7 +46,7 @@ export async function listVaults(
   request: FastifyRequest,
   reply: FastifyReply
 ) {
-  const parsed = paginationSchema.safeParse(request.query);
+  const parsed = vaultListQuerySchema.safeParse(request.query);
   if (!parsed.success) {
     return reply.status(400).send({
       success: false,
@@ -54,12 +54,13 @@ export async function listVaults(
     });
   }
 
-  const { page, pageSize } = parsed.data;
+  const { page, pageSize, search } = parsed.data;
   const skip = (page - 1) * pageSize;
 
   const { vaults, total } = await vaultRepo.findActiveVaultsPaginated({
     skip,
     take: pageSize,
+    ...(search ? { search } : {}),
   });
 
   const mints = vaults

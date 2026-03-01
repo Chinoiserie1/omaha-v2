@@ -13,7 +13,11 @@ function ListHeader() {
   return <VaultSectionHeader />;
 }
 
-export function VaultList() {
+interface VaultListProps {
+  search?: string;
+}
+
+export function VaultList({ search }: VaultListProps) {
   const router = useRouter();
   const {
     data,
@@ -24,7 +28,7 @@ export function VaultList() {
     fetchNextPage,
     hasNextPage,
     isFetchingNextPage,
-  } = useVaults();
+  } = useVaults(search);
 
   const vaults = useMemo(
     () => data?.pages.flatMap((p) => p.items) ?? [],
@@ -95,7 +99,7 @@ export function VaultList() {
     return (
       <View className="flex-1 items-center justify-center py-20">
         <Text className="text-center text-base text-muted-foreground">
-          No vaults available
+          {search ? "No vaults match your search" : "No vaults available"}
         </Text>
       </View>
     );
