@@ -1,4 +1,4 @@
-import { useReducer, useCallback } from "react";
+import { useReducer, useCallback, useState } from "react";
 import { View, ActivityIndicator } from "react-native";
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
@@ -66,8 +66,11 @@ export function WithdrawFlow() {
   const { wallets } = useEmbeddedSolanaWallet();
   const wallet = wallets?.[0];
   const { data: portfolio, isLoading } = useWalletPortfolio(wallet?.address);
-  const { send, sending, error } = useTokenTransfer();
+  const { send, sending, error: transferError } = useTokenTransfer();
   const [state, dispatch] = useReducer(reducer, initialState);
+  const [flowError, setFlowError] = useState<string | null>(null);
+
+  const error = transferError ?? flowError;
 
   const tokens: PortfolioTokenItem[] =
     portfolio?.items.filter(
@@ -76,11 +79,15 @@ export function WithdrawFlow() {
 
   const handleConfirm = useCallback(async () => {
     if (!state.token) return;
+    setFlowError(null);
     try {
       const signature = await send(state.token, state.recipient, state.amount);
       dispatch({ type: "CONFIRM_SUCCESS", txSignature: signature });
-    } catch {
-      // error is set inside useTokenTransfer
+    } catch (err) {
+      // Fallback: surface the error even if useTokenTransfer didn't set it
+      const message =
+        err instanceof Error ? err.message : "Transaction failed";
+      setFlowError(message);
     }
   }, [send, state.token, state.recipient, state.amount]);
 

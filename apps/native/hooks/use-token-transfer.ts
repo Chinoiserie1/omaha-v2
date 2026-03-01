@@ -34,13 +34,13 @@ export function useTokenTransfer(): UseTokenTransferResult {
       amount: string,
     ): Promise<string> => {
       setError(null);
-
-      if (!wallet) {
-        throw new Error("Wallet not ready");
-      }
-
       setSending(true);
+
       try {
+        if (!wallet) {
+          throw new Error("Wallet not ready");
+        }
+
         const connection = new Connection(SOLANA_RPC_URL);
         const amountNum = parseFloat(amount);
 
