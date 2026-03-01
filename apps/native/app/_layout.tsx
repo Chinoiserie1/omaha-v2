@@ -64,8 +64,6 @@ function FlushOnBackground() {
 
 /** Inner navigator — lives inside AuthProvider so it can consume useAuth. */
 function RootNavigator() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { status } = useAuth();
   const rootNav = useNavigationContainerRef();
   const prevStatus = useRef(status);
@@ -91,7 +89,7 @@ function RootNavigator() {
       <Stack
         screenOptions={{
           headerShown: false,
-          contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+          contentStyle: { backgroundColor: "#09090B" },
         }}
       >
         <Stack.Screen name="index" options={{ animation: "none" }} />
@@ -102,7 +100,7 @@ function RootNavigator() {
         <Stack.Screen name="(app)" options={{ animation: "fade" }} />
       </Stack>
       <PostHogScreenTracker />
-      <StatusBar style={isDark ? "light" : "dark"} />
+      <StatusBar style="light" />
       <Toast config={toastConfig} />
     </>
   );
@@ -111,7 +109,7 @@ function RootNavigator() {
 export default function RootLayout() {
   const { setColorScheme } = useColorScheme();
 
-  // Force dark mode — override system preference
+  // Ensure NativeWind applies dark: classes across all components
   useEffect(() => {
     setColorScheme("dark");
   }, [setColorScheme]);

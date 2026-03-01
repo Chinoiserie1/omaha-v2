@@ -53,6 +53,7 @@ export function FloatingGlassTabBar({
     >
       <GlassView
         effect="regular"
+        blur
         className="overflow-hidden"
         style={[styles.pill, styles.shadow]}
       >

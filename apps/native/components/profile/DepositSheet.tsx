@@ -22,45 +22,45 @@ export function DepositSheet() {
 
   return (
     <View className="flex-1 items-center justify-center px-6">
-      <Text className="text-xl font-bold text-zinc-900 dark:text-white mb-2">
+      <Text className="text-xl font-bold text-white mb-2">
         Deposit SOL
       </Text>
-      <Text className="text-sm text-zinc-500 dark:text-zinc-400 mb-8 text-center">
+      <Text className="text-sm text-zinc-400 mb-8 text-center">
         Send SOL to your wallet address below
       </Text>
 
-      <View className="bg-white dark:bg-zinc-800 p-6 rounded-2xl mb-6">
+      <View className="bg-zinc-800 p-6 rounded-2xl mb-6">
         <QRCode
           value={wallet.address}
           size={200}
           backgroundColor="transparent"
-          color="#18181B"
+          color="#FAFAFA"
         />
       </View>
 
       <TouchableOpacity
-        className="w-full bg-zinc-100 dark:bg-zinc-900 rounded-xl p-4 mb-4"
+        className="w-full bg-zinc-900 rounded-xl p-4 mb-4"
         onPress={handleCopy}
         activeOpacity={0.7}
       >
         <Text
-          className="text-sm text-zinc-700 dark:text-zinc-300 font-mono text-center"
+          className="text-sm text-zinc-300 font-mono text-center"
           numberOfLines={1}
           ellipsizeMode="middle"
         >
           {wallet.address}
         </Text>
-        <Text className="text-xs text-zinc-500 dark:text-zinc-400 text-center mt-1">
+        <Text className="text-xs text-zinc-400 text-center mt-1">
           {copied ? "Copied!" : "Tap to copy"}
         </Text>
       </TouchableOpacity>
 
       <TouchableOpacity
-        className="w-full bg-zinc-900 dark:bg-white py-4 rounded-xl mt-4"
+        className="w-full bg-white py-4 rounded-xl mt-4"
         onPress={() => router.back()}
         activeOpacity={0.8}
       >
-        <Text className="text-white dark:text-zinc-950 text-center font-semibold text-base">
+        <Text className="text-zinc-950 text-center font-semibold text-base">
           Done
         </Text>
       </TouchableOpacity>

@@ -9,7 +9,7 @@ export default function WithdrawRoute() {
   const { data: vault } = useVault(id);
 
   return (
-    <View className="flex-1 bg-white dark:bg-zinc-950">
+    <View className="flex-1 bg-zinc-950">
       <WithdrawScreen
         vaultId={id}
         vaultName={vault?.name ?? ""}

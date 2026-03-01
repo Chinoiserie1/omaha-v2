@@ -1,12 +1,16 @@
 import { View, StyleSheet } from "react-native";
 import { BlurView } from "@sbaiahmed1/react-native-blur";
-import { useColorScheme } from "nativewind";
 import { GLASS_CONFIG } from "@/lib/glass";
 import { cn } from "@/lib/utils";
 import type { GlassViewProps, GlassContainerProps } from "./types";
 
+/**
+ * Android GlassView — plain semi-transparent background by default.
+ * Pass `blur` to opt into a native BlurView (for floating elements like tab bars).
+ */
 export function GlassView({
   effect = "regular",
+  blur = false,
   tintColor: _tintColor,
   interactive: _interactive,
   colorScheme: _colorScheme,
@@ -15,9 +19,6 @@ export function GlassView({
   children,
   ...props
 }: GlassViewProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   if (effect === "none") {
     return (
       <View
@@ -30,24 +31,30 @@ export function GlassView({
     );
   }
 
-  const blurType = isDark
-    ? GLASS_CONFIG.androidBlurTypeDark
-    : GLASS_CONFIG.androidBlurTypeLight;
+  if (blur) {
+    return (
+      <View
+        className={cn("overflow-hidden rounded-xl", className)}
+        style={style}
+        {...props}
+      >
+        <BlurView
+          blurType={GLASS_CONFIG.androidBlurTypeDark}
+          blurAmount={GLASS_CONFIG.androidBlurAmount}
+          reducedTransparencyFallbackColor={GLASS_CONFIG.fallbackBgDark}
+          style={StyleSheet.absoluteFill}
+        />
+        {children}
+      </View>
+    );
+  }
 
   return (
     <View
       className={cn("overflow-hidden rounded-xl", className)}
-      style={style}
+      style={[{ backgroundColor: GLASS_CONFIG.fallbackBgDark }, style]}
       {...props}
     >
-      <BlurView
-        blurType={blurType}
-        blurAmount={GLASS_CONFIG.androidBlurAmount}
-        reducedTransparencyFallbackColor={
-          isDark ? GLASS_CONFIG.fallbackBgDark : GLASS_CONFIG.fallbackBgLight
-        }
-        style={StyleSheet.absoluteFill}
-      />
       {children}
     </View>
   );

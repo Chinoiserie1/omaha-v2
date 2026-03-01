@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useColorScheme } from "nativewind";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
@@ -16,8 +15,6 @@ import { useAuth } from "../contexts/auth-context";
 export default function LandingScreen() {
   const { status } = useAuth();
   const router = useRouter();
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const didRedirectToApp = useRef(false);
 
   const contentOpacity = useSharedValue(1);
@@ -66,14 +63,14 @@ export default function LandingScreen() {
 
   if (status === "loading" || status === "authenticated") {
     return (
-      <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950 items-center justify-center">
-        <ActivityIndicator size="large" color={isDark ? "#FAFAFA" : "#18181B"} />
+      <SafeAreaView className="flex-1 bg-zinc-950 items-center justify-center">
+        <ActivityIndicator size="large" color="#FAFAFA" />
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-zinc-950">
       <Animated.View
         style={contentStyle}
         className="flex-1 justify-center items-center px-6"
@@ -82,11 +79,11 @@ export default function LandingScreen() {
 
         <View className="w-full mt-16">
           <TouchableOpacity
-            className="bg-zinc-900 dark:bg-white py-4 rounded-xl"
+            className="bg-white py-4 rounded-xl"
             onPress={handleGetStarted}
             activeOpacity={0.8}
           >
-            <Text className="text-white dark:text-zinc-950 text-center font-semibold text-lg">
+            <Text className="text-zinc-950 text-center font-semibold text-lg">
               Get Started
             </Text>
           </TouchableOpacity>

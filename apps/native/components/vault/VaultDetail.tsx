@@ -3,7 +3,6 @@ import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useMemo, useState } from "react";
-import { useColorScheme } from "nativewind";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/query-keys";
 import { VaultHeader } from "./VaultHeader";
@@ -160,8 +159,7 @@ function SectionHeader({ title }: { title: string }) {
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
   const queryClient = useQueryClient();
-  const { colorScheme } = useColorScheme();
-  const iconColor = colorScheme === "dark" ? "#FAFAFA" : "#18181B";
+  const iconColor = "#FAFAFA";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -190,7 +188,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         );
       case "description":
         return (
-          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-600 dark:text-zinc-400">
+          <Text className="px-5 mx-4 mb-6 text-sm leading-5 text-center text-zinc-400">
             {item.data}
           </Text>
         );
@@ -255,16 +253,16 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950" edges={["top"]}>
+    <SafeAreaView className="flex-1 bg-zinc-950" edges={["top"]}>
       <View className="flex-row items-center px-4 py-3">
         <Pressable
           onPress={onBack}
-          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-200 dark:bg-zinc-900 active:bg-zinc-300 dark:active:bg-zinc-800"
+          className="justify-center items-center w-10 h-10 rounded-full bg-zinc-900 active:bg-zinc-800"
         >
           <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
         <Text
-          className="flex-1 ml-3 text-base font-semibold text-zinc-900 dark:text-white"
+          className="flex-1 ml-3 text-base font-semibold text-white"
           numberOfLines={1}
         >
           {vault?.name ?? ""}
@@ -278,7 +276,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         </View>
       ) : error ? (
         <View className="flex-1 justify-center items-center px-6">
-          <Text className="mb-4 text-base text-center text-zinc-600 dark:text-zinc-400">
+          <Text className="mb-4 text-base text-center text-zinc-400">
             {error.message}
           </Text>
           <Pressable

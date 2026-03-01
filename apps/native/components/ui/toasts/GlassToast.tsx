@@ -1,7 +1,5 @@
 import { View, Text, StyleSheet, Platform } from "react-native";
 import { GlassView } from "@/components/ui/glass";
-import { useColorScheme } from "nativewind";
-
 type ToastVariant = "success" | "error";
 
 type GlassToastProps = {
@@ -20,14 +18,7 @@ const OVERLAY = {
   error: "rgba(239, 68, 68, 0.08)",
 } as const;
 
-const LIGHT = {
-  border: "rgba(255,255,255,0.40)",
-  shadow: "rgba(31,38,135,0.20)",
-  textPrimary: "#18181B",
-  textSecondary: "#71717A",
-};
-
-const DARK = {
+const THEME = {
   border: "rgba(255,255,255,0.12)",
   shadow: "rgba(0,0,0,0.40)",
   textPrimary: "#FAFAFA",
@@ -35,9 +26,6 @@ const DARK = {
 };
 
 export function GlassToast({ type, text1, text2 }: GlassToastProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-  const theme = isDark ? DARK : LIGHT;
   const accent = ACCENT[type];
   const overlay = OVERLAY[type];
 
@@ -47,10 +35,10 @@ export function GlassToast({ type, text1, text2 }: GlassToastProps) {
       style={[
         styles.outer,
         {
-          borderColor: theme.border,
+          borderColor: THEME.border,
           ...Platform.select({
             ios: {
-              shadowColor: theme.shadow,
+              shadowColor: THEME.shadow,
               shadowOffset: { width: 0, height: 8 },
               shadowOpacity: 1,
               shadowRadius: 16,
@@ -69,7 +57,7 @@ export function GlassToast({ type, text1, text2 }: GlassToastProps) {
         <View style={styles.textContainer}>
           {text1 ? (
             <Text
-              style={[styles.title, { color: theme.textPrimary }]}
+              style={[styles.title, { color: THEME.textPrimary }]}
               numberOfLines={1}
             >
               {text1}
@@ -77,7 +65,7 @@ export function GlassToast({ type, text1, text2 }: GlassToastProps) {
           ) : null}
           {text2 ? (
             <Text
-              style={[styles.message, { color: theme.textSecondary }]}
+              style={[styles.message, { color: THEME.textSecondary }]}
               numberOfLines={2}
             >
               {text2}

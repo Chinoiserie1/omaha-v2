@@ -1,11 +1,7 @@
 import { Stack } from "expo-router";
 import { Platform } from "react-native";
-import { useColorScheme } from "nativewind";
 
 export default function VaultLayout() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
   const sheetOptions = {
     presentation: "formSheet" as const,
     sheetAllowedDetents: [0.4, 0.6],
@@ -13,7 +9,7 @@ export default function VaultLayout() {
     sheetGrabberVisible: Platform.OS === "ios",
     contentStyle: {
       flex: 1,
-      backgroundColor: isDark ? "#09090B" : "#FFFFFF",
+      backgroundColor: "#09090B",
     },
   };
 
@@ -21,7 +17,7 @@ export default function VaultLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+        contentStyle: { backgroundColor: "#09090B" },
       }}
     >
       <Stack.Screen name="index" />

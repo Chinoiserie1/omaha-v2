@@ -153,16 +153,16 @@ export default function ConnectTwitterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-zinc-950">
       <View className="flex-1 justify-center px-6">
         <View className="items-center mb-12">
-          <View className="justify-center items-center mb-6 w-16 h-16 rounded-2xl bg-zinc-100 dark:bg-zinc-800">
-            <Text className="text-3xl text-zinc-900 dark:text-white">𝕏</Text>
+          <View className="justify-center items-center mb-6 w-16 h-16 rounded-2xl bg-zinc-800">
+            <Text className="text-3xl text-white">𝕏</Text>
           </View>
-          <Text className="mb-3 text-3xl font-bold text-zinc-900 dark:text-white">
+          <Text className="mb-3 text-3xl font-bold text-white">
             Connect your Twitter
           </Text>
-          <Text className="text-base leading-6 text-center text-zinc-500 dark:text-zinc-400">
+          <Text className="text-base leading-6 text-center text-zinc-400">
             Link your Twitter account to set up your profile automatically.
           </Text>
         </View>
@@ -173,16 +173,16 @@ export default function ConnectTwitterScreen() {
         />
 
         {error && (
-          <View className="p-4 mt-4 bg-red-50 rounded-xl dark:bg-red-950">
-            <Text className="mb-3 text-sm text-center text-red-600 dark:text-red-400">
+          <View className="p-4 mt-4 bg-red-950 rounded-xl">
+            <Text className="mb-3 text-sm text-center text-red-400">
               {error}
             </Text>
             <TouchableOpacity
-              className="self-center px-4 py-2 rounded-lg bg-zinc-900 dark:bg-white"
+              className="self-center px-4 py-2 rounded-lg bg-white"
               onPress={handleRetry}
               activeOpacity={0.8}
             >
-              <Text className="text-sm font-semibold text-white dark:text-zinc-950">
+              <Text className="text-sm font-semibold text-zinc-950">
                 Retry
               </Text>
             </TouchableOpacity>
@@ -198,7 +198,7 @@ export default function ConnectTwitterScreen() {
           {isCreatingGuest ? (
             <ActivityIndicator color="#71717A" />
           ) : (
-            <Text className="text-base text-center text-zinc-500 dark:text-zinc-400">
+            <Text className="text-base text-center text-zinc-400">
               Continue as Guest
             </Text>
           )}

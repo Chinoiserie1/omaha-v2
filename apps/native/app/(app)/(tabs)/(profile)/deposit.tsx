@@ -3,7 +3,7 @@ import { DepositSheet } from "../../../../components/profile/DepositSheet";
 
 export default function DepositScreen() {
   return (
-    <SafeAreaView className="flex-1 bg-white dark:bg-zinc-950">
+    <SafeAreaView className="flex-1 bg-zinc-950">
       <DepositSheet />
     </SafeAreaView>
   );

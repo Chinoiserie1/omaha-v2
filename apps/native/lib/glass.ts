@@ -12,15 +12,11 @@ export type GlassEffect = "regular" | "clear" | "none";
 
 export const GLASS_CONFIG = {
   /** Default blur amount for the Android BlurView fallback */
-  androidBlurAmount: 50,
-
-  /** Default blur type for light mode on Android */
-  androidBlurTypeLight: "systemThinMaterialLight" as const,
+  androidBlurAmount: 20,
 
   /** Default blur type for dark mode on Android */
-  androidBlurTypeDark: "systemThinMaterialDark" as const,
+  androidBlurTypeDark: "dark" as const,
 
   /** Fallback background for web / reduce-transparency */
-  fallbackBgLight: "rgba(255, 255, 255, 0.7)",
-  fallbackBgDark: "rgba(9, 9, 11, 0.7)",
+  fallbackBgDark: "rgba(39, 39, 42, 0.45)",
 } as const;

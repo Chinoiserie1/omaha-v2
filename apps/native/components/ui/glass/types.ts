@@ -21,6 +21,10 @@ export interface GlassViewProps extends ViewPropsCompat {
   /** Force a specific color scheme instead of system default */
   colorScheme?: "light" | "dark" | "system";
 
+  /** Use native blur instead of semi-transparent background (default: false).
+   *  Useful for floating elements like tab bars where blur looks good. */
+  blur?: boolean;
+
   /** NativeWind className */
   className?: string;
 }

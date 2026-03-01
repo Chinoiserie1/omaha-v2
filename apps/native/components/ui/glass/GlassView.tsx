@@ -1,5 +1,4 @@
 import { View } from "react-native";
-import { useColorScheme } from "nativewind";
 import { GLASS_CONFIG } from "@/lib/glass";
 import { cn } from "@/lib/utils";
 import type { GlassViewProps, GlassContainerProps } from "./types";
@@ -9,6 +8,7 @@ import type { GlassViewProps, GlassContainerProps } from "./types";
  */
 export function GlassView({
   effect = "regular",
+  blur: _blur,
   tintColor: _tintColor,
   interactive: _interactive,
   colorScheme: _colorScheme,
@@ -17,15 +17,7 @@ export function GlassView({
   children,
   ...props
 }: GlassViewProps) {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
-
-  const bgColor =
-    effect === "none"
-      ? undefined
-      : isDark
-        ? GLASS_CONFIG.fallbackBgDark
-        : GLASS_CONFIG.fallbackBgLight;
+  const bgColor = effect === "none" ? undefined : GLASS_CONFIG.fallbackBgDark;
 
   return (
     <View

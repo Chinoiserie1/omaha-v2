@@ -2,7 +2,6 @@ import { useEffect, useRef } from "react";
 import { Redirect, Stack } from "expo-router";
 import { usePrivy } from "@privy-io/expo";
 import { usePostHog } from "posthog-react-native";
-import { useColorScheme } from "nativewind";
 import { FullScreenLoader } from "../../components/shared/FullScreenLoader";
 import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
@@ -10,8 +9,6 @@ import { useAuth } from "../../contexts/auth-context";
 import { useWithdrawalWebSocket } from "../../hooks/use-withdrawal-ws";
 
 export default function AppLayout() {
-  const { colorScheme } = useColorScheme();
-  const isDark = colorScheme === "dark";
   const { status } = useAuth();
   const { user } = usePrivy();
   const posthog = usePostHog();
@@ -78,7 +75,7 @@ export default function AppLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        contentStyle: { backgroundColor: isDark ? "#09090B" : "#FFFFFF" },
+        contentStyle: { backgroundColor: "#09090B" },
       }}
     >
       <Stack.Screen name="(tabs)" />
