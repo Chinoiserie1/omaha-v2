@@ -281,6 +281,11 @@ export async function syncAllKols(): Promise<void> {
       continue;
     }
 
+    if (!kol.algoEnabled) {
+      logger.info({ username: kol.username }, "Algo disabled, skipping tweet fetch");
+      continue;
+    }
+
     try {
       logger.info({ username: kol.username }, "Syncing KOL");
 

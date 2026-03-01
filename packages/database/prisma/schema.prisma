@@ -49,6 +49,7 @@ model Kol {
   bio            String?
   hasTwitter     Boolean             @default(true)
   isActive       Boolean             @default(true)
+  algoEnabled    Boolean             @default(true)
   lastFetchedAt  DateTime?
   tweets         Tweet[]
   portfolios     PortfolioSnapshot[]

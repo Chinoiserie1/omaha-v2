@@ -318,6 +318,11 @@ export async function synthesizeAllKols(): Promise<void> {
       continue;
     }
 
+    if (!kol.algoEnabled) {
+      logger.info({ username: kol.username }, "Algo disabled for KOL, skipping");
+      continue;
+    }
+
     logger.info(
       { kolId: kol.id, username: kol.username, progress: `${processed + 1}/${kols.length}` },
       "Processing KOL"
