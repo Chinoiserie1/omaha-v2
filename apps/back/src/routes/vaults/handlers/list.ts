@@ -4,6 +4,7 @@ import { paginationSchema } from "@repo/shared";
 import type { PaginatedResponse } from "@repo/shared";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
+import * as tokenPriceRepo from "../../../store/token-price.repository.js";
 
 function formatVaultSummary(
   vault: {
@@ -17,7 +18,8 @@ function formatVaultSummary(
     mintAddress: string | null;
     isActive: boolean;
   },
-  portfolio: PortfolioSnapshot | null
+  portfolio: PortfolioSnapshot | null,
+  performancePercent: number | null
 ) {
   return {
     id: vault.id,
@@ -29,6 +31,7 @@ function formatVaultSummary(
     glamVaultPda: vault.glamVaultPda,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
+    performancePercent,
     portfolio: portfolio
       ? {
           thesisSummary: portfolio.thesisSummary,
@@ -59,10 +62,18 @@ export async function listVaults(
     take: pageSize,
   });
 
+  const mints = vaults
+    .map((v) => v.mintAddress)
+    .filter((m): m is string => m !== null);
+  const perfMap = await tokenPriceRepo.getVaultPerformanceByMints(mints);
+
   const items = await Promise.all(
     vaults.map(async (vault) => {
       const portfolio = await portfolioRepo.findLatestSnapshot(vault.kolId);
-      return formatVaultSummary(vault, portfolio);
+      const perf = vault.mintAddress
+        ? (perfMap.get(vault.mintAddress) ?? null)
+        : null;
+      return formatVaultSummary(vault, portfolio, perf);
     })
   );
 

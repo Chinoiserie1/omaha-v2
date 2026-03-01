@@ -39,8 +39,7 @@ export function VaultList() {
           name={item.name}
           description={item.description}
           category={mock.category}
-          performancePercent={mock.performancePercent}
-          performancePeriod={mock.performancePeriod}
+          performancePercent={item.performancePercent}
           followersCount={mock.followersCount}
           onPress={() => router.push(`/(app)/(tabs)/(home)/vault/${item.id}`)}
         />

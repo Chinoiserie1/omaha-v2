@@ -72,6 +72,39 @@ export async function findAllVaultTokens(): Promise<Token[]> {
   return prisma.token.findMany({ where: { isVault: true } });
 }
 
+export async function getVaultPerformanceByMints(
+  mints: string[]
+): Promise<Map<string, number>> {
+  if (mints.length === 0) return new Map();
+
+  const rows = await prisma.$queryRaw<
+    { mint: string; first_price: number; last_price: number }[]
+  >`
+    SELECT DISTINCT ON (t.mint)
+      t.mint,
+      FIRST_VALUE(tp."usdPrice") OVER w AS first_price,
+      LAST_VALUE(tp."usdPrice") OVER w AS last_price
+    FROM "Token" t
+    JOIN "TokenPrice" tp ON tp."tokenId" = t.id
+    WHERE t."isVault" = true AND t.mint = ANY(${mints}::text[])
+    WINDOW w AS (
+      PARTITION BY tp."tokenId"
+      ORDER BY tp.date
+      ROWS BETWEEN UNBOUNDED PRECEDING AND UNBOUNDED FOLLOWING
+    )
+  `;
+
+  const map = new Map<string, number>();
+  for (const row of rows) {
+    if (row.first_price > 0) {
+      const pct =
+        ((row.last_price - row.first_price) / row.first_price) * 100;
+      map.set(row.mint, Math.round(pct * 10) / 10);
+    }
+  }
+  return map;
+}
+
 export async function getPriceHistory(
   tokenId: string,
   since: Date,

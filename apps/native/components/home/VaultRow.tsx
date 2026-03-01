@@ -8,8 +8,7 @@ interface VaultRowProps {
   name: string;
   description: string;
   category: string;
-  performancePercent: number;
-  performancePeriod: string;
+  performancePercent: number | null;
   followersCount: number;
   onPress?: () => void;
 }
@@ -26,13 +25,17 @@ export const VaultRow = memo(function VaultRow({
   description,
   category,
   performancePercent,
-  performancePeriod,
   followersCount,
   onPress,
 }: VaultRowProps) {
-  const isPositive = performancePercent >= 0;
-  const perfColor = isPositive ? "text-green-400" : "text-red-400";
-  const perfSign = isPositive ? "+" : "";
+  const hasPerf = performancePercent !== null;
+  const isPositive = hasPerf && performancePercent >= 0;
+  const perfColor = !hasPerf
+    ? "text-muted-foreground"
+    : isPositive
+      ? "text-green-400"
+      : "text-red-400";
+  const perfSign = hasPerf && isPositive ? "+" : "";
 
   return (
     <Pressable
@@ -48,8 +51,7 @@ export const VaultRow = memo(function VaultRow({
             {category}
           </Text>
           <Text className={`text-xs font-bold ${perfColor}`}>
-            {perfSign}
-            {performancePercent}% ({performancePeriod})
+            {hasPerf ? `${perfSign}${performancePercent}%` : "--"}
           </Text>
         </View>
 
