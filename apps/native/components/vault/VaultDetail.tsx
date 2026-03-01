@@ -61,7 +61,7 @@ type VaultSection =
   | { type: "performance"; data: { vaultId: string } }
   | { type: "investment"; data: VaultData }
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
-  | { type: "allocations-header" }
+  | { type: "allocations-header"; data: { count: number } }
   | { type: "allocation"; data: Allocation }
   | { type: "changes"; data: string[] }
   | { type: "holdings"; data: { vaultId: string } }
@@ -81,16 +81,6 @@ interface VaultDetailProps {
 function buildSections(vault: VaultData): VaultSection[] {
   const sections: VaultSection[] = [{ type: "header", data: vault }];
 
-  if (vault.description) {
-    sections.push({ type: "description", data: vault.description });
-  }
-
-  sections.push(
-    { type: "stats", data: vault },
-    { type: "performance", data: { vaultId: vault.id } },
-    { type: "investment", data: vault },
-  );
-
   if (vault.portfolio?.thesisSummary) {
     sections.push({
       type: "thesis",
@@ -101,9 +91,15 @@ function buildSections(vault: VaultData): VaultSection[] {
     });
   }
 
+  sections.push(
+    { type: "stats", data: vault },
+    { type: "performance", data: { vaultId: vault.id } },
+    { type: "investment", data: vault },
+  );
+
   const allocations = vault.portfolio?.allocations ?? [];
   if (allocations.length > 0) {
-    sections.push({ type: "allocations-header" });
+    sections.push({ type: "allocations-header", data: { count: allocations.length } });
     for (const alloc of allocations) {
       sections.push({ type: "allocation", data: alloc });
     }
@@ -146,15 +142,6 @@ function buildSections(vault: VaultData): VaultSection[] {
   return sections;
 }
 
-function SectionHeader({ title }: { title: string }) {
-  return (
-    <View className="px-5 pt-4 pb-2">
-      <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-        {title}
-      </Text>
-    </View>
-  );
-}
 
 export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
@@ -184,6 +171,8 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
             name={item.data.name}
             kolUsername={item.data.kolUsername}
             isActive={item.data.isActive}
+            avatarUrl={item.data.kol.avatarUrl}
+            updatedAt={item.data.portfolio?.updatedAt}
           />
         );
       case "description":
@@ -211,7 +200,25 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
           />
         );
       case "allocations-header":
-        return <SectionHeader title="Portfolio Allocation" />;
+        return (
+          <View className="px-5 pt-4 pb-2 flex-row items-center">
+            <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+              Assets Involved
+            </Text>
+            <View
+              className="ml-2 rounded-full items-center justify-center"
+              style={{
+                backgroundColor: "rgba(59, 130, 246, 0.15)",
+                paddingHorizontal: 8,
+                paddingVertical: 2,
+              }}
+            >
+              <Text style={{ color: "#3B82F6", fontSize: 10, fontWeight: "600" }}>
+                {item.data.count}
+              </Text>
+            </View>
+          </View>
+        );
       case "allocation":
         return (
           <VaultAllocationCard
@@ -292,7 +299,7 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
           renderItem={renderItem}
           getItemType={getItemType}
           keyExtractor={keyExtractor}
-          contentContainerStyle={{ paddingBottom: 40 }}
+          contentContainerStyle={{ paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />

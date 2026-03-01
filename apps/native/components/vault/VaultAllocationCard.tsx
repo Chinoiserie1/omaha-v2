@@ -2,8 +2,6 @@ import { View } from "react-native";
 import { memo } from "react";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 
 interface VaultAllocationCardProps {
   asset: string;
@@ -19,6 +17,21 @@ const convictionConfig = {
   stale: { label: "Stale", bg: "bg-secondary", text: "text-muted-foreground" },
 };
 
+const tokenColors: Record<string, string> = {
+  S: "#14F195",
+  B: "#F7931A",
+  E: "#627EEA",
+  J: "#00D4AA",
+  R: "#E42575",
+  W: "#2775CA",
+  M: "#6E4AFF",
+};
+
+function getTokenColor(asset: string): string {
+  const firstChar = asset.charAt(0).toUpperCase();
+  return tokenColors[firstChar] ?? "#3B82F6";
+}
+
 export const VaultAllocationCard = memo(function VaultAllocationCard({
   asset,
   percentage,
@@ -26,32 +39,48 @@ export const VaultAllocationCard = memo(function VaultAllocationCard({
   reasoning,
 }: VaultAllocationCardProps) {
   const config = convictionConfig[conviction] ?? convictionConfig.stale;
-  const barValue = Math.min(percentage, 100);
+  const tokenColor = getTokenColor(asset);
+  const initial = asset.charAt(0).toUpperCase();
 
   return (
-    <Card className="mx-5 mb-2 gap-3 p-4 py-4">
-      <CardContent className="gap-3">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-base font-semibold">{asset}</Text>
-          <Text className="text-base font-bold">{percentage}%</Text>
-        </View>
-        <Progress value={barValue} className="h-1.5" />
-        <View className="flex-row items-center gap-2">
-          <Badge variant="secondary" className={config.bg}>
-            <Text className={`text-[10px] font-semibold ${config.text}`}>
-              {config.label}
-            </Text>
-          </Badge>
-        </View>
+    <View className="mx-5 mb-2 bg-card border border-border rounded-xl p-4 flex-row items-center">
+      <View
+        style={{
+          width: 40,
+          height: 40,
+          borderRadius: 20,
+          backgroundColor: `${tokenColor}20`,
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Text
+          style={{ color: tokenColor, fontSize: 16, fontWeight: "700" }}
+        >
+          {initial}
+        </Text>
+      </View>
+
+      <View className="flex-1 ml-3">
+        <Text className="text-base font-semibold">{asset}</Text>
         {reasoning ? (
           <Text
-            className="text-xs leading-4 text-muted-foreground"
-            numberOfLines={2}
+            className="text-xs text-muted-foreground mt-0.5"
+            numberOfLines={1}
           >
             {reasoning}
           </Text>
         ) : null}
-      </CardContent>
-    </Card>
+      </View>
+
+      <View className="items-end">
+        <Text className="text-base font-bold">{percentage}%</Text>
+        <Badge variant="secondary" className={`mt-1 ${config.bg}`}>
+          <Text className={`text-[10px] font-semibold ${config.text}`}>
+            {config.label}
+          </Text>
+        </Badge>
+      </View>
+    </View>
   );
 });
