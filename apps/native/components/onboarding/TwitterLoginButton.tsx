@@ -91,13 +91,13 @@ export function TwitterLoginButton({
           <ActivityIndicator color="white" />
         ) : (
           <Text className="text-lg font-semibold text-primary-foreground">
-            Continue with Twitter
+            Login with X
           </Text>
         )}
       </Button>
 
       {activeState.status === "error" && activeState.error && (
-        <Text className="mt-3 text-center text-sm text-destructive">
+        <Text className="mt-3 text-sm text-center text-destructive">
           {activeState.error.message}
         </Text>
       )}

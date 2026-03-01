@@ -200,11 +200,10 @@ export default function LandingScreen() {
           </View>
 
           {/* Heading + Description */}
-          <Text style={styles.heading}>
-            Copy-Trade the{"\n"}Best KOLs on Solana
-          </Text>
+          <Text style={styles.heading}>Invest like the{"\n"}Top 1%</Text>
           <Text style={styles.description}>
-            Automatically mirror top crypto influencer trades with one tap.
+            Automate your trades by copying the signals from most profitable
+            KOLs
           </Text>
 
           {/* Buttons */}
