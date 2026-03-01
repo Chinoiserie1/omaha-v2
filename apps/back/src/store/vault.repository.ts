@@ -7,6 +7,27 @@ export async function findAllActiveVaults() {
   });
 }
 
+export async function findActiveVaultsPaginated({
+  skip,
+  take,
+}: {
+  skip: number;
+  take: number;
+}) {
+  const where = { isActive: true };
+  const [vaults, total] = await Promise.all([
+    prisma.kolVault.findMany({
+      where,
+      include: { kol: true },
+      orderBy: { createdAt: "desc" },
+      skip,
+      take,
+    }),
+    prisma.kolVault.count({ where }),
+  ]);
+  return { vaults, total };
+}
+
 export async function findVaultById(id: string) {
   return prisma.kolVault.findUnique({
     where: { id },

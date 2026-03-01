@@ -1,45 +1,35 @@
 import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import { useRouter } from "expo-router";
 import { VaultRow } from "./VaultRow";
 import { VaultSectionHeader } from "./VaultSectionHeader";
-import { ExploreMoreButton } from "./ExploreMoreButton";
+import { ExploreMoreFooter } from "./ExploreMoreFooter";
 import { DisclaimerText } from "./DisclaimerText";
 import { getVaultMockData } from "./vault-mock-data";
-import { useVaults } from "../../hooks/queries/use-vaults";
-
-interface Allocation {
-  asset: string;
-  percentage: number;
-}
-
-interface VaultSummary {
-  id: string;
-  name: string;
-  description: string;
-  kolUsername: string;
-  portfolio: {
-    allocations: Allocation[];
-  } | null;
-}
+import { useVaults, type VaultSummary } from "../../hooks/queries/use-vaults";
 
 function ListHeader() {
   return <VaultSectionHeader />;
 }
 
-function ListFooter() {
-  return (
-    <View>
-      <ExploreMoreButton />
-      <DisclaimerText />
-    </View>
-  );
-}
-
 export function VaultList() {
   const router = useRouter();
-  const { data: vaults, isLoading, error, refetch, isRefetching } = useVaults();
+  const {
+    data,
+    isLoading,
+    error,
+    refetch,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useVaults();
+
+  const vaults = useMemo(
+    () => data?.pages.flatMap((p) => p.items) ?? [],
+    [data]
+  );
 
   const renderItem = useCallback(
     ({ item }: { item: VaultSummary }) => {
@@ -56,10 +46,25 @@ export function VaultList() {
         />
       );
     },
-    [router],
+    [router]
   );
 
   const keyExtractor = useCallback((item: VaultSummary) => item.id, []);
+
+  const handleEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
+    }
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
+
+  const ListFooter = useCallback(() => {
+    return (
+      <View>
+        {hasNextPage && <ExploreMoreFooter isLoading={isFetchingNextPage} />}
+        <DisclaimerText />
+      </View>
+    );
+  }, [hasNextPage, isFetchingNextPage]);
 
   if (isLoading) {
     return (
@@ -87,7 +92,7 @@ export function VaultList() {
     );
   }
 
-  if (!vaults || vaults.length === 0) {
+  if (vaults.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
         <Text className="text-center text-base text-muted-foreground">
@@ -104,6 +109,8 @@ export function VaultList() {
       keyExtractor={keyExtractor}
       refreshing={isRefetching}
       onRefresh={() => refetch()}
+      onEndReached={handleEndReached}
+      onEndReachedThreshold={0.5}
       ListHeaderComponent={ListHeader}
       ListFooterComponent={ListFooter}
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
