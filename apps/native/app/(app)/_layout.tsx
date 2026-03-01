@@ -68,7 +68,7 @@ export default function AppLayout() {
     onboardingData !== undefined &&
     !onboardingData.onboardingCompleted
   ) {
-    return <Redirect href="/(onboarding)/connect-twitter" />;
+    return <Redirect href="/" />;
   }
 
   return (

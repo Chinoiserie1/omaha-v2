@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { View, Text } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -33,22 +33,56 @@ export function AnimatedLogo() {
   return (
     <View className="items-center">
       <Animated.View style={logoStyle}>
-        <View className="w-20 h-20 bg-white rounded-2xl items-center justify-center mb-6">
-          <Text className="text-zinc-950 text-3xl font-bold">A</Text>
+        <View style={styles.iconContainer}>
+          <Text style={styles.iconText}>A</Text>
         </View>
       </Animated.View>
 
       <Animated.View style={logoStyle}>
-        <Text className="text-4xl font-bold text-white tracking-tight">
-          Autopilot
-        </Text>
+        <Text style={styles.appName}>AUTOPILOT</Text>
       </Animated.View>
 
       <Animated.View style={taglineStyle}>
-        <Text className="text-base text-zinc-400 mt-3 text-center">
-          Your crypto portfolio on autopilot
-        </Text>
+        <Text style={styles.tagline}>Your crypto portfolio on autopilot</Text>
       </Animated.View>
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  iconContainer: {
+    width: 72,
+    height: 72,
+    borderRadius: 16,
+    backgroundColor: "rgba(0,112,255,0.2)",
+    borderWidth: 1,
+    borderColor: "rgba(0,112,255,0.4)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 16,
+    shadowColor: "#0070FF",
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 25,
+    elevation: 8,
+  },
+  iconText: {
+    color: "#0070FF",
+    fontSize: 30,
+    fontFamily: "SpaceGrotesk_700Bold",
+  },
+  appName: {
+    color: "#FFFFFF",
+    fontSize: 24,
+    fontFamily: "SpaceGrotesk_700Bold",
+    letterSpacing: 4,
+    textTransform: "uppercase",
+  },
+  tagline: {
+    color: "#94A3B8",
+    fontSize: 14,
+    fontFamily: "SpaceGrotesk_400Regular",
+    marginTop: 8,
+    textAlign: "center",
+  },
+});

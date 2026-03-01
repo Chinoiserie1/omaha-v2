@@ -25,6 +25,16 @@ module.exports = {
           900: "#18181B",
           950: "#09090B",
         },
+        brand: {
+          DEFAULT: "#0070FF",
+          dark: "#1E40AF",
+          light: "#2563EB",
+        },
+        navy: {
+          950: "#0A0F1E",
+          900: "#0F172A",
+          800: "#111827",
+        },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",
