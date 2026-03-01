@@ -2,7 +2,11 @@ import { View, Text, ActivityIndicator, TouchableOpacity } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { useCallback } from "react";
 import { useRouter } from "expo-router";
-import { VaultCard } from "../ui/VaultCard";
+import { VaultRow } from "./VaultRow";
+import { VaultSectionHeader } from "./VaultSectionHeader";
+import { ExploreMoreButton } from "./ExploreMoreButton";
+import { DisclaimerText } from "./DisclaimerText";
+import { getVaultMockData } from "./vault-mock-data";
 import { useVaults } from "../../hooks/queries/use-vaults";
 
 interface Allocation {
@@ -20,22 +24,39 @@ interface VaultSummary {
   } | null;
 }
 
+function ListHeader() {
+  return <VaultSectionHeader />;
+}
+
+function ListFooter() {
+  return (
+    <View>
+      <ExploreMoreButton />
+      <DisclaimerText />
+    </View>
+  );
+}
+
 export function VaultList() {
   const router = useRouter();
   const { data: vaults, isLoading, error, refetch, isRefetching } = useVaults();
 
   const renderItem = useCallback(
-    ({ item }: { item: VaultSummary }) => (
-      <VaultCard
-        name={item.name}
-        description={item.description}
-        allocations={
-          (item.portfolio?.allocations as Allocation[] | undefined) ?? []
-        }
-        onPress={() => router.push(`/(app)/(tabs)/(home)/vault/${item.id}`)}
-      />
-    ),
-    [router]
+    ({ item }: { item: VaultSummary }) => {
+      const mock = getVaultMockData(item.id);
+      return (
+        <VaultRow
+          name={item.name}
+          description={item.description}
+          category={mock.category}
+          performancePercent={mock.performancePercent}
+          performancePeriod={mock.performancePeriod}
+          followersCount={mock.followersCount}
+          onPress={() => router.push(`/(app)/(tabs)/(home)/vault/${item.id}`)}
+        />
+      );
+    },
+    [router],
   );
 
   const keyExtractor = useCallback((item: VaultSummary) => item.id, []);
@@ -50,15 +71,15 @@ export function VaultList() {
 
   if (error) {
     return (
-      <View className="flex-1 items-center justify-center py-20 px-6">
-        <Text className="text-base text-muted-foreground text-center mb-4">
+      <View className="flex-1 items-center justify-center px-6 py-20">
+        <Text className="mb-4 text-center text-base text-muted-foreground">
           {error.message}
         </Text>
         <TouchableOpacity
-          className="bg-primary py-3 px-6 rounded-lg"
+          className="rounded-lg bg-primary px-6 py-3"
           onPress={() => refetch()}
         >
-          <Text className="text-primary-foreground font-semibold">
+          <Text className="font-semibold text-primary-foreground">
             Try Again
           </Text>
         </TouchableOpacity>
@@ -69,7 +90,7 @@ export function VaultList() {
   if (!vaults || vaults.length === 0) {
     return (
       <View className="flex-1 items-center justify-center py-20">
-        <Text className="text-base text-muted-foreground text-center">
+        <Text className="text-center text-base text-muted-foreground">
           No vaults available
         </Text>
       </View>
@@ -83,6 +104,8 @@ export function VaultList() {
       keyExtractor={keyExtractor}
       refreshing={isRefetching}
       onRefresh={() => refetch()}
+      ListHeaderComponent={ListHeader}
+      ListFooterComponent={ListFooter}
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
       showsVerticalScrollIndicator={false}
     />
