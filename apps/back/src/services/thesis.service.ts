@@ -4,13 +4,14 @@ import { llmComplete } from "../utils/llm.js";
 import { extractJson } from "../utils/extract-json.js";
 import {
   PortfolioOutputSchema,
-  THESIS_SYSTEM_PROMPT,
+  buildThesisSystemPrompt,
   type Allocation,
 } from "@repo/shared";
 import * as portfolioRepo from "../store/portfolio.repository.js";
 import * as classificationRepo from "../store/classification.repository.js";
 import { findActiveKols } from "../store/kol.repository.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
+import { getCuratedAssetSymbols } from "../data/curated-assets.js";
 import { classifyUnclassifiedTweets } from "./classifier.service.js";
 import { computeLatestPeriod } from "./backtest.service.js";
 import { computeTweetImpacts } from "./tweet-impact.service.js";
@@ -169,11 +170,14 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
   }
 
-  logger.info({ kolId }, "Sending thesis prompt to LLM");
+  const availableSymbols = getCuratedAssetSymbols();
+  const thesisPrompt = buildThesisSystemPrompt(availableSymbols);
+
+  logger.info({ kolId, availableAssetsCount: availableSymbols.length }, "Sending thesis prompt to LLM");
 
   let rawResponse: string;
   try {
-    rawResponse = await llmComplete(THESIS_SYSTEM_PROMPT, userContent);
+    rawResponse = await llmComplete(thesisPrompt, userContent);
   } catch (err) {
     logger.error({ err, kolId }, "LLM call failed for thesis synthesis");
     return false;

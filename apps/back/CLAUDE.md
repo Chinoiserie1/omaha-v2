@@ -1,195 +1,90 @@
-# apps/back - CLAUDE.md
+# CLAUDE.md — apps/back
 
-## Overview
+> This file is the entry point for Claude Code working on the back-end.
+> Read this FIRST, then read the linked docs before touching the relevant area.
 
-This is the **Fastify 5** REST API backend using TypeScript and ESM. It provides the API endpoints for the Autopilot platform.
+## Golden Rules
 
-## Technology Stack
+1. **Optimize for accuracy over speed.** Never guess values, addresses, or formats. If unsure, ask Nadar.
+2. **Never send 4000+ Jupiter tokens to an LLM prompt.** The curated asset list exists for a reason. See `docs/ASSET-PIPELINE.md`.
+3. **Never arbitrarily add or remove tickers.** `curated-assets.ts` is a DERIVED file — its contents come from alias targets + mint lookups + stock dedup. See `docs/ASSET-PIPELINE.md` for inclusion criteria and source of truth. If a token is tradeable on Jupiter and is an alias target, it belongs in the curated list. No subjective filtering.
+4. **One-time fixes must be removed after use.** No temporary workarounds in the codebase.
+5. **Always include `prisma migrate deploy`** in the build script of `package.json`.
+6. **Use cron jobs, not infinite loops.** 1-service architecture with embedded node-cron.
+7. **Never assume zero fees for vaults.** Always explicitly set fee params.
 
-- **Framework**: Fastify 5.x
-- **Runtime**: Node.js 20+ with ESM
-- **TypeScript**: 5.7.x (strict mode)
-- **Database**: PostgreSQL via `@repo/database` (Prisma)
-- **Validation**: Zod via `@repo/shared`
-- **Dev Runner**: tsx (watch mode)
+## Architecture Overview
 
-## Directory Structure
+Read `docs/DATA-PIPELINE.md` for the full system flow diagram.
+
+Quick summary: Tweets → Classify → Thesis → Rebalance → Swap
 
 ```
-apps/back/
-├── src/
-│   ├── index.ts            # Entry point, server startup
-│   ├── app.ts              # Fastify app configuration
-│   └── routes/
-│       └── users.ts        # User CRUD routes
-├── tsconfig.json           # TypeScript config (extends @repo/config-typescript/node.json)
-├── eslint.config.js        # ESLint config (uses @repo/config-eslint/node)
-└── package.json
+CRON_FETCH_TWEETS  →  Twitter API  →  Tweet table
+CRON_RUN_ALGO      →  Classify (LLM) + Thesis (LLM)  →  PortfolioSnapshot
+CRON_REBALANCE     →  Delta computation  →  Jupiter swaps via GLAM vault
+CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 ```
 
-## Development
+## Key Documentation
 
+| Doc | What it covers | Read before touching... |
+|-----|----------------|------------------------|
+| `docs/ASSET-PIPELINE.md` | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
+| `docs/DATA-PIPELINE.md` | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service | Any cron job, any service file |
+
+## Tech Stack
+
+- **Runtime**: Node.js + TypeScript (ESM)
+- **Framework**: Fastify
+- **DB**: PostgreSQL via Prisma ORM
+- **Scheduling**: node-cron (embedded, not separate Railway services)
+- **LLM**: Claude Haiku via Anthropic API
+- **Blockchain**: Solana (web3.js, GLAM SDK, Jupiter API)
+- **Deploy**: Railway (single service)
+
+## File Layout
+
+```
+src/
+├── cron/           # Cron job entry points (thin wrappers calling services)
+├── data/           # Static data files
+│   ├── curated-assets.ts    # ~155 assets the thesis LLM can invest in
+│   └── asset-aliases.json   # ~500 aliases for classifier normalization
+├── scripts/        # One-off scripts (seed, sync, debug)
+├── services/       # Business logic
+│   ├── classifier.service.ts   # Tweet classification (uses aliases)
+│   ├── thesis.service.ts       # Portfolio synthesis (uses curated assets)
+│   ├── rebalancer.service.ts   # Vault rebalancing (uses Jupiter tradeableAssets)
+│   └── ...
+├── store/          # Prisma repository layer
+├── solana/         # On-chain interaction (GLAM, Jupiter swaps)
+└── utils/          # Shared utilities (logger, LLM client, env)
+```
+
+## Common Tasks
+
+### Adding a new KOL
+Run `seed-kols.ts` script. The algo picks them up automatically on next cron run.
+
+### Adding a new asset
+See `docs/ASSET-PIPELINE.md` § "How to Add an Asset". You need to update BOTH the aliases file AND curated-assets.ts.
+
+### Running the algo for one KOL
 ```bash
-# Start development server with hot reload
-pnpm dev              # From root
-pnpm --filter @repo/back dev  # Specific to this app
+set -a && source .env && set +a && pnpm --filter @repo/back exec tsx src/scripts/run-algo-one-kol.ts <username>
+```
 
-# Build for production
-pnpm --filter @repo/back build
-
-# Start production server
-pnpm --filter @repo/back start
-
-# Type check
+### Typecheck
+```bash
 pnpm --filter @repo/back typecheck
-
-# Lint
-pnpm --filter @repo/back lint
 ```
+Note: Some pre-existing errors (ioredis, @fastify/websocket, bullmq types) are known.
 
-The development server runs on **port 3001**.
+## Reminders
 
-## Configuration
-
-### TypeScript
-
-Extends `@repo/config-typescript/node.json` with:
-- `module: "NodeNext"`
-- `moduleResolution: "NodeNext"`
-- `target: "ES2022"`
-- Output to `dist/`
-
-### ESLint
-
-Uses `@repo/config-eslint/node` which includes:
-- Node.js specific rules (eslint-plugin-n)
-- TypeScript ESLint
-- Console logging allowed for `info`, `warn`, `error`
-
-## API Routes
-
-### Health Check
-
-```
-GET /health
-Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
-```
-
-### Users API
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/users` | List users (paginated) |
-| GET | `/api/users/:id` | Get user by ID |
-| POST | `/api/users` | Create new user |
-| PATCH | `/api/users/:id` | Update user |
-| DELETE | `/api/users/:id` | Delete user |
-
-### KOL Tweets API
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| GET | `/api/kols/:kolId/tweets` | List tweets by KOL (paginated) |
-| GET | `/api/kols/:kolId/tweets/significant` | List significant tweets with impact scores |
-| GET | `/api/kols/:kolId/threads/:conversationId` | Get tweet thread |
-
-## Using Shared Packages
-
-### Prisma Client
-
-```typescript
-import { prisma } from "@repo/database";
-
-const users = await prisma.user.findMany();
-```
-
-### Zod Validation
-
-```typescript
-import { createUserSchema, type ApiResponse } from "@repo/shared";
-
-const result = createUserSchema.safeParse(request.body);
-if (!result.success) {
-  return reply.status(400).send({
-    success: false,
-    error: result.error.errors.map(e => e.message).join(", "),
-  } satisfies ApiResponse<never>);
-}
-```
-
-## Route Pattern
-
-```typescript
-import type { FastifyInstance } from "fastify";
-import { prisma } from "@repo/database";
-import { someSchema, type ApiResponse } from "@repo/shared";
-
-export async function myRoutes(app: FastifyInstance) {
-  app.get("/", async (request, reply) => {
-    // Validate query/params/body with Zod
-    // Use Prisma for database operations
-    // Return typed response
-  });
-}
-```
-
-## Error Handling
-
-Use the `ApiResponse` type from `@repo/shared`:
-
-```typescript
-// Success
-return { success: true, data: user } satisfies ApiResponse<User>;
-
-// Error
-return reply.status(400).send({
-  success: false,
-  error: "Validation failed",
-} satisfies ApiResponse<never>);
-```
-
-## Environment Variables
-
-- `PORT` - Server port (default: 3001)
-- `HOST` - Server host (default: 0.0.0.0)
-- `DATABASE_URL` - PostgreSQL connection string
-- `NODE_ENV` - Environment (development/production)
-
-## Build Output
-
-Production build generates:
-- `dist/` - Compiled JavaScript (ESM)
-
-Run with: `node dist/index.js`
-
-## ESM Import Notes
-
-When importing local files, use `.js` extension:
-```typescript
-import { buildApp } from "./app.js";
-import { userRoutes } from "./routes/users.js";
-```
-
-## CORS
-
-CORS is enabled for all origins in development:
-```typescript
-await app.register(cors, { origin: true });
-```
-
-## Logging
-
-Fastify logger is configured:
-- Development: `debug` level
-- Production: `info` level
-
-## Testing
-
-(Add testing setup when implemented)
-
-## Important Notes
-
-- Uses tsx for development (fast TypeScript execution)
-- ESM-only (no CommonJS)
-- Prisma client must be generated before starting
-- Database must be accessible via `DATABASE_URL`
+- Update `FORNADAR.md` after changes.
+- Update `README.md` when changes affect architecture, data sources, or constraints.
+- Nadar deploys on Railway. Use env vars from `.env`.
+- M2 MacBook with x86 Homebrew at `/usr/local` — use `arch -x86_64` for build issues.
+- When creating GLAM vaults, always confirm token name/symbol with Nadar first.

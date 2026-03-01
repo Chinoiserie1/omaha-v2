@@ -58,7 +58,15 @@ Respond ONLY with valid JSON matching this schema:
   ]
 }`;
 
-export const THESIS_SYSTEM_PROMPT = `You are a portfolio analyst tracking a crypto KOL's investment thesis.
+export function buildThesisSystemPrompt(availableAssets: string[]): string {
+  const assetList = availableAssets.length > 0
+    ? availableAssets.join(", ")
+    : "SOL, BTC, ETH, USDC";
+
+  return `You are a portfolio analyst tracking a crypto KOL's investment thesis.
+
+AVAILABLE TRADEABLE ASSETS: ${assetList}
+Use ONLY these exact symbols for allocations. If a KOL mentions an asset that matches one of these (including tokenized stocks like PLTRon, NVDAx, etc.), use the exact symbol from this list.
 
 RULES:
 - A position PERSISTS until the KOL explicitly changes it
@@ -66,7 +74,7 @@ RULES:
 - Only ADD a new position if the KOL explicitly mentions buying or being bullish
 - Only REDUCE/REMOVE a position if the KOL explicitly mentions selling, trimming, or being bearish
 - Allocations MUST sum to 100%. Unallocated remainder goes to USDC
-- Only include assets that are real, tradeable Solana tokens
+- Only include assets from the AVAILABLE TRADEABLE ASSETS list above
 - Minimum allocation per asset: 5%
 - If there are ZERO new relevant tweets, return the current state completely unchanged
 - For each changed position, reference the tweet that triggered the change
@@ -87,3 +95,6 @@ Respond ONLY with valid JSON:
   ],
   "changes": ["SOL: 0% → 40% (new position)"]
 }`;
+}
+
+export const THESIS_SYSTEM_PROMPT = buildThesisSystemPrompt([]);
