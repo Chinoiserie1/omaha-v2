@@ -32,57 +32,101 @@ interface BirdeyeResponse {
 
 // --- Manual maps ---
 
-const STOCK_TICKERS: Record<string, string> = {
-  AAPL: "Apple",
-  TSLA: "Tesla",
-  NVDA: "NVIDIA",
-  AMZN: "Amazon",
-  GOOGL: "Google",
-  META: "Meta",
-  MSFT: "Microsoft",
-  NFLX: "Netflix",
-  AMD: "AMD",
-  INTC: "Intel",
-  COIN: "Coinbase",
-  HOOD: "Robinhood",
-  MSTR: "MicroStrategy",
-  CRM: "Salesforce",
-  PLTR: "Palantir",
-  UBER: "Uber",
-  SQ: "Block",
-  PYPL: "PayPal",
-  SHOP: "Shopify",
-  SNOW: "Snowflake",
-  NET: "Cloudflare",
-  RBLX: "Roblox",
-  SPOT: "Spotify",
-  DIS: "Disney",
-  BA: "Boeing",
-  JPM: "JPMorgan",
-  GS: "Goldman Sachs",
-  V: "Visa",
-  MA: "Mastercard",
-  WMT: "Walmart",
-  COST: "Costco",
-  NKE: "Nike",
-  KO: "Coca-Cola",
-  PEP: "PepsiCo",
-  MCD: "McDonald's",
-  PFE: "Pfizer",
-  JNJ: "Johnson & Johnson",
-  UNH: "UnitedHealth",
-  LLY: "Eli Lilly",
-  MRNA: "Moderna",
-  SPY: "S&P 500 ETF",
-  QQQ: "Nasdaq 100 ETF",
-  IWM: "Russell 2000 ETF",
-  DIA: "Dow Jones ETF",
-  TLT: "Treasury Bond ETF",
-  GLD: "Gold ETF",
-  SLV: "Silver ETF",
-  VTI: "Total Stock Market ETF",
-  VOO: "S&P 500 Vanguard ETF",
-  ARKK: "ARK Innovation ETF",
+// Stock tickers with company name and most liquid tokenized version
+// Winner determined by Birdeye liquidity check on 2026-03-01
+// "x" = xStock (Backed Finance, decimals 8), "on" = Ondo GM (decimals 9)
+interface StockEntry {
+  name: string;
+  bestSuffix: "x" | "on";
+  hasXstock: boolean;
+  hasOndo: boolean;
+}
+
+const STOCK_TICKERS: Record<string, StockEntry> = {
+  // --- Both xStock and Ondo exist (53 overlapping) ---
+  // xStock wins (27):
+  AAPL:  { name: "Apple",               bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  ABT:   { name: "Abbott",              bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  AMZN:  { name: "Amazon",              bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  COIN:  { name: "Coinbase",            bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  CRCL:  { name: "Circle",              bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  CSCO:  { name: "Cisco",               bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  CVX:   { name: "Chevron",             bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  GLD:   { name: "Gold ETF",            bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  GOOGL: { name: "Google",              bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  HOOD:  { name: "Robinhood",           bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  LIN:   { name: "Linde",               bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  LLY:   { name: "Eli Lilly",           bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  MCD:   { name: "McDonald's",          bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  META:  { name: "Meta",                bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  MRK:   { name: "Merck",               bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  MSTR:  { name: "MicroStrategy",       bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  NVDA:  { name: "NVIDIA",              bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  ORCL:  { name: "Oracle",              bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  PEP:   { name: "PepsiCo",             bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  PG:    { name: "Procter & Gamble",    bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  QQQ:   { name: "Nasdaq 100 ETF",      bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  SPY:   { name: "S&P 500 ETF",         bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  TSLA:  { name: "Tesla",               bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  UNH:   { name: "UnitedHealth",        bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  WMT:   { name: "Walmart",             bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  OPEN:  { name: "Opendoor",            bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  TMO:   { name: "Thermo Fisher",       bestSuffix: "x",  hasXstock: true,  hasOndo: true },
+  // Ondo wins (26):
+  ABBV:  { name: "AbbVie",              bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  ACN:   { name: "Accenture",           bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  APP:   { name: "AppLovin",            bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  AVGO:  { name: "Broadcom",            bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  BAC:   { name: "Bank of America",     bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  CRM:   { name: "Salesforce",          bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  CRWD:  { name: "CrowdStrike",         bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  GME:   { name: "GameStop",            bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  GS:    { name: "Goldman Sachs",       bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  HD:    { name: "Home Depot",          bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  IBM:   { name: "IBM",                 bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  INTC:  { name: "Intel",               bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  JNJ:   { name: "Johnson & Johnson",   bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  JPM:   { name: "JPMorgan",            bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  KO:    { name: "Coca-Cola",           bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  MA:    { name: "Mastercard",          bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  MRVL:  { name: "Marvell",             bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  MSFT:  { name: "Microsoft",           bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  NFLX:  { name: "Netflix",             bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  NVO:   { name: "Novo Nordisk",        bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  PFE:   { name: "Pfizer",              bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  PLTR:  { name: "Palantir",            bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  TQQQ:  { name: "ProShares UltraPro QQQ", bestSuffix: "on", hasXstock: true, hasOndo: true },
+  V:     { name: "Visa",                bestSuffix: "on", hasXstock: true,  hasOndo: true },
+  VTI:   { name: "Total Stock Market ETF", bestSuffix: "on", hasXstock: true, hasOndo: true },
+  XOM:   { name: "Exxon Mobil",         bestSuffix: "on", hasXstock: true,  hasOndo: true },
+
+  // --- xStocks only (10) ---
+  AMBR:  { name: "Amber",               bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  AZN:   { name: "AstraZeneca",          bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  "BRK.B": { name: "Berkshire Hathaway", bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  CMCSA: { name: "Comcast",              bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  DFDV:  { name: "DFDV",                 bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  DHR:   { name: "Danaher",              bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  HON:   { name: "Honeywell",            bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  MDT:   { name: "Medtronic",            bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  PM:    { name: "Philip Morris",        bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+  TBLL:  { name: "US Treasury Bill ETF", bestSuffix: "x",  hasXstock: true,  hasOndo: false },
+
+  // --- Ondo only (popular tickers not on xStocks) ---
+  AMD:   { name: "AMD",                  bestSuffix: "on", hasXstock: false, hasOndo: true },
+  UBER:  { name: "Uber",                 bestSuffix: "on", hasXstock: false, hasOndo: true },
+  PYPL:  { name: "PayPal",               bestSuffix: "on", hasXstock: false, hasOndo: true },
+  SHOP:  { name: "Shopify",              bestSuffix: "on", hasXstock: false, hasOndo: true },
+  SNOW:  { name: "Snowflake",            bestSuffix: "on", hasXstock: false, hasOndo: true },
+  SPOT:  { name: "Spotify",              bestSuffix: "on", hasXstock: false, hasOndo: true },
+  DIS:   { name: "Disney",               bestSuffix: "on", hasXstock: false, hasOndo: true },
+  BA:    { name: "Boeing",               bestSuffix: "on", hasXstock: false, hasOndo: true },
+  NKE:   { name: "Nike",                 bestSuffix: "on", hasXstock: false, hasOndo: true },
+  MRNA:  { name: "Moderna",              bestSuffix: "on", hasXstock: false, hasOndo: true },
+  IWM:   { name: "Russell 2000 ETF",     bestSuffix: "on", hasXstock: false, hasOndo: true },
+  TLT:   { name: "Treasury Bond ETF",    bestSuffix: "on", hasXstock: false, hasOndo: true },
+  SLV:   { name: "Silver ETF",           bestSuffix: "on", hasXstock: false, hasOndo: true },
+  COST:  { name: "Costco",               bestSuffix: "on", hasXstock: false, hasOndo: true },
 };
 
 const EXTRA_TOKENS: Record<string, string> = {
@@ -93,12 +137,21 @@ const EXTRA_TOKENS: Record<string, string> = {
 
 function buildStockAliases(): Record<string, string> {
   const aliases: Record<string, string> = {};
-  for (const [ticker, name] of Object.entries(STOCK_TICKERS)) {
+  for (const [ticker, entry] of Object.entries(STOCK_TICKERS)) {
     const lower = ticker.toLowerCase();
-    aliases[lower] = ticker;
-    aliases[`${lower}on`] = ticker; // ONDO suffix
-    aliases[`${lower}x`] = ticker; // xStocks suffix
-    aliases[name.toLowerCase()] = ticker; // company name
+    const bestSymbol = `${ticker}${entry.bestSuffix}`;
+
+    // Bare ticker + company name → most liquid version
+    aliases[lower] = bestSymbol;
+    aliases[entry.name.toLowerCase()] = bestSymbol;
+
+    // Explicit suffixed aliases → their respective platform symbol
+    if (entry.hasOndo) {
+      aliases[`${lower}on`] = `${ticker}on`;
+    }
+    if (entry.hasXstock) {
+      aliases[`${lower}x`] = `${ticker}x`;
+    }
   }
   return aliases;
 }
@@ -213,12 +266,13 @@ async function sync(): Promise<void> {
   // Step 6: Build stock aliases
   const stockAliases = buildStockAliases();
 
-  // Step 7: Merge — priority: existing manual > stocks > extra tokens > birdeye
+  // Step 7: Merge — priority: stocks > existing manual > extra tokens > birdeye
+  // Stock aliases win over existing because they're computed from verified liquidity data
   const merged: Record<string, string> = {
     ...birdeyeAliases,
     ...EXTRA_TOKENS,
-    ...stockAliases,
     ...existing,
+    ...stockAliases,
   };
 
   // Step 8: Sort alphabetically and write

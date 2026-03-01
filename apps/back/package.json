@@ -14,7 +14,8 @@
     "create-vault": "tsx src/scripts/create-kol-vault.ts",
     "sync-tokens": "tsx src/scripts/sync-jupiter-tokens.ts",
     "seed-vaults": "tsx src/scripts/seed-vaults.ts",
-    "sync-aliases": "tsx --env-file=../../.env src/scripts/sync-asset-aliases.ts"
+    "sync-aliases": "tsx --env-file=../../.env src/scripts/sync-asset-aliases.ts",
+    "seed-stocks": "tsx --env-file=../../.env src/scripts/seed-stock-tokens.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

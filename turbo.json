@@ -66,6 +66,10 @@
     "sync-aliases": {
       "cache": false,
       "dependsOn": ["^db:generate"]
+    },
+    "seed-stocks": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
     }
   },
   "globalEnv": [
