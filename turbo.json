@@ -101,7 +101,8 @@
     "TELEGRAM_CHAT_ID",
     "CRON_HEALTH_CHECK",
     "CRON_SYNC_PROFILES",
-    "CRON_FETCH_PRICES"
+    "CRON_FETCH_PRICES",
+    "NEXT_PUBLIC_MAKE_WEBHOOK_URL"
   ],
   "globalPassThroughEnv": ["CI"]
 }
