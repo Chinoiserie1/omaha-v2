@@ -181,3 +181,21 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 - **`/health` command**: Type in Telegram group → bot runs all probes → replies with results
 - **Automatic cron alerts**: Every cron job failure sends a formatted alert (rate limit, API error, or generic) with 15-minute dedup to avoid spam
 - **Graceful no-op**: If TG env vars are missing, everything silently skips — no crashes
+
+### Asset Aliases ↔ Curated Assets Sync (Mar 2026)
+
+**Problem**: The two-tier asset system was out of sync:
+- 30 curated symbols had no aliases → classifier couldn't normalize KOL mentions
+- 33 alias targets were tradeable on Jupiter but missing from curated → thesis LLM couldn't allocate
+- 10 alias targets had case mismatches with curated symbols (e.g. `BONK` vs `Bonk`)
+- `"fartcoin "` (trailing space) was a broken alias key
+
+**Fix**:
+1. Added 51 new alias entries for 30 curated tokens missing aliases (Phase 1)
+2. Fixed alias target casing for 10 tokens to match curated symbols exactly (e.g. `BONK` → `Bonk`, `ZBTC` → `zBTC`)
+3. Removed broken `"fartcoin "` alias (trailing space on key and value)
+4. Added 33 verified crypto tokens to `curated-assets.ts` with mints from `tradeable-assets.csv` (Phase 2)
+5. Skipped 67 non-winning stock suffixes, 14 bare stock redirects, 6 non-tokenized stocks (ARKK, DIA, VOO, NET, RBLX, SQ), BTC (have wrapped variants), WETH (same as ETH)
+6. 24 major L1/DeFi tokens (LINK, DOGE, ONDO, etc.) remain as alias targets but are NOT in curated — not in TradeableAsset DB and mints need external verification
+
+**Result**: 543 alias entries → 287 unique targets. 187 curated assets (110 crypto + 77 stocks). All invariants pass: every curated symbol has ≥1 alias, no duplicate stock tickers.
