@@ -14,7 +14,8 @@ AI-powered KOL (Key Opinion Leader) trading pipeline on Solana. Fetches tweets, 
 | Database        | PostgreSQL + Prisma   | 16 / 6.x |
 | Validation      | Zod                   | 3.x      |
 | AI              | Anthropic Claude      | Latest   |
-| Blockchain      | Solana + GLAM SDK     | 1.98.x   |
+| Blockchain      | Solana (@solana/web3.js) | 1.98.x |
+| Vault Mgmt      | GLAM SDK              | ^1.0.x   |
 | Auth            | Privy                 | Latest   |
 | Language        | TypeScript (ESM only) | 5.7.x    |
 
@@ -29,6 +30,7 @@ autopilot/
 ├── packages/
 │   ├── shared/        # Shared types, DTOs, Zod schemas
 │   ├── database/      # Prisma ORM setup, schema, client
+│   ├── solana/        # Solana utilities (@solana/web3.js wrappers)
 │   ├── config-eslint/ # Shared ESLint 9 flat configs
 │   └── config-typescript/ # Shared TypeScript configs
 ├── turbo.json         # Turborepo pipeline config
@@ -52,6 +54,7 @@ autopilot/
 | `PRIVY_APP_SECRET`         | Privy server-side auth         |
 | `SOLANA_RPC_URL`           | Solana RPC endpoint (optional) |
 | `JUPITER_API_KEY`          | Jupiter swap API (optional)    |
+| `BIRDEYE_API_KEY`          | Price data / backtesting       |
 
 ## Quick Start
 
@@ -103,7 +106,8 @@ pnpm clean          # Clean all build artifacts
 ```bash
 pnpm dev:web        # Web app only (port 3000)
 pnpm dev:back       # Backend API only (port 3001)
-pnpm dev:native     # Expo native app only
+pnpm dev:ios        # Expo native app (iOS)
+pnpm dev:android    # Expo native app (Android)
 ```
 
 ### Database
@@ -124,6 +128,7 @@ pnpm seed:kols      # Seed KOL data into database
 pnpm sync-tokens    # Sync tradeable tokens from Jupiter
 pnpm create-vault   # Create Solana vaults for KOLs
 pnpm seed-vaults    # Seed vault data
+pnpm sync-aliases   # Sync asset aliases from Birdeye/Jupiter
 ```
 
 ## Architecture
@@ -146,17 +151,27 @@ The backend runs an automated pipeline via cron jobs:
 | Fetch tweets     | Every 15 min     | `CRON_FETCH_TWEETS`     |
 | Run algorithm    | Every 30 min     | `CRON_RUN_ALGO`         |
 | Rebalance vaults | Every 6 hours    | `CRON_REBALANCE_VAULTS` |
+| Sync profiles    | Weekly (Sun 3AM) | `CRON_SYNC_PROFILES`    |
+| Fetch prices     | Every minute     | `CRON_FETCH_PRICES`     |
+| Health check     | Every 6 hours    | `CRON_HEALTH_CHECK`     |
 
 ### Database Models
 
 - **User** — Privy-authenticated users
-- **Kol** — Key Opinion Leaders (twitter accounts)
+- **Kol** — Key Opinion Leaders (twitter accounts). `algoEnabled` flag controls whether the automated pipeline (tweet fetch, classification, portfolio generation) runs for this KOL
 - **Tweet** — Raw tweets with engagement metrics
 - **ClassifiedTweet** — AI-classified tweets (sentiment, assets, category)
 - **PortfolioSnapshot** — Generated portfolio allocations
 - **KolVault** — Solana vaults (GLAM) linked to KOLs
 - **RebalanceEvent** — Vault rebalancing history
 - **TradeableAsset** — Supported tokens (symbol, mint, decimals)
+- **Follow** — User-to-user follow relationships
+- **TweetImpact** — Per-tweet contribution to portfolio changes
+- **HoldingsSnapshot** — Point-in-time vault holdings record
+- **TokenPriceDaily** — Daily token prices for backtesting
+- **SnapshotPerformance** — Period returns between portfolio snapshots
+- **Token** — Token/vault metadata (mint, decimals)
+- **TokenPrice** — Real-time token price records
 
 ## Environment Variables
 
@@ -171,6 +186,13 @@ NODE_ENV=development
 EXPO_PUBLIC_PRIVY_APP_ID="your-privy-app-id"
 EXPO_PUBLIC_PRIVY_CLIENT_ID="your-privy-client-id"
 PRIVY_APP_SECRET="your-privy-app-secret"
+
+# PostHog (Analytics)
+EXPO_PUBLIC_POSTHOG_API_KEY="your-posthog-api-key"
+
+# Native App
+EXPO_PUBLIC_API_URL="http://localhost:4001"
+EXPO_PUBLIC_SOLANA_RPC_URL=
 
 # Twitter (RapidAPI)
 RAPIDAPI_KEY=
@@ -188,6 +210,9 @@ GLAM_PROGRAM_ID=GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz
 # Jupiter
 JUPITER_API_KEY=
 
+# Birdeye (price data / backtesting)
+BIRDEYE_API_KEY=
+
 # Rebalancing
 REBALANCE_DRY_RUN=true
 MAX_PRICE_IMPACT_BPS=100
@@ -199,6 +224,13 @@ SNAPSHOT_STALENESS_H=24
 CRON_FETCH_TWEETS="*/15 * * * *"
 CRON_RUN_ALGO="*/30 * * * *"
 CRON_REBALANCE_VAULTS="0 */6 * * *"
+CRON_SYNC_PROFILES="0 3 * * 0"
+CRON_FETCH_PRICES="* * * * *"
+CRON_HEALTH_CHECK="0 */6 * * *"
+
+# Telegram Alerts (optional)
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_CHAT_ID=
 ```
 
 ## Contributing
