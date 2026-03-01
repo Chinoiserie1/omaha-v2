@@ -152,7 +152,7 @@ interface TokenScore {
 // ─── BIRDEYE: Token Overview ─────────────────────────────────────────
 
 async function fetchBirdeyeOverview(mint: string): Promise<BirdeyeData> {
-  const apiKey = process.env.BIRDEYE_API_KEY;
+  const apiKey = process.env['BIRDEYE_API_KEY'];
   if (!apiKey) {
     return {
       mint,
@@ -191,7 +191,7 @@ async function fetchBirdeyeOverview(mint: string): Promise<BirdeyeData> {
       };
     }
 
-    const json = await res.json();
+    const json = (await res.json()) as Record<string, any>;
     const d = json.data;
 
     if (!d) {
@@ -245,8 +245,8 @@ async function fetchJupiterQuote(
   url.searchParams.set("amount", lamports.toString());
 
   const headers: Record<string, string> = {};
-  if (process.env.JUPITER_API_KEY) {
-    headers["X-API-Key"] = process.env.JUPITER_API_KEY;
+  if (process.env['JUPITER_API_KEY']) {
+    headers["X-API-Key"] = process.env['JUPITER_API_KEY'];
   }
 
   try {
@@ -265,7 +265,7 @@ async function fetchJupiterQuote(
       };
     }
 
-    const data = await res.json();
+    const data = (await res.json()) as Record<string, any>;
 
     // priceImpactPct is a STRING in Jupiter's response, e.g. "0.0523" or "-0.0001"
     // - Positive = price moved against you (bad, you got less than fair price)
@@ -366,7 +366,7 @@ function computeScores(
 
   // Sort by composite (highest first) and mark winner
   scores.sort((a, b) => b.compositeScore - a.compositeScore);
-  if (scores.length > 0) scores[0].winner = true;
+  if (scores.length > 0) scores[0]!.winner = true;
 
   return scores;
 }
@@ -396,7 +396,7 @@ function printResults(scores: TokenScore[]) {
   console.log("═".repeat(80));
 
   for (let i = 0; i < scores.length; i++) {
-    const s = scores[i];
+    const s = scores[i]!;
     const rank = i + 1;
     const tag = s.winner ? " ◀ WINNER — keep this one" : " — remove from curated";
 
@@ -437,8 +437,9 @@ function printResults(scores: TokenScore[]) {
     console.log(`WINNER_MINT=${winner.mint}`);
     console.log(`WINNER_SYMBOL=${winner.symbol}`);
     for (let i = 0; i < losers.length; i++) {
-      console.log(`LOSER_${i}_MINT=${losers[i].mint}`);
-      console.log(`LOSER_${i}_SYMBOL=${losers[i].symbol}`);
+      const loser = losers[i]!;
+      console.log(`LOSER_${i}_MINT=${loser.mint}`);
+      console.log(`LOSER_${i}_SYMBOL=${loser.symbol}`);
     }
   }
 }
@@ -464,7 +465,7 @@ async function main() {
   }
 
   // Validate env
-  if (!process.env.BIRDEYE_API_KEY) {
+  if (!process.env['BIRDEYE_API_KEY']) {
     console.error("ERROR: BIRDEYE_API_KEY env var not set");
     process.exit(1);
   }
