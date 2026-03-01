@@ -4,6 +4,7 @@ import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
 import Animated, { FadeIn, SlideInDown } from "react-native-reanimated";
 import { GlassView } from "@/components/ui/glass";
 import { GlassTabBarItem } from "./GlassTabBarItem";
+import { useTabBarVisibility } from "@/contexts/tab-bar-visibility";
 import {
   TAB_BAR_HEIGHT,
   TAB_BAR_BOTTOM_MARGIN,
@@ -20,6 +21,7 @@ export function FloatingGlassTabBar({
   navigation,
   insets,
 }: BottomTabBarProps) {
+  const { isTabBarVisible } = useTabBarVisibility();
   const [isKeyboardVisible, setIsKeyboardVisible] = useState(false);
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export function FloatingGlassTabBar({
     };
   }, []);
 
-  if (isKeyboardVisible) {
+  if (isKeyboardVisible || !isTabBarVisible) {
     return null;
   }
 
