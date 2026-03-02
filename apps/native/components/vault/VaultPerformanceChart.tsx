@@ -84,7 +84,7 @@ export const VaultPerformanceChart = memo(function VaultPerformanceChart({
               >
                 <Text
                   className={`text-xs font-semibold ${
-                    active ? "text-foreground" : "text-muted-foreground"
+                    active ? "text-white" : "text-muted-foreground"
                   }`}
                 >
                   {p.label}

@@ -4,6 +4,7 @@ import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import { useMyProfile } from "../../../../hooks/queries/use-profile";
 import { useWalletPortfolio } from "../../../../hooks/queries/use-wallet-portfolio";
+import { usePortfolioChart } from "../../../../hooks/queries/use-portfolio-chart";
 import { PortfolioHeader } from "../../../../components/profile/PortfolioHeader";
 import { NetWorthDisplay } from "../../../../components/profile/NetWorthDisplay";
 import { AssetCardsGrid } from "../../../../components/profile/AssetCardsGrid";
@@ -11,19 +12,18 @@ import { QuickActions } from "../../../../components/profile/QuickActions";
 import { PortfolioPerformanceChart } from "../../../../components/profile/PortfolioPerformanceChart";
 import { ActiveThesisList } from "../../../../components/profile/ActiveThesisList";
 import { PortfolioSignOutButton } from "../../../../components/profile/PortfolioSignOutButton";
-import {
-  MOCK_DAILY_CHANGE_PERCENT,
-  MOCK_ACTIVE_THESES,
-} from "../../../../components/profile/portfolio-mock-data";
+import { MOCK_ACTIVE_THESES } from "../../../../components/profile/portfolio-mock-data";
 
 export default function ProfileScreen() {
   const router = useRouter();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const { wallets } = useEmbeddedSolanaWallet();
   const wallet = wallets?.[0];
+  const walletAddress = wallet?.address;
   const { data: portfolio, isLoading: portfolioLoading } = useWalletPortfolio(
-    wallet?.address,
+    walletAddress,
   );
+  const { data: dailyChart } = usePortfolioChart(walletAddress, "1d");
 
   if (profileLoading) {
     return (
@@ -48,7 +48,7 @@ export default function ProfileScreen() {
 
         <NetWorthDisplay
           totalUsd={portfolio?.totalUsd ?? 0}
-          dailyChangePercent={MOCK_DAILY_CHANGE_PERCENT}
+          dailyChangePercent={dailyChart?.percentChange ?? 0}
           isLoading={portfolioLoading}
         />
 
@@ -66,7 +66,7 @@ export default function ProfileScreen() {
           }
         />
 
-        <PortfolioPerformanceChart />
+        <PortfolioPerformanceChart walletAddress={walletAddress} />
 
         <ActiveThesisList theses={MOCK_ACTIVE_THESES} />
 
