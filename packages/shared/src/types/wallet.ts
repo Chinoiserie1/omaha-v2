@@ -52,3 +52,15 @@ export interface PortfolioChartResponse {
   startValue: number | null;
   percentChange: number | null;
 }
+
+export interface ActiveThesisItem {
+  vaultId: string;
+  name: string;
+  kolUsername: string;
+  assetCount: number;
+  shares: number;
+  sharePrice: number;
+  valueUsd: number;
+  pnlAmount: number;
+  pnlPercent: number;
+}

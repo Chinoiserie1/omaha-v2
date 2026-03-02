@@ -5,27 +5,26 @@ interface ActiveThesisRowProps {
   name: string;
   kolUsername: string;
   assetCount: number;
-  pnlAmount: number;
+  valueUsd: number;
   pnlPercent: number;
   onPress?: () => void;
 }
 
-function formatPnl(amount: number): string {
-  const sign = amount >= 0 ? "+" : "";
-  return `${sign}$${Math.abs(amount).toFixed(2)}`;
+function formatUsd(value: number): string {
+  return `$${value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
 export function ActiveThesisRow({
   name,
   kolUsername,
   assetCount,
-  pnlAmount,
+  valueUsd,
   pnlPercent,
   onPress,
 }: ActiveThesisRowProps) {
-  const isPositive = pnlAmount >= 0;
+  const isPositive = pnlPercent >= 0;
   const pnlColor = isPositive ? "text-emerald-400" : "text-red-400";
-  const sign = pnlPercent >= 0 ? "+" : "";
+  const sign = isPositive ? "+" : "";
 
   return (
     <Pressable
@@ -40,8 +39,8 @@ export function ActiveThesisRow({
       </View>
 
       <View className="items-end gap-0.5">
-        <Text className={`text-sm font-bold ${pnlColor}`}>
-          {formatPnl(pnlAmount)}
+        <Text className="text-sm font-bold text-foreground">
+          {formatUsd(valueUsd)}
         </Text>
         <Text className={`text-xs ${pnlColor}`}>
           {sign}{pnlPercent.toFixed(1)}%

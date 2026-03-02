@@ -22,6 +22,8 @@ export const queryKeys = {
       ["wallet", "portfolio", address] as const,
     portfolioChart: (address: string, period: string) =>
       ["wallet", "portfolio", address, "chart", period] as const,
+    activeTheses: (address: string) =>
+      ["wallet", "portfolio", address, "active-theses"] as const,
   },
   withdrawals: {
     all: () => ["withdrawals"] as const,
