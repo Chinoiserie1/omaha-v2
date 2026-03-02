@@ -280,6 +280,18 @@ model TokenPrice {
 
 // ── Withdrawal Queue Models ─────────────────────────────────────
 
+// ── Portfolio Value Snapshots ─────────────────────────────────────
+
+model PortfolioValueSnapshot {
+  id            String   @id @default(cuid())
+  walletAddress String
+  totalValueUsd Float
+  holdings      Json     // [{ mint, symbol, amount, usdPrice, valueUsd }]
+  snapshotDate  DateTime @default(now())
+
+  @@index([walletAddress, snapshotDate])
+}
+
 model WithdrawalRequest {
   id                 String    @id @default(cuid())
   userId             String

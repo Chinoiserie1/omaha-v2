@@ -37,3 +37,18 @@ export interface WalletPortfolio {
   totalUsd: number;
   items: PortfolioItem[];
 }
+
+export type PortfolioChartPeriod = "1d" | "7d" | "30d" | "all";
+
+export interface PortfolioChartPoint {
+  timestamp: number;
+  value: number;
+}
+
+export interface PortfolioChartResponse {
+  period: PortfolioChartPeriod;
+  points: PortfolioChartPoint[];
+  currentValue: number | null;
+  startValue: number | null;
+  percentChange: number | null;
+}
