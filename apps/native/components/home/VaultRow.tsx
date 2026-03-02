@@ -40,27 +40,26 @@ export const VaultRow = memo(function VaultRow({
   return (
     <Pressable
       className="flex-row items-center py-4 active:opacity-70"
-      style={{ borderBottomWidth: 0.5, borderBottomColor: "rgba(248,250,252,0.15)" }}
+      style={{
+        borderBottomWidth: 0.5,
+        borderBottomColor: "rgba(248,250,252,0.15)",
+      }}
       onPress={onPress}
     >
       <VaultProfilePicture name={name} size={52} />
 
-      <View className="ml-3 flex-1">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-xs font-medium text-muted-foreground">
-            {category}
+      <View className="flex-1 ml-3">
+        <View className="flex-row justify-between items-center">
+          <Text
+            className="mt-0.5 text-base font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {name}
           </Text>
           <Text className={`text-xs font-bold ${perfColor}`}>
             {hasPerf ? `${perfSign}${performancePercent}%` : "--"}
           </Text>
         </View>
-
-        <Text
-          className="mt-0.5 text-base font-semibold text-foreground"
-          numberOfLines={1}
-        >
-          {name}
-        </Text>
 
         <Text
           className="mt-0.5 text-sm italic text-muted-foreground"
@@ -75,7 +74,7 @@ export const VaultRow = memo(function VaultRow({
               BETA
             </Text>
           </Badge>
-          <View className="flex-row items-center gap-1">
+          <View className="flex-row gap-1 items-center">
             <Ionicons name="people-outline" size={12} color="#94A3B8" />
             <Text className="text-xs text-muted-foreground">
               {formatFollowers(followersCount)}

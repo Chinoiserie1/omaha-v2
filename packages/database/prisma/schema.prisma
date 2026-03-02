@@ -9,20 +9,20 @@ datasource db {
 }
 
 model User {
-  id                  String   @id @default(cuid())
-  privyId             String   @unique
-  email               String?  @unique
-  username            String?  @unique
+  id                  String              @id @default(cuid())
+  privyId             String              @unique
+  email               String?             @unique
+  username            String?             @unique
   name                String?
-  walletAddress       String?  @unique
-  twitterId           String?  @unique
+  walletAddress       String?             @unique
+  twitterId           String?             @unique
   twitterUsername     String?
   profileImageUrl     String?
-  onboardingCompleted Boolean  @default(false)
-  createdAt           DateTime @default(now())
-  updatedAt           DateTime @updatedAt
-  followers           Follow[] @relation("Following")
-  following           Follow[] @relation("Followers")
+  onboardingCompleted Boolean             @default(false)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  followers           Follow[]            @relation("Following")
+  following           Follow[]            @relation("Followers")
   withdrawalRequests  WithdrawalRequest[]
   vaultFavorites      VaultFavorite[]
 }
@@ -150,32 +150,32 @@ model TweetImpact {
 }
 
 model KolVault {
-  id               String           @id @default(cuid())
-  kolId            String           @unique
-  kol              Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
-  kolUsername      String           @default("")
-  avatarUrl        String           @default("")
-  name             String           @default("")
-  description      String           @default("")
-  glamVaultPda     String?          @unique
-  statePda         String           @unique
-  mintAddress      String?          @unique
-  vaultName        String
-  vaultSymbol      String
-  dryRun           Boolean          @default(true)
-  isActive         Boolean          @default(true)
-  jupiterEnabled   Boolean          @default(false)
-  about            String           @default("")
-  dataSource       String           @default("")
-  performanceCalc  String           @default("")
-  disclosure       String           @default("")
-  lastRebalancedAt DateTime?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
-  rebalanceEvents      RebalanceEvent[]
-  holdingsSnapshots    HoldingsSnapshot[]
-  withdrawalRequests   WithdrawalRequest[]
-  favorites            VaultFavorite[]
+  id                 String              @id @default(cuid())
+  kolId              String              @unique
+  kol                Kol                 @relation(fields: [kolId], references: [id], onDelete: Cascade)
+  kolUsername        String              @default("")
+  avatarUrl          String              @default("")
+  name               String              @default("")
+  description        String              @default("")
+  glamVaultPda       String?             @unique
+  statePda           String              @unique
+  mintAddress        String?             @unique
+  vaultName          String
+  vaultSymbol        String
+  dryRun             Boolean             @default(true)
+  isActive           Boolean             @default(true)
+  jupiterEnabled     Boolean             @default(false)
+  about              String              @default("")
+  dataSource         String              @default("")
+  performanceCalc    String              @default("")
+  disclosure         String              @default("")
+  lastRebalancedAt   DateTime?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  rebalanceEvents    RebalanceEvent[]
+  holdingsSnapshots  HoldingsSnapshot[]
+  withdrawalRequests WithdrawalRequest[]
+  favorites          VaultFavorite[]
 
   @@index([kolId])
 }
@@ -280,42 +280,41 @@ model TokenPrice {
   @@index([tokenId, date])
 }
 
-// ── Withdrawal Queue Models ─────────────────────────────────────
-
 // ── Portfolio Value Snapshots ─────────────────────────────────────
 
 model PortfolioValueSnapshot {
   id            String   @id @default(cuid())
   walletAddress String
   totalValueUsd Float
-  holdings      Json     // [{ mint, symbol, amount, usdPrice, valueUsd }]
+  holdings      Json // [{ mint, symbol, amount, usdPrice, valueUsd }]
   snapshotDate  DateTime @default(now())
 
   @@index([walletAddress, snapshotDate])
 }
 
+// ── Withdrawal Queue Models ─────────────────────────────────────
 model WithdrawalRequest {
-  id                 String    @id @default(cuid())
-  userId             String
-  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kolVaultId         String
-  kolVault           KolVault  @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
-  amount             Float
-  status             String    @default("REQUESTED")
-  idempotencyKey     String    @unique
-  batchId            String
-  redeemTxSignature  String?
-  claimTxSignature   String?
-  errorMessage       String?
-  errorCount         Int       @default(0)
-  removedReason      String?
-  requestedAt        DateTime  @default(now())
-  processingAt       DateTime?
-  claimableAt        DateTime?
-  claimedAt          DateTime?
-  failedAt           DateTime?
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
+  id                String    @id @default(cuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kolVaultId        String
+  kolVault          KolVault  @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  amount            Float
+  status            String    @default("REQUESTED")
+  idempotencyKey    String    @unique
+  batchId           String
+  redeemTxSignature String?
+  claimTxSignature  String?
+  errorMessage      String?
+  errorCount        Int       @default(0)
+  removedReason     String?
+  requestedAt       DateTime  @default(now())
+  processingAt      DateTime?
+  claimableAt       DateTime?
+  claimedAt         DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   @@index([userId, status])
   @@index([kolVaultId, status])
