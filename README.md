@@ -247,6 +247,10 @@ CRON_SYNC_PROFILES="0 3 * * 0"
 CRON_FETCH_PRICES="* * * * *"
 CRON_HEALTH_CHECK="0 */6 * * *"
 
+
+# Withdraw vault window before available to claim
+WITHDRAWAL_BATCH_WINDOW_MS=600000
+
 # Telegram Alerts (optional)
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
