@@ -13,6 +13,7 @@ export const queryKeys = {
     performance: (id: string, period: string) =>
       ["vaults", id, "performance", period] as const,
     holdings: (id: string) => ["vaults", id, "holdings"] as const,
+    favoriteStatus: (id: string) => ["vaults", id, "favorite"] as const,
   },
   username: {
     check: (username: string) => ["username", "check", username] as const,

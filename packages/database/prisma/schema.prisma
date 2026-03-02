@@ -24,6 +24,7 @@ model User {
   followers           Follow[] @relation("Following")
   following           Follow[] @relation("Followers")
   withdrawalRequests  WithdrawalRequest[]
+  vaultFavorites      VaultFavorite[]
 }
 
 model Follow {
@@ -174,6 +175,7 @@ model KolVault {
   rebalanceEvents      RebalanceEvent[]
   holdingsSnapshots    HoldingsSnapshot[]
   withdrawalRequests   WithdrawalRequest[]
+  favorites            VaultFavorite[]
 
   @@index([kolId])
 }
@@ -320,4 +322,19 @@ model WithdrawalRequest {
   @@index([batchId])
   @@index([status, requestedAt])
   @@index([status, processingAt])
+}
+
+// ── Vault Favorites ─────────────────────────────────────────
+
+model VaultFavorite {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kolVaultId String
+  kolVault   KolVault @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@unique([userId, kolVaultId])
+  @@index([userId])
+  @@index([kolVaultId])
 }

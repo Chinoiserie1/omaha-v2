@@ -10,6 +10,8 @@ import { redeemFromVault } from "./handlers/redeem.js";
 import { getInvestorStatus } from "./handlers/investor-status.js";
 import { claimRedemption } from "./handlers/claim.js";
 import { confirmSubscribe } from "./handlers/confirm-subscribe.js";
+import { getFavoriteStatus } from "./handlers/favorite-status.js";
+import { toggleFavorite } from "./handlers/toggle-favorite.js";
 
 export async function vaultRoutes(app: FastifyInstance) {
   app.get("/", listVaults);
@@ -26,5 +28,7 @@ export async function vaultRoutes(app: FastifyInstance) {
     authRoutes.post("/:id/redeem", redeemFromVault);
     authRoutes.post("/:id/claim", claimRedemption);
     authRoutes.post("/:id/confirm-subscribe", confirmSubscribe);
+    authRoutes.get("/:id/favorite", getFavoriteStatus);
+    authRoutes.post("/:id/favorite", toggleFavorite);
   });
 }

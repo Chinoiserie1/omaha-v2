@@ -12,6 +12,7 @@ import { VaultChanges } from "./VaultChanges";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
+import { FavoriteHeaderButton } from "./FavoriteHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 
@@ -269,12 +270,15 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         >
           <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
-        <Text
-          className="flex-1 ml-3 text-base font-semibold text-foreground"
-          numberOfLines={1}
-        >
-          {vault?.name ?? ""}
-        </Text>
+        <View className="flex-1 flex-row items-center ml-3">
+          <Text
+            className="shrink text-base font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {vault?.name ?? ""}
+          </Text>
+          {vault && <FavoriteHeaderButton vaultId={vaultId} />}
+        </View>
         {vault && <InvestHeaderButton onPress={onInvest} />}
       </View>
 
