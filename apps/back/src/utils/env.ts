@@ -63,6 +63,9 @@ const envSchema = z.object({
   WITHDRAWAL_BATCH_WINDOW_MS: z.coerce.number().default(600_000), // 10 min
   WITHDRAWAL_MAX_RETRIES: z.coerce.number().default(3),
   CRON_RECOVERY_WITHDRAWALS: z.string().default("*/5 * * * *"),
+
+  // Portfolio snapshots (weekly safety-net)
+  CRON_SNAPSHOT_PORTFOLIOS: z.string().default("0 0 * * 0"),
 });
 
 export type Env = z.infer<typeof envSchema>;

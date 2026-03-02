@@ -2,29 +2,42 @@
 
 ## Overview
 
-This is the **Expo SDK 54** React Native application using Expo Router for navigation. It provides the mobile experience for the Autopilot platform.
+This is the **Expo SDK 54** React Native application using Expo Router for navigation. It provides the mobile experience for the Omaha platform with features like vault discovery, investment management, portfolio tracking, and multi-step withdrawal flows.
 
 ## Technology Stack
 
 - **Framework**: Expo SDK 54
 - **React Native**: 0.81.x
 - **React**: 19.1.x
-- **Navigation**: Expo Router 6.x
+- **Navigation**: Expo Router (file-based routing)
 - **TypeScript**: 5.7.x (strict mode)
 - **Validation**: Zod via `@repo/shared`
+- **Styling**: Tailwind CSS v4 + Glass UI (iOS 26+)
 
 ## Directory Structure
 
 ```
 apps/native/
 ├── app/                    # Expo Router (file-based routing) - ROUTES ONLY
-│   ├── _layout.tsx         # Root layout with Stack navigator
-│   └── index.tsx           # Home screen
+│   ├── _layout.tsx         # Root layout + navigation setup
+│   ├── (tabs)/             # Tab navigator group
+│   │   ├── (home)/         # Vault discovery & list
+│   │   ├── (profile)/      # Portfolio dashboard & settings
+│   │   └── (settings)/     # User preferences
+│   ├── landing/            # Landing/onboarding
+│   └── auth/               # Authentication flows
 ├── components/             # All components (organized by feature)
-│   ├── home/               # Components for home screen
-│   └── shared/             # Shared components across screens
-├── styles/                 # Shared styles
-├── assets/                 # Static assets (icons, images)
+│   ├── home/               # Home/vault discovery components
+│   ├── profile/            # Portfolio, theses, withdrawals
+│   ├── vault/              # Vault detail & investment flows
+│   ├── navigation/         # Navigation UI (tab bar, etc.)
+│   ├── auth/               # Authentication UI
+│   ├── ui/                 # Reusable UI components & Glass views
+│   └── shared/             # Shared logic & utilities
+├── hooks/                  # Custom React hooks (queries, effects)
+├── lib/                    # Utilities (glass config, query keys, etc.)
+├── contexts/               # React Context providers
+├── assets/                 # Static assets (icons, images, fonts)
 ├── app.json                # Expo configuration
 ├── babel.config.js         # Babel configuration
 ├── metro.config.js         # Metro bundler config (monorepo support)
@@ -71,7 +84,45 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 - `isNativeLiquidGlassSupported` — boolean, true on iOS 26+
 - `GLASS_CONFIG` — blur amounts, fallback colors, blur types
 
-## Component Organization (Parallel Structure)
+## Screen Structure (March 2026)
+
+### Home Tab - Vault Discovery
+
+- **Route**: `app/(tabs)/(home)/index.tsx`
+- **Components**: `components/home/VaultList.tsx`, `VaultRow.tsx`, `VaultCard.tsx`
+- **Features**: Search by vault name/KOL username, infinite scroll pagination, real performance metrics
+
+### Profile Tab - Portfolio Dashboard (March 2026)
+
+- **Route**: `app/(tabs)/(profile)/index.tsx`
+- **New Design**: Premium portfolio dashboard with net worth, asset grid, performance chart
+- **Components**:
+  - `PortfolioHeader.tsx` - User wallet address & net worth
+  - `AssetCardsGrid.tsx` - Holdings display (SPL tokens + vault shares)
+  - `PortfolioPerformanceChart.tsx` - Connected to backend portfolio chart endpoint
+  - `ActiveThesisList.tsx` - Real vaults from user's wallet (March 2026)
+  - `ActiveThesisRow.tsx` - Navigate to vault detail pages
+- **Features**: Real wallet balances, active theses from on-chain vaults, performance history
+
+### Vault Detail Screen
+
+- **Route**: `app/(app)/(tabs)/(home)/vault/[id].tsx`
+- **Components**: `components/vault/VaultDetail.tsx`, `VaultHeader.tsx`, `VaultThesis.tsx`, `VaultAllocationCard.tsx`
+- **Features**: Investment thesis, allocations, performance chart, subscribe/redeem buttons
+
+### Withdrawal Flow (Multi-Step - March 2026)
+
+- **Route**: `app/(tabs)/(profile)/withdraw.tsx`
+- **Components**: `components/profile/withdraw/`
+  - `WithdrawFlow.tsx` - State machine controller
+  - `TokenPicker.tsx` - Select token to withdraw
+  - `TransferForm.tsx` - Input amount
+  - `TransferReview.tsx` - Confirm details
+  - `TransferSuccess.tsx` - Completion screen
+  - `TokenAvatar.tsx` - Token display
+- **Features**: Token selection, SPL token transfer, multi-step confirmation, batch window waiting
+
+## Component Organization
 
 **Expo Router limitation**: All files inside `app/` are treated as routes. Components CANNOT be colocated inside the `app/` directory.
 
@@ -79,62 +130,96 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 
 ### Rules
 
-1. **Screen-specific components**: Place in `components/{screen-name}/` folder
-2. **Shared components**: Place in `components/shared/` folder
+1. **Screen-specific components**: Place in `components/{feature-name}/` folder
+2. **Shared components**: Place in `components/shared/` or `components/ui/` folder
 3. **NEVER place components inside `app/`** - they will become routes
 
-### Examples
+### Feature-Based Organization
 
 ```
-app/                              # ROUTES ONLY - no components here!
-├── _layout.tsx
-├── index.tsx                     # Home screen → uses components/home/*
-├── users/
-│   ├── _layout.tsx
-│   ├── index.tsx                 # Users list → uses components/users/*
-│   └── [id].tsx                  # User detail → uses components/users/detail/*
-└── settings.tsx                  # Settings → uses components/settings/*
-
-components/                       # ALL components live here
-├── home/                         # Components for app/index.tsx
-│   ├── UserForm.tsx
-│   └── ValidationResult.tsx
-├── users/                        # Components for app/users/*
-│   ├── UserCard.tsx
-│   ├── UserList.tsx
-│   └── detail/                   # Components for app/users/[id].tsx
-│       └── UserProfile.tsx
-├── settings/                     # Components for app/settings.tsx
-│   └── SettingsForm.tsx
-└── shared/                       # Used across multiple screens
-    ├── Button.tsx
-    ├── Modal.tsx
-    └── LoadingSpinner.tsx
-
-styles/                           # Shared StyleSheet definitions
-├── colors.ts
-├── typography.ts
-└── spacing.ts
+components/
+├── home/                    # Vault discovery & listing
+│   ├── VaultList.tsx
+│   ├── VaultRow.tsx
+│   └── vault-mock-data.ts   # Mock data for development
+├── profile/                 # Portfolio dashboard & settings
+│   ├── PortfolioHeader.tsx
+│   ├── AssetCard.tsx
+│   ├── AssetCardsGrid.tsx
+│   ├── PortfolioPerformanceChart.tsx
+│   ├── ActiveThesisList.tsx
+│   ├── ActiveThesisRow.tsx
+│   ├── withdraw/            # Withdrawal multi-step flow
+│   │   ├── WithdrawFlow.tsx
+│   │   ├── TokenPicker.tsx
+│   │   ├── TransferForm.tsx
+│   │   ├── TransferReview.tsx
+│   │   ├── TransferSuccess.tsx
+│   │   ├── TokenAvatar.tsx
+│   │   └── index.ts
+│   └── WithdrawForm.tsx
+├── vault/                   # Vault detail page
+│   ├── VaultDetail.tsx
+│   ├── VaultHeader.tsx
+│   ├── VaultThesis.tsx
+│   ├── VaultAllocationCard.tsx
+│   ├── VaultPerformanceChart.tsx
+│   └── VaultChanges.tsx
+├── ui/                      # Reusable UI components
+│   ├── glass/               # Glass UI (platform-specific)
+│   │   ├── GlassView.ios.tsx
+│   │   ├── GlassView.android.tsx
+│   │   ├── GlassView.tsx
+│   │   └── GlassContainer.tsx
+│   ├── Button.tsx           # Primary button (glass variant)
+│   ├── Card.tsx             # Card container (glass variant)
+│   ├── Modal.tsx
+│   └── ...other components
+├── navigation/              # Navigation UI
+│   ├── FloatingGlassTabBar.tsx
+│   └── BottomTabNavigator.tsx
+└── shared/                  # Shared logic & utilities
+    ├── LoadingSpinner.tsx
+    └── ErrorBoundary.tsx
 ```
 
 ### Import Pattern
 
 ```typescript
-// In app/index.tsx
-import { UserForm } from "../components/home/UserForm";
-import { ValidationResult } from "../components/home/ValidationResult";
+// In app/(tabs)/(home)/index.tsx
+import { VaultList } from "../../../components/home/VaultList";
+import { Button } from "../../../components/ui/Button";
 
-// In app/users/index.tsx
-import { UserCard } from "../../components/users/UserCard";
-import { Button } from "../../components/shared/Button";
+// In components/profile/PortfolioPerformanceChart.tsx (uses hooks)
+import { usePortfolioChart } from "../../hooks/queries/use-portfolio-chart";
 ```
 
-### When to Move a Component
+### Context & Hooks
 
-- **Stay in feature folder**: Component is only used by one screen
-- **Move to shared/**: Component is needed by 2+ screens
+```typescript
+// lib/query-keys.ts - React Query key factory
+export const vaultKeys = {
+  all: ["vaults"] as const,
+  lists: () => [...vaultKeys.all, "list"] as const,
+  list: (filters: VaultFilters) => [...vaultKeys.lists(), filters] as const,
+  details: () => [...vaultKeys.all, "detail"] as const,
+  detail: (id: string) => [...vaultKeys.details(), id] as const,
+};
 
-See: [Expo Router Core Concepts](https://docs.expo.dev/router/basics/core-concepts/) - Non-navigation components must live outside `app/` directory.
+// hooks/queries/use-vaults.ts - React Query hook
+export function useVaults(filters?: VaultFilters) {
+  return useQuery({
+    queryKey: vaultKeys.list(filters),
+    queryFn: () => fetchVaults(filters),
+  });
+}
+
+// contexts/tab-bar-visibility.tsx - Context for controlling tab bar
+export const TabBarVisibilityContext = createContext<{
+  visible: boolean;
+  setVisible: (visible: boolean) => void;
+}>({ visible: true, setVisible: () => {} });
+```
 
 ## Development
 

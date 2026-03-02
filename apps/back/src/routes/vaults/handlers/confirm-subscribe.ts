@@ -1,11 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { rebalanceKolVault } from "../../../services/rebalancer.service.js";
+import { captureSnapshotIfChanged } from "../../../services/portfolio-snapshot.service.js";
 import { logger } from "../../../utils/logger.js";
 
 type ConfirmSubscribeRequest = FastifyRequest<{
   Params: { id: string };
-  Body: { txSignature: string };
+  Body: { txSignature: string; signerPublicKey?: string };
 }>;
 
 export async function confirmSubscribe(
@@ -13,7 +14,7 @@ export async function confirmSubscribe(
   reply: FastifyReply,
 ) {
   const { id } = request.params;
-  const { txSignature } = request.body;
+  const { txSignature, signerPublicKey } = request.body;
 
   if (!txSignature || typeof txSignature !== "string") {
     return reply.status(400).send({ error: "txSignature is required" });
@@ -38,6 +39,18 @@ export async function confirmSubscribe(
       );
     });
   });
+
+  // Capture portfolio snapshot after deposit (async, non-blocking)
+  if (signerPublicKey) {
+    setImmediate(() => {
+      captureSnapshotIfChanged(signerPublicKey).catch((err) => {
+        logger.warn(
+          { err, address: signerPublicKey },
+          "Post-deposit portfolio snapshot failed",
+        );
+      });
+    });
+  }
 
   return { success: true, message: "Rebalance triggered" };
 }

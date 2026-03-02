@@ -37,3 +37,30 @@ export interface WalletPortfolio {
   totalUsd: number;
   items: PortfolioItem[];
 }
+
+export type PortfolioChartPeriod = "1d" | "7d" | "30d" | "all";
+
+export interface PortfolioChartPoint {
+  timestamp: number;
+  value: number;
+}
+
+export interface PortfolioChartResponse {
+  period: PortfolioChartPeriod;
+  points: PortfolioChartPoint[];
+  currentValue: number | null;
+  startValue: number | null;
+  percentChange: number | null;
+}
+
+export interface ActiveThesisItem {
+  vaultId: string;
+  name: string;
+  kolUsername: string;
+  assetCount: number;
+  shares: number;
+  sharePrice: number;
+  valueUsd: number;
+  pnlAmount: number;
+  pnlPercent: number;
+}

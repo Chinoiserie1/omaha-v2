@@ -13,6 +13,7 @@ import { fetchPrices } from "./fetch-prices.js";
 import { syncProfiles } from "./sync-profiles.js";
 import { healthCheck } from "./health-check.js";
 import { recoverWithdrawals } from "./recovery-withdrawals.js";
+import { snapshotPortfolios } from "./snapshot-portfolios.js";
 
 const tasks: cron.ScheduledTask[] = [];
 
@@ -61,6 +62,14 @@ export async function cronPlugin(app: FastifyInstance): Promise<void> {
     cron.schedule(env.CRON_RECOVERY_WITHDRAWALS, () => {
       recoverWithdrawals().catch((err) =>
         app.log.error(err, "recoverWithdrawals cron error"),
+      );
+    }),
+  );
+
+  tasks.push(
+    cron.schedule(env.CRON_SNAPSHOT_PORTFOLIOS, () => {
+      snapshotPortfolios().catch((err) =>
+        alertOnError("cron:snapshot-portfolios", err),
       );
     }),
   );

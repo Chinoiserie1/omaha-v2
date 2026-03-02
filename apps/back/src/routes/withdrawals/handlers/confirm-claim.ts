@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@repo/database";
 import { confirmClaimSchema, type ApiResponse } from "@repo/shared";
 import { confirmClaim } from "../../../services/withdrawal-claim.service.js";
+import { captureSnapshotIfChanged } from "../../../services/portfolio-snapshot.service.js";
 import { notifyUser } from "../../../infra/websocket.js";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import { logger } from "../../../utils/logger.js";
@@ -60,6 +61,18 @@ export async function confirmClaimHandler(
         status: "CLAIMED",
         timestamp: new Date().toISOString(),
         claimTxSignature: bodyResult.data.txSignature,
+      });
+    }
+
+    // Capture portfolio snapshot after withdrawal (async, non-blocking)
+    if (user.walletAddress) {
+      setImmediate(() => {
+        captureSnapshotIfChanged(user.walletAddress!).catch((err) => {
+          logger.warn(
+            { err, address: user.walletAddress },
+            "Post-withdrawal portfolio snapshot failed",
+          );
+        });
       });
     }
 

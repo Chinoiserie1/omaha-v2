@@ -4,20 +4,20 @@ AI-powered KOL (Key Opinion Leader) trading pipeline on Solana. Fetches tweets, 
 
 ## Tech Stack
 
-| Layer           | Technology            | Version  |
-| --------------- | --------------------- | -------- |
-| Monorepo        | Turborepo             | 2.7.x    |
-| Package Manager | pnpm                  | 9.15.0   |
-| Web Frontend    | Next.js               | 15.x     |
-| Mobile          | Expo / React Native   | SDK 52   |
-| Backend         | Fastify               | 5.x      |
-| Database        | PostgreSQL + Prisma   | 16 / 6.x |
-| Validation      | Zod                   | 3.x      |
-| AI              | Anthropic Claude      | Latest   |
-| Blockchain      | Solana (@solana/web3.js) | 1.98.x |
-| Vault Mgmt      | GLAM SDK              | ^1.0.x   |
-| Auth            | Privy                 | Latest   |
-| Language        | TypeScript (ESM only) | 5.7.x    |
+| Layer           | Technology               | Version  |
+| --------------- | ------------------------ | -------- |
+| Monorepo        | Turborepo                | 2.7.x    |
+| Package Manager | pnpm                     | 9.15.0   |
+| Web Frontend    | Next.js                  | 15.x     |
+| Mobile          | Expo / React Native      | SDK 52   |
+| Backend         | Fastify                  | 5.x      |
+| Database        | PostgreSQL + Prisma      | 16 / 6.x |
+| Validation      | Zod                      | 3.x      |
+| AI              | Anthropic Claude         | Latest   |
+| Blockchain      | Solana (@solana/web3.js) | 1.98.x   |
+| Vault Mgmt      | GLAM SDK                 | ^1.0.x   |
+| Auth            | Privy                    | Latest   |
+| Language        | TypeScript (ESM only)    | 5.7.x    |
 
 ## Project Structure
 
@@ -209,6 +209,7 @@ PRIVY_APP_SECRET="your-privy-app-secret"
 EXPO_PUBLIC_POSTHOG_API_KEY="your-posthog-api-key"
 
 # Native App
+EXPO_PUBLIC_API_URL_PROD="https://prod"
 EXPO_PUBLIC_API_URL="http://localhost:4001"
 EXPO_PUBLIC_SOLANA_RPC_URL=
 
