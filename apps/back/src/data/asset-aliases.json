@@ -1,6 +1,6 @@
 {
-  "1": "1",
   "$hachi": "$HACHI",
+  "1": "1",
   "1 coin can change your life": "1",
   "21.co wrapped bitcoin": "cbBTC",
   "21btc": "cbBTC",
@@ -104,8 +104,8 @@
   "coca-cola": "KOon",
   "coin": "COINx",
   "coinbase": "COINx",
-  "coinbase wrapped btc": "cbBTC",
   "coinbase wrapped bitcoin": "cbBTC",
+  "coinbase wrapped btc": "cbBTC",
   "coinon": "COINon",
   "coinx": "COINx",
   "comcast": "CMCSAx",
@@ -362,6 +362,9 @@
   "orcl": "ORCLx",
   "orclon": "ORCLon",
   "orclx": "ORCLx",
+  "ore": "ORE",
+  "ore mining": "ORE",
+  "ore token": "ORE",
   "palantir": "PLTRon",
   "parcl": "PRCL",
   "paypal": "PYPLon",
@@ -543,5 +546,5 @@
   "zec": "ZEC",
   "zerebro": "ZEREBRO",
   "zora": "ZORA",
-  "パンチ": "PUNCH"
+  "\u30d1\u30f3\u30c1": "PUNCH"
 }

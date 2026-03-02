@@ -66,6 +66,7 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "IOT", name: "Helium IOT", mint: "iotEVVZLEywoTn1QdwNPddxPWszn3zFhEot3MfL9fns", decimals: 6, category: "crypto" },
   { symbol: "GRASS", name: "Grass", mint: "Grass7B4RdKfBCjTKgSqnXkqjwiGvQyFbuSCUJr3XXjs", decimals: 9, category: "crypto" },
   { symbol: "NOS", name: "Nosana", mint: "nosXBVoaCTtYdLvKY6Csb4AC8JCdQKKAaWYtx2ZMoo7", decimals: 6, category: "crypto" },
+  { symbol: "ORE", name: "ORE", mint: "oreoU2P8bN6jkk3jbaiVxYnG1dCXcYxwhwyK9jSybcp", decimals: 11, category: "crypto" },
 
   // LSTs
   { symbol: "mSOL", name: "Marinade staked SOL", mint: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So", decimals: 9, category: "crypto" },
