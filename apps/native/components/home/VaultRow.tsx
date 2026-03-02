@@ -63,12 +63,12 @@ export const VaultRow = memo(function VaultRow({
 
         <Text
           className="mt-0.5 text-sm italic text-muted-foreground"
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {description}
         </Text>
 
-        <View className="mt-1.5 flex-row items-center gap-2">
+        {/* <View className="mt-1.5 flex-row items-center gap-2">
           <Badge variant="secondary" className="px-2 py-0.5">
             <Text className="text-xs font-medium text-muted-foreground">
               BETA
@@ -80,7 +80,7 @@ export const VaultRow = memo(function VaultRow({
               {formatFollowers(followersCount)}
             </Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       <Ionicons
