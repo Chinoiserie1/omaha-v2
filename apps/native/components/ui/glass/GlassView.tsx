@@ -4,7 +4,14 @@ import { cn } from "@/lib/utils";
 import type { GlassViewProps, GlassContainerProps } from "./types";
 
 /**
- * Web / fallback GlassView — semi-transparent background, no blur.
+ * Web / fallback GlassView — semi-transparent dark background, no blur.
+ *
+ * Used on web and as the default export for platforms that don't have a
+ * platform-specific file (`.ios.tsx` or `.android.tsx`).
+ * The `blur`, `tintColor`, `interactive`, and `colorScheme` props are
+ * accepted for API compatibility but have no visual effect on this platform.
+ *
+ * @param props - See {@link GlassViewProps}.
  */
 export function GlassView({
   effect = "regular",
@@ -17,6 +24,7 @@ export function GlassView({
   children,
   ...props
 }: GlassViewProps) {
+  // Only apply the translucent background when a glass effect is requested.
   const bgColor = effect === "none" ? undefined : GLASS_CONFIG.fallbackBgDark;
 
   return (
@@ -30,6 +38,13 @@ export function GlassView({
   );
 }
 
+/**
+ * Web / fallback GlassContainer — plain wrapper with no glass merging.
+ *
+ * `spacing` is accepted for API compatibility but ignored on web.
+ *
+ * @param props - See {@link GlassContainerProps}.
+ */
 export function GlassContainer({
   spacing: _spacing,
   className,
