@@ -6,6 +6,7 @@ import { VaultProfilePicture } from "@/components/vault/VaultProfilePicture";
 
 interface VaultRowProps {
   name: string;
+  avatarUrl?: string | null;
   description: string;
   category: string;
   performancePercent: number | null;
@@ -22,6 +23,7 @@ function formatFollowers(count: number): string {
 
 export const VaultRow = memo(function VaultRow({
   name,
+  avatarUrl,
   description,
   category,
   performancePercent,
@@ -46,7 +48,7 @@ export const VaultRow = memo(function VaultRow({
       }}
       onPress={onPress}
     >
-      <VaultProfilePicture name={name} size={52} />
+      <VaultProfilePicture name={name} avatarUrl={avatarUrl} size={52} />
 
       <View className="flex-1 ml-3">
         <View className="flex-row justify-between items-center">

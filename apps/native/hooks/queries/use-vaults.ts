@@ -12,6 +12,7 @@ export interface VaultSummary {
   name: string;
   description: string;
   kolUsername: string;
+  kolAvatarUrl: string | null;
   performancePercent: number | null;
   portfolio: {
     allocations: Allocation[];
