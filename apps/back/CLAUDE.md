@@ -28,10 +28,10 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 
 ## Key Documentation
 
-| Doc | What it covers | Read before touching... |
-|-----|----------------|------------------------|
+| Doc                      | What it covers                                                                                  | Read before touching...                                                                                          |
+| ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `docs/ASSET-PIPELINE.md` | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
-| `docs/DATA-PIPELINE.md` | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service | Any cron job, any service file |
+| `docs/DATA-PIPELINE.md`  | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
 
 ## Tech Stack
 
@@ -65,20 +65,25 @@ src/
 ## Common Tasks
 
 ### Adding a new KOL
+
 Run `seed-kols.ts` script. The algo picks them up automatically on next cron run.
 
 ### Adding a new asset
+
 See `docs/ASSET-PIPELINE.md` § "How to Add an Asset". You need to update BOTH the aliases file AND curated-assets.ts.
 
 ### Running the algo for one KOL
+
 ```bash
 set -a && source .env && set +a && pnpm --filter @repo/back exec tsx src/scripts/run-algo-one-kol.ts <username>
 ```
 
 ### Typecheck
+
 ```bash
 pnpm --filter @repo/back typecheck
 ```
+
 Note: Some pre-existing errors (ioredis, @fastify/websocket, bullmq types) are known.
 
 ## Reminders
@@ -88,3 +93,223 @@ Note: Some pre-existing errors (ioredis, @fastify/websocket, bullmq types) are k
 - Nadar deploys on Railway. Use env vars from `.env`.
 - M2 MacBook with x86 Homebrew at `/usr/local` — use `arch -x86_64` for build issues.
 - When creating GLAM vaults, always confirm token name/symbol with Nadar first.
+
+## Configuration
+
+### TypeScript
+
+Extends `@repo/config-typescript/node.json` with:
+
+- `module: "NodeNext"`
+- `moduleResolution: "NodeNext"`
+- `target: "ES2022"`
+- Output to `dist/`
+
+### ESLint
+
+Uses `@repo/config-eslint/node` which includes:
+
+- Node.js specific rules (eslint-plugin-n)
+- TypeScript ESLint
+- Console logging allowed for `info`, `warn`, `error`
+
+## Key Services
+
+- **TweetClassifier** - Analyzes tweets for sentiment, assets, and signals
+- **ThesisService** - Generates portfolio allocations from classified tweets
+- **BacktestService** - Runs historical portfolio simulations with real token prices
+- **RebalancerService** - Executes on-chain vault swaps via Jupiter
+- **TwitterService** - Fetches tweets via RapidAPI
+- **PortfolioSnapshotService** - Captures portfolio value snapshots on-demand (March 2026)
+- **WithdrawalService** - Manages user withdrawals with multi-step flow
+
+## Key Repositories
+
+- **KolRepository** - KOL data access (with `algoEnabled` flag support)
+- **TweetRepository** - Tweet storage & queries
+- **VaultRepository** - Vault data & performance
+- **PortfolioRepository** - Portfolio snapshots & history
+- **PortfolioSnapshotRepository** - Historical portfolio values (March 2026)
+- **PriceRepository** - Token pricing data
+- **PerformanceRepository** - Vault performance metrics
+
+## Cron Jobs
+
+Scheduled tasks run from `src/cron/index.ts`:
+
+| Job                   | Schedule         | Purpose                                        |
+| --------------------- | ---------------- | ---------------------------------------------- |
+| `fetch-tweets`        | Every 15 min     | Fetch new tweets for active KOLs               |
+| `run-algo`            | Every 30 min     | Classify tweets + generate theses              |
+| `fetch-prices`        | Every 1 min      | Update token prices from Birdeye               |
+| `rebalance-vaults`    | Every 6 hours    | Execute on-chain swaps                         |
+| `snapshot-portfolios` | Every 6 hours    | Capture portfolio values for charts (Mar 2026) |
+| `sync-profiles`       | Weekly (Sun 3am) | Refresh KOL Twitter profiles                   |
+| `health-check`        | Every 6 hours    | Monitor API health                             |
+
+## API Routes (Main Endpoints)
+
+### Health Check
+
+```
+GET /health
+Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
+```
+
+### KOL Management
+
+| Method | Endpoint                                | Description                                   |
+| ------ | --------------------------------------- | --------------------------------------------- |
+| GET    | `/api/kols`                             | List active KOLs (supports `?all=true`)       |
+| GET    | `/api/kols/:id`                         | Get KOL details with recent tweets            |
+| POST   | `/api/kols/sync-profiles`               | Refresh all KOL Twitter profiles              |
+| GET    | `/api/kols/:id/tweets`                  | List tweets by KOL (paginated, date filter)   |
+| GET    | `/api/kols/:id/tweets/significant`      | Significant tweets with impact scores         |
+| GET    | `/api/kols/:id/threads/:conversationId` | Get tweet thread (context for classification) |
+| GET    | `/api/kols/:id/portfolio`               | Latest portfolio snapshot                     |
+| GET    | `/api/kols/:id/portfolio/history`       | Portfolio history (paginated)                 |
+| POST   | `/api/kols/:id/portfolio`               | Create manual portfolio snapshot              |
+| GET    | `/api/kols/:id/backtest`                | Run backtest for KOL strategy                 |
+
+### Wallet & User Data (March 2026)
+
+| Method | Endpoint                               | Description                                |
+| ------ | -------------------------------------- | ------------------------------------------ |
+| GET    | `/api/wallet/balances/:address`        | User SPL token balances                    |
+| GET    | `/api/wallet/portfolio/:address`       | User vault holdings summary                |
+| GET    | `/api/wallet/:address/portfolio/chart` | Portfolio value history for chart          |
+| GET    | `/api/wallet/:address/active-theses`   | Active investment theses from vaults       |
+| GET    | `/api/profile/me`                      | Current user profile (Privy authenticated) |
+
+### Vault Management
+
+| Method | Endpoint                          | Description                                     |
+| ------ | --------------------------------- | ----------------------------------------------- |
+| GET    | `/api/vaults`                     | List vaults (with search, infinite scroll)      |
+| GET    | `/api/vaults/:id`                 | Vault details + performance + holdings          |
+| GET    | `/api/vaults/:id/performance`     | Vault returns (7d/30d/all-time)                 |
+| GET    | `/api/vaults/:id/holdings`        | Current vault token holdings                    |
+| POST   | `/api/vaults/:id/subscribe`       | Begin subscription (with on-chain confirmation) |
+| POST   | `/api/vaults/:id/investor-status` | Check user's investor status                    |
+| POST   | `/api/vaults/:id/redeem`          | Initiate redemption                             |
+
+### Withdrawal Flow
+
+| Method | Endpoint                                 | Description                                 |
+| ------ | ---------------------------------------- | ------------------------------------------- |
+| POST   | `/api/withdrawals/initiate`              | Start withdrawal request                    |
+| POST   | `/api/withdrawals/:id/confirm-subscribe` | Confirm withdrawal subscription             |
+| GET    | `/api/withdrawals/:id/claim`             | Claim withdrawn tokens (after batch window) |
+| POST   | `/api/withdrawals/:id/confirm-claim`     | Finalize claim                              |
+
+### Content Ingestion
+
+| Method | Endpoint       | Description                                      |
+| ------ | -------------- | ------------------------------------------------ |
+| POST   | `/api/tweets`  | Ingest tweet from URL (auto-creates KOL)         |
+| POST   | `/api/content` | Ingest external content (Telegram, Reddit, etc.) |
+
+## Using Shared Packages
+
+### Prisma Client
+
+```typescript
+import { prisma } from "@repo/database";
+
+const users = await prisma.user.findMany();
+```
+
+### Zod Validation
+
+```typescript
+import { createUserSchema, type ApiResponse } from "@repo/shared";
+
+const result = createUserSchema.safeParse(request.body);
+if (!result.success) {
+  return reply.status(400).send({
+    success: false,
+    error: result.error.errors.map((e) => e.message).join(", "),
+  } satisfies ApiResponse<never>);
+}
+```
+
+## Route Pattern
+
+```typescript
+import type { FastifyInstance } from "fastify";
+import { prisma } from "@repo/database";
+import { someSchema, type ApiResponse } from "@repo/shared";
+
+export async function myRoutes(app: FastifyInstance) {
+  app.get("/", async (request, reply) => {
+    // Validate query/params/body with Zod
+    // Use Prisma for database operations
+    // Return typed response
+  });
+}
+```
+
+## Error Handling
+
+Use the `ApiResponse` type from `@repo/shared`:
+
+```typescript
+// Success
+return { success: true, data: user } satisfies ApiResponse<User>;
+
+// Error
+return reply.status(400).send({
+  success: false,
+  error: "Validation failed",
+} satisfies ApiResponse<never>);
+```
+
+## Environment Variables
+
+- `PORT` - Server port (default: 3001)
+- `HOST` - Server host (default: 0.0.0.0)
+- `DATABASE_URL` - PostgreSQL connection string
+- `NODE_ENV` - Environment (development/production)
+
+## Build Output
+
+Production build generates:
+
+- `dist/` - Compiled JavaScript (ESM)
+
+Run with: `node dist/index.js`
+
+## ESM Import Notes
+
+When importing local files, use `.js` extension:
+
+```typescript
+import { buildApp } from "./app.js";
+import { userRoutes } from "./routes/users.js";
+```
+
+## CORS
+
+CORS is enabled for all origins in development:
+
+```typescript
+await app.register(cors, { origin: true });
+```
+
+## Logging
+
+Fastify logger is configured:
+
+- Development: `debug` level
+- Production: `info` level
+
+## Testing
+
+(Add testing setup when implemented)
+
+## Important Notes
+
+- Uses tsx for development (fast TypeScript execution)
+- ESM-only (no CommonJS)
+- Prisma client must be generated before starting
+- Database must be accessible via `DATABASE_URL`

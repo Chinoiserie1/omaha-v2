@@ -18,7 +18,7 @@ Each app has its own detailed CLAUDE.md file:
 
   - See [apps/back/CLAUDE.md](./apps/back/CLAUDE.md)
 
-- **`apps/native/`** - Expo SDK 52 React Native application
+- **`apps/native/`** - Expo SDK 54 React Native application
   - See [apps/native/CLAUDE.md](./apps/native/CLAUDE.md)
 
 ### Packages
@@ -195,7 +195,7 @@ Environment variables are managed in `turbo.json` under `globalEnv`.
 | ------------ | ------------------- | ----------------- |
 | Monorepo     | Turborepo           | 2.7.x             |
 | Web Frontend | Next.js             | 15.x              |
-| Mobile       | Expo / React Native | SDK 52            |
+| Mobile       | Expo / React Native | SDK 54            |
 | Backend      | Fastify             | 5.x               |
 | Database     | PostgreSQL + Prisma | 6.x               |
 | Validation   | Zod                 | 3.x               |

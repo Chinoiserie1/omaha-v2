@@ -111,6 +111,20 @@ curl $API/api/wallet/balances/<solanaAddress>
 curl $API/api/wallet/portfolio/<solanaAddress>
 ```
 
+### Wallet portfolio chart (March 2026)
+```bash
+curl "$API/api/wallet/<solanaAddress>/portfolio/chart?days=30"
+# Response: { items: [{ timestamp, value, assets }], ... }
+# For rendering portfolio performance chart on mobile profile
+```
+
+### Wallet active theses (March 2026)
+```bash
+curl "$API/api/wallet/<solanaAddress>/active-theses"
+# Response: { items: [{ id, kolName, kolUsername, assets, allocations, status }], ... }
+# Real investment theses linked to user's vaults from on-chain wallet data
+```
+
 ### Health check
 ```bash
 curl $API/health
