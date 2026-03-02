@@ -60,6 +60,7 @@
   "pnpm": {
     "overrides": {
       "react": "19.1.0",
+      "react-dom": "19.1.0",
       "react-native-css-interop": "0.2.2"
     },
     "patchedDependencies": {

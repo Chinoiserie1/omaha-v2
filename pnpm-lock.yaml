@@ -6,6 +6,7 @@ settings:
 
 overrides:
   react: 19.1.0
+  react-dom: 19.1.0
   react-native-css-interop: 0.2.2
 
 patchedDependencies:
@@ -361,13 +362,13 @@ importers:
         version: link:../../packages/shared
       next:
         specifier: ^15.1.0
-        version: 15.5.9(@babel/core@7.28.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.1.0))(react@19.1.0)
+        version: 15.5.9(@babel/core@7.28.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
       react:
         specifier: 19.1.0
         version: 19.1.0
       react-dom:
-        specifier: ^19.0.0
-        version: 19.2.3(react@19.1.0)
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
     devDependencies:
       '@repo/config-eslint':
         specifier: workspace:*
@@ -1361,7 +1362,7 @@ packages:
     peerDependencies:
       expo: '*'
       react: 19.1.0
-      react-dom: '*'
+      react-dom: 19.1.0
       react-native: '*'
     peerDependenciesMeta:
       react-dom:
@@ -1940,7 +1941,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -1953,7 +1954,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -1993,7 +1994,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2015,7 +2016,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2037,7 +2038,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2059,7 +2060,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2072,7 +2073,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2085,7 +2086,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2098,7 +2099,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2111,7 +2112,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2124,7 +2125,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2137,7 +2138,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2150,7 +2151,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -2190,7 +2191,7 @@ packages:
       '@types/react': '*'
       '@types/react-dom': '*'
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0 || ^19.0.0-rc
+      react-dom: 19.1.0
     peerDependenciesMeta:
       '@types/react':
         optional: true
@@ -4288,7 +4289,7 @@ packages:
       expo-constants: ^18.0.13
       expo-linking: ^8.0.11
       react: 19.1.0
-      react-dom: '*'
+      react-dom: 19.1.0
       react-native: '*'
       react-native-gesture-handler: '*'
       react-native-reanimated: '*'
@@ -5460,7 +5461,7 @@ packages:
       '@playwright/test': ^1.51.1
       babel-plugin-react-compiler: '*'
       react: 19.1.0
-      react-dom: ^18.2.0 || 19.0.0-rc-de68d2f4-20241204 || ^19.0.0
+      react-dom: 19.1.0
       sass: ^1.3.0
     peerDependenciesMeta:
       '@opentelemetry/api':
@@ -5950,6 +5951,11 @@ packages:
 
   react-devtools-core@6.1.5:
     resolution: {integrity: sha512-ePrwPfxAnB+7hgnEr8vpKxL9cmnp7F322t8oqcPshbIQQhDKgFDW4tjhF2wjVbdXF9O/nyuy3sQWd9JGpiLPvA==}
+
+  react-dom@19.1.0:
+    resolution: {integrity: sha512-Xs1hdnE+DyKgeHJeJznQmYMIBG3TKIHJJT95Q58nHLSrElKlGQqDTR2HQ9fx5CN/Gk6Vh/kupBTDLU11/nDk/g==}
+    peerDependencies:
+      react: 19.1.0
 
   react-dom@19.2.3:
     resolution: {integrity: sha512-yELu4WmLPw5Mr/lmeEpox5rw3RETacE++JgHqQzd2dg+YbJuat3jH4ingc+WPZhxaoFzdv9y33G+F7Nl5O0GBg==}
@@ -6985,7 +6991,7 @@ packages:
     resolution: {integrity: sha512-ZFkClGpWyI2WUQjdLJ/BaGuV6AVQiJ3uELGk3OYtP+B6yCO7Cmn9vPFXVJkRaGkOJu3m8bQMgtyzNHixULceQA==}
     peerDependencies:
       react: 19.1.0
-      react-dom: ^16.8 || ^17.0 || ^18.0 || ^19.0.0 || ^19.0.0-rc
+      react-dom: 19.1.0
 
   viem@2.43.3:
     resolution: {integrity: sha512-zM251fspfSjENCtfmT7cauuD+AA/YAlkFU7cksdEQJxj7wDuO0XFRWRH+RMvfmTFza88B9kug5cKU+Wk2nAjJg==}
@@ -13371,14 +13377,14 @@ snapshots:
 
   nested-error-stacks@2.0.1: {}
 
-  next@15.5.9(@babel/core@7.28.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.2.3(react@19.1.0))(react@19.1.0):
+  next@15.5.9(@babel/core@7.28.5)(babel-plugin-react-compiler@1.0.0)(react-dom@19.1.0(react@19.1.0))(react@19.1.0):
     dependencies:
       '@next/env': 15.5.9
       '@swc/helpers': 0.5.15
       caniuse-lite: 1.0.30001761
       postcss: 8.4.31
       react: 19.1.0
-      react-dom: 19.2.3(react@19.1.0)
+      react-dom: 19.1.0(react@19.1.0)
       styled-jsx: 5.1.6(@babel/core@7.28.5)(react@19.1.0)
     optionalDependencies:
       '@next/swc-darwin-arm64': 15.5.7
@@ -13873,6 +13879,11 @@ snapshots:
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
+
+  react-dom@19.1.0(react@19.1.0):
+    dependencies:
+      react: 19.1.0
+      scheduler: 0.26.0
 
   react-dom@19.2.3(react@19.1.0):
     dependencies:
