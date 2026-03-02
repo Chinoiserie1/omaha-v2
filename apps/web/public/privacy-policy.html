@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Omaha</title>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #141414;
+      --border: #1e1e1e;
+      --text: #e5e5e5;
+      --muted: #a3a3a3;
+      --accent: #10b981;
+    }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      padding: 2rem 1rem;
+    }
+    .container {
+      max-width: 720px;
+      margin: 0 auto;
+    }
+    .logo {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 0.5rem;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+    .effective {
+      color: var(--muted);
+      font-size: 0.875rem;
+      margin-bottom: 2.5rem;
+    }
+    h2 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin-top: 2.5rem;
+      margin-bottom: 0.75rem;
+      color: #fff;
+    }
+    p, li {
+      color: var(--muted);
+      margin-bottom: 0.75rem;
+    }
+    ul {
+      padding-left: 1.25rem;
+      margin-bottom: 1rem;
+    }
+    li { margin-bottom: 0.4rem; }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    .divider {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 2.5rem 0;
+    }
+    .footer {
+      color: var(--muted);
+      font-size: 0.8rem;
+      margin-top: 3rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">Omaha</div>
+    <h1>Privacy Policy</h1>
+    <p class="effective">Effective Date: February 25, 2026</p>
+
+    <p>Omaha ("we," "our," or "the Platform") operates a Solana-based application that provides automated portfolio management through analysis of publicly available social media data. This Privacy Policy explains what information we collect, how we use it, and your choices regarding that information.</p>
+
+    <h2>1. Information We Collect</h2>
+
+    <h3 style="font-size:1.05rem; font-weight:600; color:#fff; margin-top:1.25rem; margin-bottom:0.5rem;">1.1 Information You Provide</h3>
+    <ul>
+      <li><strong style="color:#e5e5e5;">Account credentials</strong> - When you sign up via Twitter (X) OAuth or email through our authentication provider (Privy), we receive your Twitter user ID, Twitter username, email address, and profile image URL.</li>
+      <li><strong style="color:#e5e5e5;">Username</strong> - You choose a display username during onboarding.</li>
+      <li><strong style="color:#e5e5e5;">Wallet information</strong> - An embedded Solana wallet is created for you automatically upon signup via Privy. We do not store your private keys; they are managed by Privy's secure infrastructure.</li>
+    </ul>
+
+    <h3 style="font-size:1.05rem; font-weight:600; color:#fff; margin-top:1.25rem; margin-bottom:0.5rem;">1.2 Information Collected Automatically</h3>
+    <ul>
+      <li><strong style="color:#e5e5e5;">Device and usage data</strong> - Device type, operating system, app version, screen interactions, and crash logs collected through Expo and standard mobile analytics.</li>
+      <li><strong style="color:#e5e5e5;">Blockchain data</strong> - Wallet addresses, transaction signatures, vault allocations, and on-chain activity. This data is inherently public on the Solana blockchain.</li>
+    </ul>
+
+    <h3 style="font-size:1.05rem; font-weight:600; color:#fff; margin-top:1.25rem; margin-bottom:0.5rem;">1.3 Public Data We Process</h3>
+    <ul>
+      <li><strong style="color:#e5e5e5;">KOL tweet data</strong> - We ingest publicly available tweets from curated Key Opinion Leaders on X (Twitter) for the purpose of generating portfolio signals. This data includes tweet text, engagement metrics, and posting timestamps. We do not collect private or protected tweets.</li>
+    </ul>
+
+    <h2>2. How We Use Your Information</h2>
+    <ul>
+      <li><strong style="color:#e5e5e5;">Provide the service</strong> - Authenticate your account, create and manage your embedded wallet, display vault information, and process vault allocations.</li>
+      <li><strong style="color:#e5e5e5;">Portfolio management</strong> - Use AI (Claude by Anthropic) to classify public KOL tweets and synthesize portfolio allocations, then execute on-chain rebalancing through Jupiter DEX within GLAM vaults on Solana.</li>
+      <li><strong style="color:#e5e5e5;">Improve the platform</strong> - Analyze usage patterns to improve app performance, reliability, and user experience.</li>
+      <li><strong style="color:#e5e5e5;">Communications</strong> - Send service-related notifications (e.g., vault rebalance events, material changes to the platform).</li>
+    </ul>
+
+    <h2>3. How We Share Your Information</h2>
+    <p>We do not sell your personal information. We share data only in the following cases:</p>
+    <ul>
+      <li><strong style="color:#e5e5e5;">Service providers</strong> - Privy (authentication and wallet custody), Anthropic (LLM processing of public tweet data), and infrastructure providers (database hosting, RPC nodes).</li>
+      <li><strong style="color:#e5e5e5;">Blockchain</strong> - Transactions executed on your behalf are recorded on the Solana blockchain and are publicly visible by nature.</li>
+      <li><strong style="color:#e5e5e5;">Legal requirements</strong> - When required by law, legal process, or to protect the rights and safety of our users or the platform.</li>
+    </ul>
+
+    <h2>4. Data Retention</h2>
+    <p>We retain your account data for as long as your account is active. Tweet data used for portfolio signal generation is retained to maintain portfolio history and auditability. You may request deletion of your account and associated personal data at any time by contacting us.</p>
+
+    <h2>5. Security</h2>
+    <p>We implement industry-standard security measures including encrypted database connections, authenticated API endpoints with JWT verification, and secure key management through Privy. Vault operations include safety parameters such as dry-run mode, swap size limits, and price impact thresholds. However, no system is completely secure, and we cannot guarantee absolute security.</p>
+
+    <h2>6. Your Rights and Choices</h2>
+    <ul>
+      <li><strong style="color:#e5e5e5;">Access and correction</strong> - You can view and update your profile information within the app.</li>
+      <li><strong style="color:#e5e5e5;">Deletion</strong> - You may request that we delete your account and personal data by emailing us at the address below.</li>
+      <li><strong style="color:#e5e5e5;">Blockchain data</strong> - On-chain transaction data cannot be deleted due to the immutable nature of the Solana blockchain.</li>
+    </ul>
+
+    <h2>7. Children</h2>
+    <p>Omaha is not intended for use by anyone under the age of 18. We do not knowingly collect personal information from minors.</p>
+
+    <h2>8. Changes to This Policy</h2>
+    <p>We may update this Privacy Policy from time to time. We will notify users of material changes through the app or via email. Continued use of the Platform after changes constitutes acceptance of the updated policy.</p>
+
+    <h2>9. Contact Us</h2>
+    <p>If you have questions about this Privacy Policy or wish to exercise your data rights, contact us at:</p>
+    <p><a href="mailto:privacy@omaha.gg">privacy@omaha.gg</a></p>
+
+    <div class="footer">
+      &copy; 2026 Omaha. All rights reserved.
+    </div>
+  </div>
+</body>
+</html>
