@@ -53,12 +53,14 @@ src/
 ├── data/           # Static data files
 │   ├── curated-assets.ts    # ~155 assets the thesis LLM can invest in
 │   └── asset-aliases.json   # ~500 aliases for classifier normalization
+├── infra/          # Infrastructure (WebSocket, queues)
+│   └── websocket.ts         # WebSocket server + notifyUser broadcast
 ├── scripts/        # One-off scripts (seed, sync, debug)
 ├── services/       # Business logic
 │   ├── classifier.service.ts   # Tweet classification (uses aliases)
 │   ├── thesis.service.ts       # Portfolio synthesis (uses curated assets)
 │   ├── rebalancer.service.ts   # Vault rebalancing (uses Jupiter tradeableAssets)
-│   └── ...
+│   └── withdrawal.service.ts   # Multi-step withdrawal flow (triggers WS notifications)
 ├── store/          # Prisma repository layer
 ├── solana/         # On-chain interaction (GLAM, Jupiter swaps)
 └── utils/          # Shared utilities (logger, LLM client, env)
@@ -204,6 +206,40 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | POST   | `/api/withdrawals/:id/confirm-subscribe` | Confirm withdrawal subscription             |
 | GET    | `/api/withdrawals/:id/claim`             | Claim withdrawn tokens (after batch window) |
 | POST   | `/api/withdrawals/:id/confirm-claim`     | Finalize claim                              |
+
+### WebSocket
+
+| Protocol | Endpoint            | Description                              |
+| -------- | ------------------- | ---------------------------------------- |
+| WS       | `/ws/withdrawals`   | Real-time withdrawal status updates      |
+
+**Connection**: `ws://localhost:4001/ws/withdrawals?token=<privy_auth_token>`
+
+**Authentication**: Privy token passed as `token` query parameter. Invalid tokens close the connection with code 4001.
+
+**Heartbeat**: Server pings every 30 seconds to keep connections alive.
+
+**Message format** (server → client):
+```json
+{ "event": "<event_name>", "data": { ... } }
+```
+
+**Events**:
+
+| Event | Status | Triggered When | Extra Fields |
+| ----- | ------ | -------------- | ------------ |
+| `withdrawal:status` | `PROCESSING` | Redeem tx confirmed on-chain | `redeemTxSignature` |
+| `withdrawal:status` | `CLAIMABLE` | Fulfill batch tx succeeded | — |
+| `withdrawal:status` | `CLAIMED` | Claim tx confirmed on-chain | `claimTxSignature` |
+| `withdrawal:status` | `FAILED` | Fulfill batch failed | `errorMessage` |
+
+All payloads include `withdrawalId`, `status`, and `timestamp`.
+
+**Source files**:
+- `src/infra/websocket.ts` — Server setup, connection tracking, `notifyUser()` broadcast
+- `src/routes/withdrawals/handlers/confirm-redeem.ts` — Sends PROCESSING
+- `src/routes/withdrawals/handlers/confirm-claim.ts` — Sends CLAIMED
+- `src/services/withdrawal.service.ts` — Sends PROCESSING / FAILED
 
 ### Content Ingestion
 

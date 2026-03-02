@@ -156,6 +156,33 @@ For each KOL-vault pair:
 | `HEALTH_CHECK` | Every 5m | Verify system liveness, alert on failures |
 | `RECOVERY_WITHDRAWALS` | Every 15m | Retry failed withdrawal transactions |
 
+### WebSocket: Real-Time Withdrawal Notifications
+
+**Endpoint**: `GET /ws/withdrawals?token=<privy_token>` (upgraded to WebSocket)
+**Source**: `src/infra/websocket.ts`
+
+The withdrawal flow uses WebSocket to push status updates to connected clients in real time, avoiding polling.
+
+```
+User initiates withdrawal
+  │
+  ├─ POST /api/withdrawals/initiate
+  │
+  ├─ POST /api/withdrawals/:id/confirm-redeem
+  │     └─ WS event: { event: "withdrawal:status", data: { status: "PROCESSING" } }
+  │
+  ├─ Background worker processes fulfill batch
+  │     ├─ Success → WS event: { status: "CLAIMABLE" }
+  │     └─ Failure → WS event: { status: "FAILED" }
+  │
+  └─ POST /api/withdrawals/:id/confirm-claim
+        └─ WS event: { status: "CLAIMED" }
+```
+
+**Connection management**: Server tracks connections per userId in a `Map<string, Set<WebSocket>>`. Multiple connections per user are supported (e.g., multiple browser tabs). Heartbeat pings every 30 seconds. Stale connections are cleaned up on close/error.
+
+**Broadcast function**: `notifyUser(userId, event, data)` — sends JSON to all open sockets for a user. Called from withdrawal route handlers and the withdrawal service.
+
 ## Database Schema (Key Tables)
 
 ```

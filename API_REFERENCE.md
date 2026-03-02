@@ -137,6 +137,38 @@ curl $API/health
 
 ---
 
+## WebSocket
+
+### Withdrawal Status Updates
+
+**Endpoint**: `ws://localhost:4001/ws/withdrawals?token=<privy_auth_token>`
+**Production**: `wss://backend-fetch-data-production.up.railway.app/ws/withdrawals?token=<privy_auth_token>`
+
+**Auth**: Privy access token passed as `token` query parameter. Connection closed with code 4001 if invalid.
+
+**Heartbeat**: Server pings every 30s. No client action required.
+
+**Messages** (server → client, JSON):
+```json
+{ "event": "withdrawal:status", "data": { "withdrawalId": "...", "status": "PROCESSING", "timestamp": "...", "redeemTxSignature": "..." } }
+{ "event": "withdrawal:status", "data": { "withdrawalId": "...", "status": "CLAIMABLE", "timestamp": "..." } }
+{ "event": "withdrawal:status", "data": { "withdrawalId": "...", "status": "CLAIMED", "timestamp": "...", "claimTxSignature": "..." } }
+{ "event": "withdrawal:status", "data": { "withdrawalId": "...", "status": "FAILED", "timestamp": "...", "errorMessage": "..." } }
+```
+
+**JavaScript example**:
+```javascript
+const ws = new WebSocket(`wss://${API_HOST}/ws/withdrawals?token=${privyAccessToken}`);
+ws.onmessage = (e) => {
+  const { event, data } = JSON.parse(e.data);
+  if (event === "withdrawal:status") {
+    console.log(`Withdrawal ${data.withdrawalId}: ${data.status}`);
+  }
+};
+```
+
+---
+
 ## CLI Scripts (run from repo root)
 
 ### Backfill tweets for a KOL (historical data)
