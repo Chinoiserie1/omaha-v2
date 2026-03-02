@@ -1,7 +1,7 @@
 import { View, Platform, StyleSheet, Keyboard } from "react-native";
 import { useEffect, useState } from "react";
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import Animated, { FadeIn, SlideInDown } from "react-native-reanimated";
+import Animated, { Easing, SlideInDown } from "react-native-reanimated";
 import { GlassView } from "@/components/ui/glass";
 import { GlassTabBarItem } from "./GlassTabBarItem";
 import { useTabBarVisibility } from "@/contexts/tab-bar-visibility";
@@ -82,7 +82,7 @@ export function FloatingGlassTabBar({
     // child `pill` style. During animation start frames the height may be
     // briefly indeterminate on Android.
     <Animated.View
-      entering={SlideInDown.duration(400).springify().damping(18)}
+      entering={SlideInDown.duration(350).easing(Easing.out(Easing.cubic))}
       pointerEvents="box-none"
       style={[
         styles.outerContainer,
