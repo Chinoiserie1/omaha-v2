@@ -98,11 +98,21 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 - **New Design**: Premium portfolio dashboard with net worth, asset grid, performance chart
 - **Components**:
   - `PortfolioHeader.tsx` - User wallet address & net worth
-  - `AssetCardsGrid.tsx` - Holdings display (SPL tokens + vault shares)
+  - `AssetCardsGrid.tsx` - Holdings display (SPL tokens + vault shares + SOL with Fund button)
+  - `SolAssetCard.tsx` - SOL balance card with "Fund SOL" button for USDC→SOL swaps
   - `PortfolioPerformanceChart.tsx` - Connected to backend portfolio chart endpoint
   - `ActiveThesisList.tsx` - Real vaults from user's wallet (March 2026)
   - `ActiveThesisRow.tsx` - Navigate to vault detail pages
-- **Features**: Real wallet balances, active theses from on-chain vaults, performance history
+- **Features**: Real wallet balances, active theses from on-chain vaults, performance history, fund SOL flow
+
+### Fund SOL Modal Screen (March 2026)
+
+- **Route**: `app/(app)/(tabs)/(profile)/fund-sol.tsx`
+- **Components**:
+  - `FundSolSheet.tsx` - Main modal container ($/amount, confirm, success states)
+  - `AmountPicker.tsx` - Quick picker buttons ($1, $2, $5, $10)
+  - `FundSolSuccess.tsx` - Success confirmation screen
+- **Features**: Quick USDC→SOL swaps, platform fee display (2%), transaction builder + signing flow
 
 ### Vault Detail Screen
 
@@ -146,6 +156,7 @@ components/
 │   ├── PortfolioHeader.tsx
 │   ├── AssetCard.tsx
 │   ├── AssetCardsGrid.tsx
+│   ├── SolAssetCard.tsx     # SOL card with Fund SOL button
 │   ├── PortfolioPerformanceChart.tsx
 │   ├── ActiveThesisList.tsx
 │   ├── ActiveThesisRow.tsx
@@ -156,6 +167,11 @@ components/
 │   │   ├── TransferReview.tsx
 │   │   ├── TransferSuccess.tsx
 │   │   ├── TokenAvatar.tsx
+│   │   └── index.ts
+│   ├── fund-sol/            # Fund SOL (USDC → SOL swap)
+│   │   ├── FundSolSheet.tsx
+│   │   ├── AmountPicker.tsx
+│   │   ├── FundSolSuccess.tsx
 │   │   └── index.ts
 │   └── WithdrawForm.tsx
 ├── vault/                   # Vault detail page

@@ -6,8 +6,14 @@ export const SHARE_TOKEN_DECIMALS = 6;
 export const SHARE_TOKEN_MULTIPLIER = 10 ** SHARE_TOKEN_DECIMALS; // 1_000_000
 
 export const USDC_MINT = new PublicKey(
-  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
 );
+export const USDC_DECIMALS = 6;
+
+export const SOL_MINT = new PublicKey(
+  "So11111111111111111111111111111111111111112",
+);
+export const SOL_DECIMALS = 9;
 
 export const GLAM_PROGRAM_ID = new PublicKey(env.GLAM_PROGRAM_ID);
 
@@ -43,6 +49,27 @@ export function getKeeper(): Keypair {
     throw new Error("KEEPER_PRIVATE_KEY is not set");
   }
   return _keeperKeypair;
+}
+
+// ── Fee Payer Keypair ──────────────────────────────────────────
+function loadFeePayerKeypair(): Keypair | null {
+  const envKey = env.FEE_PAYER_PRIVATE_KEY;
+  if (!envKey) return null;
+
+  try {
+    return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(envKey)));
+  } catch {
+    return Keypair.fromSecretKey(Buffer.from(envKey, "base64"));
+  }
+}
+
+const _feePayerKeypair = loadFeePayerKeypair();
+
+export function getFeePayer(): Keypair {
+  if (!_feePayerKeypair) {
+    throw new Error("FEE_PAYER_PRIVATE_KEY is not set");
+  }
+  return _feePayerKeypair;
 }
 
 // ── Vault PDA derivation ───────────────────────────────────────

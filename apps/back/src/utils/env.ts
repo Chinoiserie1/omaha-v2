@@ -28,6 +28,8 @@ const envSchema = z.object({
   // KOL Pipeline — Solana (optional — crons work without these)
   SOLANA_RPC_URL: z.string().optional(),
   KEEPER_PRIVATE_KEY: z.string().optional(),
+  FEE_PAYER_PRIVATE_KEY: z.string().optional(),
+  FUND_SOL_FEE_PCT: z.coerce.number().default(2),
   GLAM_PROGRAM_ID: z
     .string()
     .default("GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"),

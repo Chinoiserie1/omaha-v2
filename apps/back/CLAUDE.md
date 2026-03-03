@@ -60,7 +60,10 @@ src/
 │   ├── classifier.service.ts   # Tweet classification (uses aliases)
 │   ├── thesis.service.ts       # Portfolio synthesis (uses curated assets)
 │   ├── rebalancer.service.ts   # Vault rebalancing (uses Jupiter tradeableAssets)
-│   └── withdrawal.service.ts   # Multi-step withdrawal flow (triggers WS notifications)
+│   ├── withdrawal.service.ts   # Multi-step withdrawal flow (triggers WS notifications)
+│   ├── fund-sol.service.ts     # Jupiter quote + swap plan builder for USDC → SOL
+│   ├── fund-sol-tx.builder.ts  # Transaction builder with fee payer partial sign
+│   └── jupiter-instruction.util.ts  # Shared Jupiter instruction deserializer
 ├── store/          # Prisma repository layer
 ├── solana/         # On-chain interaction (GLAM, Jupiter swaps)
 └── utils/          # Shared utilities (logger, LLM client, env)
@@ -126,6 +129,8 @@ Uses `@repo/config-eslint/node` which includes:
 - **TwitterService** - Fetches tweets via RapidAPI
 - **PortfolioSnapshotService** - Captures portfolio value snapshots on-demand (March 2026)
 - **WithdrawalService** - Manages user withdrawals with multi-step flow
+- **FundSolService** - Gets Jupiter USDC→SOL quotes and builds swap plans with platform fees
+- **FundSolTxBuilder** - Builds funded swap transactions with fee payer partial signing
 
 ## Key Repositories
 
@@ -241,6 +246,19 @@ All payloads include `withdrawalId`, `status`, and `timestamp`.
 - `src/routes/withdrawals/handlers/confirm-claim.ts` — Sends CLAIMED
 - `src/services/withdrawal.service.ts` — Sends PROCESSING / FAILED
 
+### Swap & Fund SOL
+
+| Method | Endpoint           | Description                                                           |
+| ------ | ------------------ | --------------------------------------------------------------------- |
+| POST   | `/api/swap/fund-sol` | Swap USDC → SOL for gas fees (auth required, $1-$10 limit, 2% fee)    |
+
+**Fund SOL Details:**
+- **Request**: `{ amountUsd: number (1-10), signerPublicKey: string }`
+- **Response**: `{ success: true, data: { transaction: base64, quote: FundSolQuote } }`
+- **Auth**: Requires valid Privy auth token
+- **Fee**: Platform takes `FUND_SOL_FEE_PCT` (default 2%) from swap
+- **Fee Payer**: Optional fee payer wallet (`FEE_PAYER_PRIVATE_KEY`) covers Solana tx fees
+
 ### Content Ingestion
 
 | Method | Endpoint       | Description                                      |
@@ -305,10 +323,15 @@ return reply.status(400).send({
 
 ## Environment Variables
 
+### Core
 - `PORT` - Server port (default: 3001)
 - `HOST` - Server host (default: 0.0.0.0)
 - `DATABASE_URL` - PostgreSQL connection string
 - `NODE_ENV` - Environment (development/production)
+
+### Fund SOL (Swap USDC → SOL)
+- `FEE_PAYER_PRIVATE_KEY` (optional) - Base64 or JSON array keypair for fee payer wallet
+- `FUND_SOL_FEE_PCT` (optional, default: 2) - Platform fee percentage for fund-sol swaps
 
 ## Build Output
 

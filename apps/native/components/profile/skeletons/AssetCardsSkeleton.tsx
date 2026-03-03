@@ -1,31 +1,32 @@
 import { View } from "react-native";
 import { Skeleton } from "@/components/ui/Skeleton";
-import { Card, CardContent } from "@/components/ui/card";
+import { GlassView } from "@/components/ui/glass";
 
-function AssetCardSkeleton() {
+export function BalanceAreaSkeleton() {
   return (
-    <Card className="flex-1">
-      <CardContent className="gap-2">
-        <View className="flex-row items-center gap-2">
-          <Skeleton className="h-8 w-8 rounded-full" />
-          <Skeleton className="h-4 w-16 rounded" />
+    <View className="mb-4 gap-4">
+      {/* USDC available label */}
+      <View className="items-center">
+        <Skeleton className="h-4 w-40 rounded" />
+      </View>
+
+      {/* Gas gauge bar */}
+      <GlassView className="rounded-xl px-4 py-3">
+        <View className="gap-3">
+          <View className="flex-row items-center gap-2">
+            <Skeleton className="h-4 w-4 rounded" />
+            <Skeleton className="h-4 w-28 rounded" />
+          </View>
+          <Skeleton className="h-2 w-full rounded-full" />
+          <View className="flex-row items-center justify-between">
+            <Skeleton className="h-3 w-32 rounded" />
+            <Skeleton className="h-8 w-16 rounded-md" />
+          </View>
         </View>
-        <Skeleton className="h-3 w-20 rounded" />
-        <Skeleton className="h-5 w-16 rounded" />
-      </CardContent>
-    </Card>
-  );
-}
-
-export function AssetCardsSkeleton() {
-  return (
-    <View className="mb-4 flex-row flex-wrap gap-3">
-      <View className="w-[48%]">
-        <AssetCardSkeleton />
-      </View>
-      <View className="w-[48%]">
-        <AssetCardSkeleton />
-      </View>
+      </GlassView>
     </View>
   );
 }
+
+/** @deprecated Use BalanceAreaSkeleton instead */
+export const AssetCardsSkeleton = BalanceAreaSkeleton;

@@ -116,6 +116,12 @@ userResponseSchema: z.object({
   updatedAt: z.coerce.date(),
 })
 
+// Fund SOL (USDC → SOL swap)
+fundSolRequestSchema: z.object({
+  amountUsd: z.number().min(1).max(10),
+  signerPublicKey: z.string(),
+})
+
 // Pagination
 paginationSchema: z.object({
   page: z.coerce.number().int().positive().default(1),
@@ -135,6 +141,7 @@ DTOs are inferred from Zod schemas:
 type CreateUserDto = z.infer<typeof createUserSchema>;
 type UpdateUserDto = z.infer<typeof updateUserSchema>;
 type UserResponseDto = z.infer<typeof userResponseSchema>;
+type FundSolRequestDto = z.infer<typeof fundSolRequestSchema>;
 type PaginationDto = z.infer<typeof paginationSchema>;
 ```
 

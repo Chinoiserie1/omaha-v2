@@ -2,7 +2,7 @@ import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { PortfolioHeaderSkeleton } from "./PortfolioHeaderSkeleton";
 import { NetWorthSkeleton } from "./NetWorthSkeleton";
-import { AssetCardsSkeleton } from "./AssetCardsSkeleton";
+import { BalanceAreaSkeleton } from "./AssetCardsSkeleton";
 import { QuickActionsSkeleton } from "./QuickActionsSkeleton";
 import { PerformanceChartSkeleton } from "./PerformanceChartSkeleton";
 import { ActiveThesesSkeleton } from "./ActiveThesesSkeleton";
@@ -17,7 +17,7 @@ export function ProfileScreenSkeleton() {
       >
         <PortfolioHeaderSkeleton />
         <NetWorthSkeleton />
-        <AssetCardsSkeleton />
+        <BalanceAreaSkeleton />
         <QuickActionsSkeleton />
         <PerformanceChartSkeleton />
         <ActiveThesesSkeleton />

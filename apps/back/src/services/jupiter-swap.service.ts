@@ -5,12 +5,10 @@ import { logger } from "../utils/logger.js";
 import { deriveVaultPda } from "../solana/config.js";
 import { wrapForGlam } from "../solana/mapper.js";
 import { buildAndSendVersionedTx } from "../solana/tx.js";
-
-interface JupiterInstructionPayload {
-  programId: string;
-  accounts: { pubkey: string; isSigner: boolean; isWritable: boolean }[];
-  data: string; // base64
-}
+import {
+  deserializeInstruction,
+  type JupiterInstructionPayload,
+} from "./jupiter-instruction.util.js";
 
 const JUPITER_API_BASE = "https://api.jup.ag/swap/v1";
 
@@ -74,22 +72,6 @@ async function getJupiterSwapInstructions(
     cleanupInstruction: data.cleanupInstruction ?? null,
     addressLookupTableAddresses: data.addressLookupTableAddresses ?? [],
   };
-}
-
-// ── Instruction Deserialization ────────────────────────────────
-
-function deserializeInstruction(
-  ix: JupiterInstructionPayload
-): TransactionInstruction {
-  return new TransactionInstruction({
-    programId: new PublicKey(ix.programId),
-    keys: ix.accounts.map((key) => ({
-      pubkey: new PublicKey(key.pubkey),
-      isSigner: key.isSigner,
-      isWritable: key.isWritable,
-    })),
-    data: Buffer.from(ix.data, "base64"),
-  });
 }
 
 // ── Price Impact Validation ────────────────────────────────────

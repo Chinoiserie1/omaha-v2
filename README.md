@@ -55,6 +55,7 @@ autopilot/
 | `SOLANA_RPC_URL`           | Solana RPC endpoint (optional) |
 | `JUPITER_API_KEY`          | Jupiter swap API (optional)    |
 | `BIRDEYE_API_KEY`          | Price data / backtesting       |
+| `FEE_PAYER_PRIVATE_KEY`    | Fund SOL fee payer (optional)  |
 
 ## Quick Start
 
@@ -232,6 +233,10 @@ JUPITER_API_KEY=
 
 # Birdeye (price data / backtesting)
 BIRDEYE_API_KEY=
+
+# Fund SOL (USDC → SOL swap for gas fees)
+FEE_PAYER_PRIVATE_KEY=
+FUND_SOL_FEE_PCT=2
 
 # Rebalancing
 REBALANCE_DRY_RUN=true
