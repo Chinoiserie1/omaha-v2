@@ -198,6 +198,7 @@ Copy `.env.example` to `.env` and configure:
 ```bash
 # Database (matches docker-compose.yml defaults)
 DATABASE_URL="postgresql://user:password@localhost:5456/autopilot"
+REDIS_URL="redis://localhost:6380"
 NODE_ENV=development
 
 # Privy Authentication

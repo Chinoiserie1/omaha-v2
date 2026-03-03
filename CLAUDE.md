@@ -181,7 +181,8 @@ pnpm clean
 Create a `.env` file in the root directory (see `.env.example`):
 
 ```env
-DATABASE_URL="postgresql://user:password@localhost:5432/autopilot"
+DATABASE_URL="postgresql://user:password@localhost:5456/autopilot"
+REDIS_URL="redis://localhost:6380"
 NODE_ENV=development
 ```
 
