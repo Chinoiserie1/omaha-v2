@@ -46,3 +46,42 @@ export async function findLatestByKolVault(
     orderBy: { startedAt: "desc" },
   });
 }
+
+export async function findByVaultWithSnapshots(
+  kolVaultId: string,
+  limit = 10
+) {
+  return prisma.rebalanceEvent.findMany({
+    where: { kolVaultId },
+    orderBy: { startedAt: "desc" },
+    take: limit,
+    include: {
+      snapshot: {
+        select: {
+          id: true,
+          thesisSummary: true,
+          changes: true,
+          createdAt: true,
+          tweetImpacts: {
+            orderBy: { significanceScore: "desc" },
+            take: 1,
+            include: {
+              tweet: {
+                select: {
+                  tweetId: true,
+                  fullText: true,
+                  postedAt: true,
+                  favoriteCount: true,
+                  retweetCount: true,
+                  replyCount: true,
+                  bookmarkCount: true,
+                  viewsCount: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+}

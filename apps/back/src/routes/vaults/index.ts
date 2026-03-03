@@ -12,12 +12,14 @@ import { claimRedemption } from "./handlers/claim.js";
 import { confirmSubscribe } from "./handlers/confirm-subscribe.js";
 import { getFavoriteStatus } from "./handlers/favorite-status.js";
 import { toggleFavorite } from "./handlers/toggle-favorite.js";
+import { getRebalances } from "./handlers/rebalances.js";
 
 export async function vaultRoutes(app: FastifyInstance) {
   app.get("/", listVaults);
   app.get("/:id", getVault);
   app.get("/:id/performance", getVaultPerformance);
   app.get("/:id/holdings", getVaultHoldingsHandler);
+  app.get("/:id/rebalances", getRebalances);
   app.post("/:id/holdings/snapshot", snapshotHoldingsHandler);
 
   // Auth-protected routes
