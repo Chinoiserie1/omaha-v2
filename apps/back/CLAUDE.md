@@ -165,6 +165,7 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | GET    | `/api/kols`                             | List active KOLs (supports `?all=true`)       |
 | GET    | `/api/kols/:id`                         | Get KOL details with recent tweets            |
 | POST   | `/api/kols/sync-profiles`               | Refresh all KOL Twitter profiles              |
+| POST   | `/api/kols/:kolId/instant-run-algo`     | Trigger classify + thesis for one KOL         |
 | GET    | `/api/kols/:id/tweets`                  | List tweets by KOL (paginated, date filter)   |
 | GET    | `/api/kols/:id/tweets/significant`      | Significant tweets with impact scores         |
 | GET    | `/api/kols/:id/threads/:conversationId` | Get tweet thread (context for classification) |

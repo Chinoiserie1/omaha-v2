@@ -43,6 +43,11 @@ curl -X POST $API/api/kols/<kolId>/portfolio \
   -d '{"thesisSummary":"...","allocations":[{"asset":"SOL","percentage":60},{"asset":"USDC","percentage":40}],"changes":["manual entry"]}'
 ```
 
+### Instantly run algo (classify + thesis) for one KOL
+```bash
+curl -X POST $API/api/kols/<kolId>/instant-run-algo
+```
+
 ### Run backtest for a KOL
 ```bash
 curl $API/api/kols/<kolId>/backtest
@@ -203,5 +208,4 @@ These operations have **no curl endpoint** — they can only be triggered via CL
 
 - **Tweet backfilling** — `backfill-tweets.ts` script only
 - **KOL seeding** — `seed-kols.ts` script only
-- **Classification + synthesis** — `run-algo` cron or `run-algo-one-kol.ts` script
 - **Price backfilling** — `fetch-prices` cron only (no manual trigger endpoint)
