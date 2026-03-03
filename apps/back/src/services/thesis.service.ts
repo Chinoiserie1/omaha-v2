@@ -1,4 +1,4 @@
-import type { Prisma } from "@repo/database";
+import type { PortfolioSnapshot, Prisma } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import { llmComplete } from "../utils/llm.js";
 import { extractJson } from "../utils/extract-json.js";
@@ -100,75 +100,24 @@ function formatClassificationsWithThreads(
   return entries.map((e) => e.line).join("\n\n");
 }
 
-export async function synthesizeThesis(kolId: string): Promise<boolean> {
-  const latestSnapshot = await portfolioRepo.findLatestSnapshot(kolId);
-  const tradeableAssets = await getTradeableAssetsMap();
+// ---------------------------------------------------------------------------
+// Single snapshot synthesis (extracted for reuse by both incremental & retroactive paths)
+// ---------------------------------------------------------------------------
 
-  logger.info(
-    { kolId, tradeableAssetsCount: tradeableAssets.size, hasExistingSnapshot: !!latestSnapshot },
-    "Starting thesis synthesis"
-  );
+interface SingleSnapshotInput {
+  kolId: string;
+  userContent: string;
+  sourceTweetIds: string[];
+  previousSnapshot: PortfolioSnapshot | null;
+  createdAt?: Date;
+  decayReferenceDate?: Date;
+}
 
-  let userContent: string;
-  let sourceTweetIds: string[];
-
-  if (!latestSnapshot) {
-    logger.info({ kolId }, "Cold start — no previous snapshot, building thesis from scratch");
-
-    const allRelevant =
-      await classificationRepo.findRelevantClassificationsSince(
-        kolId,
-        new Date(0)
-      );
-
-    if (allRelevant.length === 0) {
-      logger.info({ kolId }, "No relevant tweets for cold start, skipping");
-      return false;
-    }
-
-    sourceTweetIds = allRelevant.map((c) => c.tweetId);
-
-    logger.info(
-      { kolId, relevantTweets: allRelevant.length },
-      "Found relevant tweets for cold start"
-    );
-
-    const tweetsFormatted = formatClassificationsWithThreads(allRelevant);
-
-    userContent = `ALL RELEVANT TWEETS (oldest to newest):\n${tweetsFormatted}\n\nBuild their current investment thesis from scratch.`;
-  } else {
-    logger.info(
-      { kolId, lastSnapshotAt: latestSnapshot.createdAt.toISOString() },
-      "Updating existing thesis"
-    );
-
-    const newRelevant =
-      await classificationRepo.findRelevantClassificationsSince(
-        kolId,
-        latestSnapshot.createdAt
-      );
-
-    if (newRelevant.length === 0) {
-      logger.info({ kolId }, "No new relevant tweets since last snapshot, skipping");
-      return false;
-    }
-
-    sourceTweetIds = newRelevant.map((c) => c.tweetId);
-
-    logger.info(
-      { kolId, newRelevantTweets: newRelevant.length },
-      "Found new relevant tweets since last snapshot"
-    );
-
-    const currentState = JSON.stringify({
-      thesisSummary: latestSnapshot.thesisSummary,
-      allocations: latestSnapshot.allocations,
-    });
-
-    const tweetsFormatted = formatClassificationsWithThreads(newRelevant);
-
-    userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
-  }
+async function synthesizeSingleSnapshot(
+  input: SingleSnapshotInput,
+  tradeableAssets: Map<string, { mint: string; decimals: number }>
+): Promise<{ snapshot: PortfolioSnapshot; allocations: Allocation[] } | null> {
+  const { kolId, userContent, sourceTweetIds, previousSnapshot, createdAt, decayReferenceDate } = input;
 
   const availableSymbols = getCuratedAssetSymbols();
   const thesisPrompt = buildThesisSystemPrompt(availableSymbols);
@@ -180,7 +129,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     rawResponse = await llmComplete(thesisPrompt, userContent);
   } catch (err) {
     logger.error({ err, kolId }, "LLM call failed for thesis synthesis");
-    return false;
+    return null;
   }
 
   logger.info({ kolId, responseLength: rawResponse.length }, "LLM response received");
@@ -190,7 +139,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     parsed = extractJson(rawResponse);
   } catch {
     logger.error({ kolId, rawResponse }, "Failed to parse thesis JSON");
-    return false;
+    return null;
   }
 
   const result = PortfolioOutputSchema.safeParse(parsed);
@@ -199,43 +148,25 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
       { kolId, errors: result.error.issues },
       "Thesis response failed schema validation"
     );
-    return false;
+    return null;
   }
 
   const portfolio = result.data;
 
-  logger.info(
-    { kolId, thesisSummary: portfolio.thesisSummary },
-    "Thesis summary"
-  );
+  logger.info({ kolId, thesisSummary: portfolio.thesisSummary }, "Thesis summary");
 
   // Validate allocations sum roughly to 100%
-  const totalPct = portfolio.allocations.reduce(
-    (sum, a) => sum + a.percentage,
-    0
-  );
+  const totalPct = portfolio.allocations.reduce((sum, a) => sum + a.percentage, 0);
   logger.info({ kolId, totalPct }, "Allocation total percentage");
 
   if (totalPct < 95 || totalPct > 105) {
-    logger.error(
-      { kolId, totalPct },
-      "Allocation percentages don't sum to ~100%, rejecting"
-    );
-    return false;
+    logger.error({ kolId, totalPct }, "Allocation percentages don't sum to ~100%, rejecting");
+    return null;
   }
 
-  // Log each allocation
   for (const alloc of portfolio.allocations) {
     logger.info(
-      {
-        kolId,
-        asset: alloc.asset,
-        percentage: alloc.percentage,
-        conviction: alloc.conviction,
-        reasoning: alloc.reasoning,
-        since: alloc.since,
-        lastSignal: alloc.lastSignal,
-      },
+      { kolId, asset: alloc.asset, percentage: alloc.percentage, conviction: alloc.conviction, reasoning: alloc.reasoning, since: alloc.since, lastSignal: alloc.lastSignal },
       "Allocation"
     );
   }
@@ -245,10 +176,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     if (alloc.asset === "USDC") continue;
     const tradeableInfo = tradeableAssets.get(alloc.asset);
     if (!tradeableInfo) {
-      logger.warn(
-        { kolId, asset: alloc.asset },
-        "Asset not in tradeable assets, skipping"
-      );
+      logger.warn({ kolId, asset: alloc.asset }, "Asset not in tradeable assets, skipping");
       continue;
     }
     alloc.mint = tradeableInfo.mint;
@@ -257,7 +185,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
   // Apply conviction decay
   const decayedAllocations = applyConvictionDecay(
     portfolio.allocations as unknown as Allocation[],
-    new Date()
+    decayReferenceDate ?? new Date()
   );
 
   // Log changes
@@ -275,17 +203,18 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     allocations: decayedAllocations as unknown as Prisma.InputJsonValue,
     changes: portfolio.changes,
     sourceTweetIds,
+    ...(createdAt ? { createdAt } : {}),
   });
 
   logger.info(
-    { kolId, allocations: decayedAllocations.length, changes: portfolio.changes.length },
+    { kolId, allocations: decayedAllocations.length, changes: portfolio.changes.length, createdAt: createdAt?.toISOString() },
     "Portfolio snapshot saved"
   );
 
   // Compute tweet impact scores (non-fatal)
   try {
-    const oldAllocations = latestSnapshot
-      ? (latestSnapshot.allocations as unknown as Allocation[])
+    const oldAllocations = previousSnapshot
+      ? (previousSnapshot.allocations as unknown as Allocation[])
       : null;
     await computeTweetImpacts({
       kolId,
@@ -297,6 +226,199 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
   } catch (err) {
     logger.warn({ err, kolId }, "Failed to compute tweet impacts (non-fatal)");
   }
+
+  return { snapshot: savedSnapshot, allocations: decayedAllocations };
+}
+
+// ---------------------------------------------------------------------------
+// Weekly window generation for retroactive snapshots
+// ---------------------------------------------------------------------------
+
+interface TimeWindow {
+  startDate: Date;
+  endDate: Date;
+}
+
+export function generateWeeklyWindows(earliest: Date, latest: Date): TimeWindow[] {
+  const windows: TimeWindow[] = [];
+
+  // Find Monday 00:00:00 UTC of the week containing `earliest`
+  const day = earliest.getUTCDay(); // 0=Sun, 1=Mon...
+  const mondayOffset = day === 0 ? -6 : 1 - day;
+  const firstMonday = new Date(Date.UTC(
+    earliest.getUTCFullYear(),
+    earliest.getUTCMonth(),
+    earliest.getUTCDate() + mondayOffset
+  ));
+
+  let windowStart = firstMonday;
+
+  while (windowStart.getTime() <= latest.getTime()) {
+    // Sunday 23:59:59.999 UTC of this week
+    const sundayEnd = new Date(windowStart.getTime() + 7 * 24 * 60 * 60 * 1000 - 1);
+
+    // Cap last window at `latest`
+    const windowEnd = sundayEnd.getTime() > latest.getTime() ? latest : sundayEnd;
+
+    windows.push({ startDate: new Date(windowStart), endDate: windowEnd });
+
+    // Next Monday
+    windowStart = new Date(windowStart.getTime() + 7 * 24 * 60 * 60 * 1000);
+  }
+
+  return windows;
+}
+
+// ---------------------------------------------------------------------------
+// Retroactive snapshot generation (cold start replacement)
+// ---------------------------------------------------------------------------
+
+type ClassificationWithTweet = Awaited<
+  ReturnType<typeof classificationRepo.findRelevantClassificationsSince>
+>[number];
+
+async function generateRetroactiveSnapshots(
+  kolId: string,
+  allRelevant: ClassificationWithTweet[]
+): Promise<boolean> {
+  const tradeableAssets = await getTradeableAssetsMap();
+
+  // Sort by tweet posted date (not classifiedAt which is bulk classification time)
+  const sorted = [...allRelevant].sort(
+    (a, b) => a.tweet.postedAt.getTime() - b.tweet.postedAt.getTime()
+  );
+
+  const earliest = sorted[0]!.tweet.postedAt;
+  const latest = sorted[sorted.length - 1]!.tweet.postedAt;
+  const windows = generateWeeklyWindows(earliest, latest);
+
+  logger.info(
+    { kolId, totalTweets: sorted.length, windows: windows.length, earliest: earliest.toISOString(), latest: latest.toISOString() },
+    "Generating retroactive weekly snapshots"
+  );
+
+  let previousSnapshot: PortfolioSnapshot | null = null;
+  let cumulativeTweets: ClassificationWithTweet[] = [];
+  let generatedCount = 0;
+
+  for (const window of windows) {
+    // Collect tweets in this window
+    const windowTweets = sorted.filter(
+      (c) => c.tweet.postedAt >= window.startDate && c.tweet.postedAt <= window.endDate
+    );
+
+    if (windowTweets.length === 0) continue;
+
+    cumulativeTweets = [...cumulativeTweets, ...windowTweets];
+    const sourceTweetIds = windowTweets.map((c) => c.tweetId);
+
+    let userContent: string;
+
+    if (!previousSnapshot) {
+      // First window: cold start from all tweets up to this point
+      const tweetsFormatted = formatClassificationsWithThreads(cumulativeTweets);
+      userContent = `ALL RELEVANT TWEETS (oldest to newest):\n${tweetsFormatted}\n\nBuild their current investment thesis from scratch.`;
+    } else {
+      // Subsequent windows: incremental update
+      const currentState = JSON.stringify({
+        thesisSummary: previousSnapshot.thesisSummary,
+        allocations: previousSnapshot.allocations,
+      });
+      const tweetsFormatted = formatClassificationsWithThreads(windowTweets);
+      userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
+    }
+
+    logger.info(
+      { kolId, windowStart: window.startDate.toISOString(), windowEnd: window.endDate.toISOString(), tweetsInWindow: windowTweets.length },
+      "Processing retroactive window"
+    );
+
+    const result = await synthesizeSingleSnapshot(
+      {
+        kolId,
+        userContent,
+        sourceTweetIds,
+        previousSnapshot,
+        createdAt: window.endDate,
+        decayReferenceDate: window.endDate,
+      },
+      tradeableAssets
+    );
+
+    if (result) {
+      previousSnapshot = result.snapshot;
+      generatedCount++;
+      logger.info(
+        { kolId, generatedCount, windowEnd: window.endDate.toISOString() },
+        "Generated retroactive snapshot"
+      );
+    } else {
+      logger.warn(
+        { kolId, windowEnd: window.endDate.toISOString() },
+        "Failed to generate retroactive snapshot for window, continuing"
+      );
+    }
+  }
+
+  logger.info({ kolId, generatedCount, totalWindows: windows.length }, "Retroactive snapshot generation complete");
+  return generatedCount > 0;
+}
+
+// ---------------------------------------------------------------------------
+// Main entry point
+// ---------------------------------------------------------------------------
+
+export async function synthesizeThesis(kolId: string): Promise<boolean> {
+  const latestSnapshot = await portfolioRepo.findLatestSnapshot(kolId);
+  const tradeableAssets = await getTradeableAssetsMap();
+
+  logger.info(
+    { kolId, tradeableAssetsCount: tradeableAssets.size, hasExistingSnapshot: !!latestSnapshot },
+    "Starting thesis synthesis"
+  );
+
+  // Cold start: generate retroactive weekly snapshots
+  if (!latestSnapshot) {
+    logger.info({ kolId }, "Cold start — generating retroactive weekly snapshots");
+
+    const allRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, new Date(0));
+    if (allRelevant.length === 0) {
+      logger.info({ kolId }, "No relevant tweets for cold start, skipping");
+      return false;
+    }
+
+    return generateRetroactiveSnapshots(kolId, allRelevant);
+  }
+
+  // Incremental update: use new tweets since last snapshot
+  logger.info(
+    { kolId, lastSnapshotAt: latestSnapshot.createdAt.toISOString() },
+    "Updating existing thesis"
+  );
+
+  const newRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, latestSnapshot.createdAt);
+  if (newRelevant.length === 0) {
+    logger.info({ kolId }, "No new relevant tweets since last snapshot, skipping");
+    return false;
+  }
+
+  const sourceTweetIds = newRelevant.map((c) => c.tweetId);
+
+  logger.info({ kolId, newRelevantTweets: newRelevant.length }, "Found new relevant tweets since last snapshot");
+
+  const currentState = JSON.stringify({
+    thesisSummary: latestSnapshot.thesisSummary,
+    allocations: latestSnapshot.allocations,
+  });
+  const tweetsFormatted = formatClassificationsWithThreads(newRelevant);
+  const userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
+
+  const result = await synthesizeSingleSnapshot(
+    { kolId, userContent, sourceTweetIds, previousSnapshot: latestSnapshot },
+    tradeableAssets
+  );
+
+  if (!result) return false;
 
   // Compute backtest performance for this new period (non-fatal)
   try {

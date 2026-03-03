@@ -7,6 +7,7 @@ export async function createSnapshot(data: {
   allocations: Prisma.InputJsonValue;
   changes: string[];
   sourceTweetIds: string[];
+  createdAt?: Date;
 }): Promise<PortfolioSnapshot> {
   return prisma.portfolioSnapshot.create({ data });
 }

@@ -33,6 +33,7 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 | ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
 | `docs/ASSET-PIPELINE.md` | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
 | `docs/DATA-PIPELINE.md`  | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
+| `docs/backtest.md`       | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
 
 ## Tech Stack
 

@@ -225,6 +225,23 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 
 **Result**: 543 alias entries → 287 unique targets. 187 curated assets (110 crypto + 77 stocks). All invariants pass: every curated symbol has ≥1 alias, no duplicate stock tickers.
 
+### Retroactive Portfolio Snapshots on Cold Start (Mar 2026)
+
+**Problem**: When a KOL was first added to the DB, the cold start path in `synthesizeThesis()` took ALL historical tweets and created a **single** snapshot. This meant the backtest had no temporal granularity — it could only start from the day the KOL was added, even if their tweets went back months (e.g. Mert: tweets since Nov 2025, but snapshots only from Feb 23 2026).
+
+**Fix**: Replaced the single-snapshot cold start with `generateRetroactiveSnapshots()`:
+1. Sorts all relevant tweets by `tweet.postedAt` (not `classifiedAt`)
+2. Generates weekly time windows (Mon–Sun) via `generateWeeklyWindows()`
+3. For each non-empty window: calls `synthesizeSingleSnapshot()` with `createdAt = window.endDate`
+4. First window uses cold start prompt (cumulative tweets), subsequent windows use incremental prompt (previous thesis state + new window tweets)
+5. Conviction decay uses `window.endDate` as reference (not `now()`)
+
+Also extracted the LLM call → parse → validate → save logic into `synthesizeSingleSnapshot()` for reuse by both retroactive and incremental paths.
+
+**Cost**: ~N Haiku calls per KOL cold start where N = number of non-empty weeks. For a KOL with 17 weeks of sparse tweets: ~5-8 calls (~$0.20).
+
+**Files changed**: `thesis.service.ts` (refactored), `portfolio.repository.ts` (added optional `createdAt` param)
+
 ### Asset Category Expansion & BTC/Gold Dedup (Mar 2026)
 
 **Problem**: `CuratedAsset.category` only supported `"crypto" | "stock"`, but several assets were miscategorized — ETFs like QQQx/SPYx are indices, GLDx/SLVon are commodities, TBLLx/TLTon are fixed income. Additionally, 4 wrapped BTC tokens (21BTC, cbBTC, WBTC, zBTC) diluted Bitcoin exposure across the portfolio, and "bitcoin"/"btc" aliases mapped to non-existent "BTC" symbol (bug).
