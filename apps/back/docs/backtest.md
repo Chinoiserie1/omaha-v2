@@ -390,25 +390,35 @@ No backtest UI currently.
 
 ## Snapshot Lifecycle
 
-### Cold Start → Retroactive Weekly Snapshots
+### Retroactive Backfill (Automatic)
 
-When a KOL has **zero** existing snapshots, `synthesizeThesis()` generates retroactive weekly snapshots from their full tweet history:
+`synthesizeThesis()` automatically detects and backfills gaps between a KOL's earliest tweet activity and their earliest existing snapshot. This works for both new and existing KOLs — no manual deletion needed.
 
-1. Fetches all relevant classified tweets (sorted by `tweet.postedAt`)
+**How it works:**
+
+1. Fetches the earliest existing snapshot and all relevant classified tweets
+2. Compares the oldest tweet's `postedAt` date against the earliest snapshot's `createdAt`
+3. Two paths:
+   - **Cold start** (no snapshots): full retroactive generation from all tweets
+   - **Gap backfill** (tweets older than earliest snapshot): generates retroactive snapshots only for tweets before the earliest snapshot, then falls through to the incremental path
+
+**Retroactive generation** (shared by both paths):
+
+1. Sorts tweets by `tweet.postedAt` (not `classifiedAt` which is bulk classification time)
 2. Calls `generateWeeklyWindows(earliest, latest)` to create Mon–Sun time windows
 3. For each non-empty window, calls `synthesizeSingleSnapshot()` with `createdAt = window.endDate`
 4. First window: cold start prompt (all tweets up to that point). Subsequent windows: incremental prompt (previous thesis + new window tweets)
 5. Conviction decay uses `window.endDate` as reference date (historical accuracy)
 
-This means a KOL with tweets spanning Nov 2025–Feb 2026 will get ~5-8 snapshots on first run, giving the backtest engine enough periods to compute meaningful returns from the start.
+**Example**: Mert was added Feb 23 with a single snapshot. He has tweets since Nov 2025. On next algo run, the gap (Nov 2025 → Feb 23 2026) is detected and ~4 weekly retroactive snapshots are backfilled automatically. The backtest now covers the full tweet history.
 
 ### Incremental Updates (Cron)
 
-Once retroactive snapshots exist, subsequent cron runs create one snapshot per cycle with new tweets since the last snapshot. This is the normal steady-state.
+Once retroactive snapshots exist and no gap remains, subsequent cron runs create one snapshot per cycle with new tweets since the last snapshot. This is the normal steady-state.
 
 ### Idempotency
 
-The `if (!latestSnapshot)` guard ensures retroactive generation only runs when zero snapshots exist. If the process crashes mid-generation, the next cron run takes the incremental path (using whatever snapshots were created before the crash).
+Once backfilled, the gap check (`oldestTweetDate < earliestSnapshot.createdAt`) becomes false because the new retroactive snapshots now cover those dates. The backfill won't re-run on subsequent cron cycles.
 
 ---
 

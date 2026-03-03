@@ -21,6 +21,15 @@ export async function findLatestSnapshot(
   });
 }
 
+export async function findEarliestSnapshot(
+  kolId: string
+): Promise<PortfolioSnapshot | null> {
+  return prisma.portfolioSnapshot.findFirst({
+    where: { kolId },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
 export async function findSnapshotHistory(
   kolId: string,
   limit = 50

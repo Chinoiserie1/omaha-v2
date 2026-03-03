@@ -369,34 +369,56 @@ async function generateRetroactiveSnapshots(
 // ---------------------------------------------------------------------------
 
 export async function synthesizeThesis(kolId: string): Promise<boolean> {
-  const latestSnapshot = await portfolioRepo.findLatestSnapshot(kolId);
   const tradeableAssets = await getTradeableAssetsMap();
 
   logger.info(
-    { kolId, tradeableAssetsCount: tradeableAssets.size, hasExistingSnapshot: !!latestSnapshot },
+    { kolId, tradeableAssetsCount: tradeableAssets.size },
     "Starting thesis synthesis"
   );
 
-  // Cold start: generate retroactive weekly snapshots
-  if (!latestSnapshot) {
-    logger.info({ kolId }, "Cold start — generating retroactive weekly snapshots");
+  // --- Retroactive backfill: check for tweets older than earliest snapshot ---
+  const earliestSnapshot = await portfolioRepo.findEarliestSnapshot(kolId);
+  const allRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, new Date(0));
 
-    const allRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, new Date(0));
-    if (allRelevant.length === 0) {
-      logger.info({ kolId }, "No relevant tweets for cold start, skipping");
-      return false;
+  if (allRelevant.length > 0) {
+    const oldestTweetDate = allRelevant.reduce(
+      (min, c) => (c.tweet.postedAt < min ? c.tweet.postedAt : min),
+      allRelevant[0]!.tweet.postedAt
+    );
+
+    if (!earliestSnapshot) {
+      // Cold start: no snapshots at all → full retroactive generation
+      logger.info({ kolId }, "Cold start — generating retroactive weekly snapshots");
+      return generateRetroactiveSnapshots(kolId, allRelevant);
     }
 
-    return generateRetroactiveSnapshots(kolId, allRelevant);
+    if (oldestTweetDate < earliestSnapshot.createdAt) {
+      // Gap detected: tweets exist before earliest snapshot → backfill the gap
+      const tweetsBeforeEarliest = allRelevant.filter(
+        (c) => c.tweet.postedAt < earliestSnapshot.createdAt
+      );
+      logger.info(
+        {
+          kolId,
+          gap: `${oldestTweetDate.toISOString()} → ${earliestSnapshot.createdAt.toISOString()}`,
+          tweetsInGap: tweetsBeforeEarliest.length,
+        },
+        "Gap detected — backfilling retroactive snapshots before earliest existing snapshot"
+      );
+      await generateRetroactiveSnapshots(kolId, tweetsBeforeEarliest);
+      // Fall through to incremental path for new tweets
+    }
   }
 
-  // Incremental update: use new tweets since last snapshot
-  logger.info(
-    { kolId, lastSnapshotAt: latestSnapshot.createdAt.toISOString() },
-    "Updating existing thesis"
-  );
+  // --- Incremental update ---
+  // Re-fetch latestSnapshot since retroactive backfill may have created new ones
+  const currentLatest = await portfolioRepo.findLatestSnapshot(kolId);
+  if (!currentLatest) {
+    logger.info({ kolId }, "No snapshots and no relevant tweets, skipping");
+    return false;
+  }
 
-  const newRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, latestSnapshot.createdAt);
+  const newRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, currentLatest.createdAt);
   if (newRelevant.length === 0) {
     logger.info({ kolId }, "No new relevant tweets since last snapshot, skipping");
     return false;
@@ -407,14 +429,14 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
   logger.info({ kolId, newRelevantTweets: newRelevant.length }, "Found new relevant tweets since last snapshot");
 
   const currentState = JSON.stringify({
-    thesisSummary: latestSnapshot.thesisSummary,
-    allocations: latestSnapshot.allocations,
+    thesisSummary: currentLatest.thesisSummary,
+    allocations: currentLatest.allocations,
   });
   const tweetsFormatted = formatClassificationsWithThreads(newRelevant);
   const userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
 
   const result = await synthesizeSingleSnapshot(
-    { kolId, userContent, sourceTweetIds, previousSnapshot: latestSnapshot },
+    { kolId, userContent, sourceTweetIds, previousSnapshot: currentLatest },
     tradeableAssets
   );
 
