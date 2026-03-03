@@ -4,6 +4,8 @@ import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import * as Clipboard from "expo-clipboard";
 import QRCode from "react-native-qrcode-svg";
+import { AlertTriangle } from "lucide-react-native";
+import { GlassView } from "@/components/ui/glass";
 
 export function DepositSheet() {
   const router = useRouter();
@@ -23,11 +25,21 @@ export function DepositSheet() {
   return (
     <View className="flex-1 items-center justify-center px-6">
       <Text className="text-xl font-bold text-foreground mb-2">
-        Deposit SOL
+        Deposit USDC
       </Text>
-      <Text className="text-sm text-muted-foreground mb-8 text-center">
-        Send SOL to your wallet address below
+      <Text className="text-sm text-muted-foreground mb-4 text-center">
+        Send USDC to your wallet address below
       </Text>
+
+      <GlassView className="mb-6 w-full rounded-xl px-4 py-3">
+        <View className="flex-row items-start gap-2">
+          <AlertTriangle size={16} color="#f59e0b" className="mt-0.5" />
+          <Text className="flex-1 text-xs text-amber-400">
+            Only send USDC (SPL) to this address. Sending other tokens may
+            result in loss of funds.
+          </Text>
+        </View>
+      </GlassView>
 
       <View className="bg-secondary p-6 rounded-2xl mb-6">
         <QRCode
