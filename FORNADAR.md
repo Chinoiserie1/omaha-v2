@@ -121,6 +121,25 @@ Result: 89 → 493 aliases. 265 stock tokens seeded. Run with `pnpm seed-stocks 
 
 **Decimals**: xStocks = 8 (verified on-chain for AAPLx, TSLAx), Ondo = 9 (from Jupiter API). Do NOT assume — always verify on-chain.
 
+### Backtest Price Gaps & Same-Day Noise (Mar 2026)
+
+**Problem**: Backtest showed -4.71% on the first period then 0% for all subsequent periods. Verified on Mert's data (5 snapshots, 4 stored periods — only 1 had real returns).
+
+Three interrelated bugs:
+
+1. **Price cache check too coarse** (`price.service.ts`): `ensurePricesForSymbols()` checked `countPricesInRange(symbol, from, to) > 0` to decide "already cached". If ANY price existed in the range, it skipped fetching — even if the end of the range had no data. Example: ZEC prices existed for Feb 23-28, but when the range extended to Mar 2, the count check found Feb data and skipped, leaving Mar 1 unfetched.
+
+2. **Same-day snapshots produce 0% periods** (`backtest.service.ts`): Thesis cron runs every 30 min and creates a new snapshot whenever new tweets exist. Two snapshots on the same calendar day (e.g. Feb 28 11:10 and 14:07) always compute 0% return because prices are daily granularity — both sides resolve to the same close price.
+
+3. **Near-date fallback masks missing data** (`price.service.ts`): `getPriceOnDate()` falls back to ±3 days when exact date is missing. When both `priceFrom` (Feb 28) and `priceTo` (Mar 1 → fallback to Feb 28) resolve to the same stale price, the return is silently 0%. System treats "no data" as "flat market" with no warning.
+
+**Fix**:
+1. Replaced `countPricesInRange > 0` with `findPriceOnDate(symbol, endDate)` — only skip if the end date specifically has a price. Crypto trades 24/7/365, so every date should have data. Re-fetching overlapping dates is safe (`upsertDailyPrice` deduplicates via `@@unique([symbol, date])`).
+
+2. Added `deduplicateByDay()` helper in `runBacktest()` — keeps only the last snapshot per calendar day before iterating periods. Added same-day guard in `computeLatestPeriod()` to skip computation when the two latest snapshots share a calendar day. Snapshots themselves are still created (they represent real thesis updates).
+
+3. Changed `getPriceOnDate` return type from `number | null` to `PriceResult { price, date, isFallback }`. `computePeriod` now detects when both from/to prices resolved to the same date and logs a warning. Only caller is `computePeriod`, so blast radius is contained.
+
 ## Lessons Learned & Best Practices
 
 1. **Never touch root mobile dependencies** — `expo`, `react@18.3.1`, `react-native` in root `package.json` are sacred. Changing them breaks the mobile app.
@@ -150,6 +169,12 @@ Result: 89 → 493 aliases. 265 stock tokens seeded. Run with `pnpm seed-stocks 
 14. **When multiple tokenized versions exist, pick by liquidity** — For stocks available on both xStocks (Backed Finance) and Ondo GM, check on-chain liquidity via Birdeye to determine which is more tradeable. The split is roughly 50/50 (27 xStock wins vs 26 Ondo wins as of Mar 2026), not one-sided.
 
 15. **Verify token decimals on-chain, never assume** — xStocks use 8 decimals (not the assumed 9). Ondo GM uses 9. Wrong decimals = wrong swap amounts. Always verify via Solana RPC `getAccountInfo` with `jsonParsed` encoding.
+
+16. **Crypto markets are 24/7/365** — Never assume weekend/holiday gaps in price data. Every calendar date should have a token price. If it's missing, it's genuinely missing, not a market closure. Don't build weekend-handling logic that doesn't apply.
+
+17. **Cache checks must match the query granularity** — Checking "any data exists in range" is not the same as "data exists for the dates I need". When caching time-series data, validate coverage at the resolution you'll query (daily prices → check the specific date), not just the existence of any data in the window.
+
+18. **Fallback mechanisms can hide bugs** — The ±3 day price fallback was designed for legitimate gaps (weekends for SPX). In crypto, it masked the fact that prices stopped being fetched. When both sides of a comparison fall back to the same value, the result (0%) looks plausible but is wrong. Add observability (return metadata, log fallback usage) so silent failures become visible.
 
 10. **Treat tweet threads as atomic units** — When classifying or synthesizing KOL signals, individual thread tweets lack context ("as I said above", "adding more here"). Concatenating the full thread before LLM analysis fixes misclassification and prevents over-weighting. The classifier fetches the full thread (including already-classified tweets) via `findThreadByConversationId` for maximum context, then applies the same classification to all unclassified tweets in the thread. The synthesizer groups by `conversationId` and emits one entry per thread so a multi-tweet thread doesn't inflate signal strength.
 

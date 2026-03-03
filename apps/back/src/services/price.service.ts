@@ -144,18 +144,20 @@ export async function ensurePricesForSymbols(
 ): Promise<void> {
   const uniqueSymbols = [...new Set(symbols)].filter((s) => !STABLECOINS.has(s));
 
+  const endDate = toDateOnly(to);
+
   for (const symbol of uniqueSymbols) {
     if (symbol === "SPX") {
-      const count = await priceRepo.countPricesInRange("SPX", from, to);
-      if (count === 0) {
+      const hasEndDate = await priceRepo.findPriceOnDate("SPX", endDate);
+      if (!hasEndDate) {
         await fetchAndStoreSP500Prices(from, to);
       }
       continue;
     }
 
-    const count = await priceRepo.countPricesInRange(symbol, from, to);
-    if (count > 0) {
-      logger.debug({ symbol, count }, "Prices already cached, skipping fetch");
+    const hasEndDate = await priceRepo.findPriceOnDate(symbol, endDate);
+    if (hasEndDate) {
+      logger.debug({ symbol, date: endDate.toISOString() }, "End-date price cached, skipping fetch");
       continue;
     }
 
@@ -170,6 +172,12 @@ export async function ensurePricesForSymbols(
   }
 }
 
+export interface PriceResult {
+  price: number;
+  date: Date;
+  isFallback: boolean;
+}
+
 /**
  * Get the USD price for a symbol on a given date.
  * Stablecoins return $1. Others look up from DB (with near-date fallback).
@@ -177,13 +185,15 @@ export async function ensurePricesForSymbols(
 export async function getPriceOnDate(
   symbol: string,
   date: Date
-): Promise<number | null> {
-  if (STABLECOINS.has(symbol)) return 1;
+): Promise<PriceResult | null> {
+  if (STABLECOINS.has(symbol)) return { price: 1, date, isFallback: false };
 
   const dateOnly = toDateOnly(date);
   const exact = await priceRepo.findPriceOnDate(symbol, dateOnly);
-  if (exact) return exact.priceUsd;
+  if (exact) return { price: exact.priceUsd, date: exact.date, isFallback: false };
 
   const near = await priceRepo.findPriceNearDate(symbol, dateOnly);
-  return near?.priceUsd ?? null;
+  if (near) return { price: near.priceUsd, date: near.date, isFallback: true };
+
+  return null;
 }

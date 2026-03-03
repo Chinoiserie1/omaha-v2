@@ -12,6 +12,7 @@
 5. **Always include `prisma migrate deploy`** in the build script of `package.json`.
 6. **Use cron jobs, not infinite loops.** 1-service architecture with embedded node-cron.
 7. **Never assume zero fees for vaults.** Always explicitly set fee params.
+8. **Crypto markets are 24/7/365.** Every calendar date should have a price. Never assume weekend/holiday gaps in price data. If a date is missing, it's genuinely missing data that needs fetching — not a market closure.
 
 ## Architecture Overview
 
