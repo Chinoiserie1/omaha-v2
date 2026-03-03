@@ -1,5 +1,6 @@
-import { View, ActivityIndicator } from "react-native";
+import { View } from "react-native";
 import { Text } from "@/components/ui/text";
+import { NetWorthSkeleton } from "./skeletons";
 
 interface NetWorthDisplayProps {
   totalUsd: number;
@@ -31,7 +32,7 @@ export function NetWorthDisplay({
   return (
     <View className="mb-6 items-center">
       {isLoading ? (
-        <ActivityIndicator size="large" color="#94A3B8" className="my-4" />
+        <NetWorthSkeleton />
       ) : (
         <>
           <Text className="text-4xl font-bold">{formatTotalUsd(totalUsd)}</Text>

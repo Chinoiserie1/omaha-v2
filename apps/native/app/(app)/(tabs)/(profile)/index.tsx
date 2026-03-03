@@ -1,4 +1,4 @@
-import { ScrollView, ActivityIndicator } from "react-native";
+import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
@@ -13,6 +13,7 @@ import { QuickActions } from "../../../../components/profile/QuickActions";
 import { PortfolioPerformanceChart } from "../../../../components/profile/PortfolioPerformanceChart";
 import { ActiveThesisList } from "../../../../components/profile/ActiveThesisList";
 import { PortfolioSignOutButton } from "../../../../components/profile/PortfolioSignOutButton";
+import { ProfileScreenSkeleton } from "../../../../components/profile/skeletons";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -27,11 +28,7 @@ export default function ProfileScreen() {
   const { data: activeTheses } = useActiveTheses(walletAddress);
 
   if (profileLoading) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#94A3B8" />
-      </SafeAreaView>
-    );
+    return <ProfileScreenSkeleton />;
   }
 
   return (

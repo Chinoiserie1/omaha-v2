@@ -1,8 +1,9 @@
-import { View, Pressable, ActivityIndicator } from "react-native";
+import { View, Pressable } from "react-native";
 import { useState, memo } from "react";
 import { Text } from "@/components/ui/text";
 import { Card, CardContent } from "@/components/ui/card";
 import { LineChartView } from "@/components/ui/LineChartView";
+import { ChartSkeleton } from "@/components/ui/Skeleton";
 import { usePortfolioChart } from "@/hooks/queries/use-portfolio-chart";
 import type { PortfolioChartPeriod } from "@repo/shared";
 
@@ -47,9 +48,7 @@ export const PortfolioPerformanceChart = memo(
           </View>
 
           {isLoading ? (
-            <View className="h-[160px] items-center justify-center">
-              <ActivityIndicator size="small" color="#94A3B8" />
-            </View>
+            <ChartSkeleton height={160} />
           ) : points.length > 1 ? (
             <LineChartView
               data={points}

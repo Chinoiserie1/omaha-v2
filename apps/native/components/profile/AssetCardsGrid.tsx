@@ -1,6 +1,7 @@
-import { View, ActivityIndicator } from "react-native";
+import { View } from "react-native";
 import type { PortfolioItem } from "@repo/shared";
 import { AssetCard } from "./AssetCard";
+import { AssetCardsSkeleton } from "./skeletons";
 
 interface AssetCardsGridProps {
   items: PortfolioItem[];
@@ -29,11 +30,7 @@ function findToken(
 
 export function AssetCardsGrid({ items, isLoading = false }: AssetCardsGridProps) {
   if (isLoading) {
-    return (
-      <View className="my-4 items-center">
-        <ActivityIndicator size="small" color="#94A3B8" />
-      </View>
-    );
+    return <AssetCardsSkeleton />;
   }
 
   return (
