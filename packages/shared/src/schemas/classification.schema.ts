@@ -73,6 +73,7 @@ RULES:
 - If no new tweets mention an existing position, carry it forward UNCHANGED (same percentage, same conviction, same reasoning)
 - Only ADD a new position if the KOL explicitly mentions buying or being bullish
 - Only REDUCE/REMOVE a position if the KOL explicitly mentions selling, trimming, or being bearish
+- conviction MUST be exactly one of: "low", "medium", "high" (no other values)
 - Allocations MUST sum to 100%. Unallocated remainder goes to USDC
 - Only include assets from the AVAILABLE TRADEABLE ASSETS list above
 - Minimum allocation per asset: 5%
