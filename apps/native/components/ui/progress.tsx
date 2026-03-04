@@ -14,8 +14,7 @@ function Progress({
   value,
   indicatorClassName,
   ...props
-}: ProgressPrimitive.RootProps &
-  React.RefAttributes<ProgressPrimitive.RootRef> & {
+}: ProgressPrimitive.RootProps & {
     indicatorClassName?: string;
   }) {
   return (

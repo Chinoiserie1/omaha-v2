@@ -45,9 +45,11 @@
     "wt:android": "bash scripts/worktree-dev.sh android",
     "wt:start": "bash scripts/worktree-dev.sh",
     "wt:create": "bash scripts/worktree-create.sh",
-    "wt:clean": "bash scripts/worktree-clean.sh"
+    "wt:clean": "bash scripts/worktree-clean.sh",
+    "prepare": "husky"
   },
   "devDependencies": {
+    "husky": "^9.1.7",
     "turbo": "^2.7.1",
     "typescript": "^5.7.2"
   },

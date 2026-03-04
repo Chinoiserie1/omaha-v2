@@ -1,0 +1,6 @@
+branch=$(git symbolic-ref --short HEAD)
+
+if [ "$branch" = "main" ]; then
+  echo "Direct push to main is not allowed. Please create a pull request."
+  exit 1
+fi

@@ -2,7 +2,6 @@ import {
   ComputeBudgetProgram,
   PublicKey,
   Transaction,
-  type TransactionInstruction,
 } from "@solana/web3.js";
 import {
   createTransferCheckedInstruction,

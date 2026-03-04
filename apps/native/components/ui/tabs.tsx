@@ -6,7 +6,7 @@ import { Platform } from "react-native";
 function Tabs({
   className,
   ...props
-}: TabsPrimitive.RootProps & React.RefAttributes<TabsPrimitive.RootRef>) {
+}: TabsPrimitive.RootProps) {
   return (
     <TabsPrimitive.Root
       className={cn("flex flex-col gap-2", className)}
@@ -18,7 +18,7 @@ function Tabs({
 function TabsList({
   className,
   ...props
-}: TabsPrimitive.ListProps & React.RefAttributes<TabsPrimitive.ListRef>) {
+}: TabsPrimitive.ListProps) {
   return (
     <TabsPrimitive.List
       className={cn(
@@ -34,8 +34,7 @@ function TabsList({
 function TabsTrigger({
   className,
   ...props
-}: TabsPrimitive.TriggerProps &
-  React.RefAttributes<TabsPrimitive.TriggerRef>) {
+}: TabsPrimitive.TriggerProps) {
   const { value } = TabsPrimitive.useRootContext();
   return (
     <TextClassContext.Provider
@@ -64,8 +63,7 @@ function TabsTrigger({
 function TabsContent({
   className,
   ...props
-}: TabsPrimitive.ContentProps &
-  React.RefAttributes<TabsPrimitive.ContentRef>) {
+}: TabsPrimitive.ContentProps) {
   return (
     <TabsPrimitive.Content
       className={cn(

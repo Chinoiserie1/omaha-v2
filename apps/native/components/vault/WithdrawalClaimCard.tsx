@@ -1,11 +1,10 @@
-import { ActivityIndicator, View, Linking } from "react-native";
+import { ActivityIndicator, View } from "react-native";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
 import Toast from "react-native-toast-message";
 import { captureError } from "../../lib/capture-error";
 import { useClaimWithdrawal } from "../../hooks/mutations/use-claim-withdrawal";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import type { WithdrawalRequest } from "@repo/shared";
 
 interface WithdrawalClaimCardProps {
@@ -44,10 +43,6 @@ export function WithdrawalClaimCard({ withdrawal }: WithdrawalClaimCardProps) {
         text2: err instanceof Error ? err.message : "Transaction failed",
       });
     }
-  };
-
-  const openTx = (sig: string) => {
-    Linking.openURL(`https://solscan.io/tx/${sig}`);
   };
 
   return (
