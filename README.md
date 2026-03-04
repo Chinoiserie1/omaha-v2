@@ -9,7 +9,7 @@ AI-powered KOL (Key Opinion Leader) trading pipeline on Solana. Fetches tweets, 
 | Monorepo        | Turborepo                | 2.7.x    |
 | Package Manager | pnpm                     | 9.15.0   |
 | Web Frontend    | Next.js                  | 15.x     |
-| Mobile          | Expo / React Native      | SDK 52   |
+| Mobile          | Expo / React Native      | SDK 54   |
 | Backend         | Fastify                  | 5.x      |
 | Database        | PostgreSQL + Prisma      | 16 / 6.x |
 | Validation      | Zod                      | 3.x      |
@@ -26,7 +26,7 @@ autopilot/
 ├── apps/
 │   ├── web/           # Next.js 15 web app (port 3000)
 │   ├── back/          # Fastify 5 REST API (port 3001)
-│   └── native/        # Expo SDK 52 mobile app
+│   └── native/        # Expo SDK 54 mobile app
 ├── packages/
 │   ├── shared/        # Shared types, DTOs, Zod schemas
 │   ├── database/      # Prisma ORM setup, schema, client
@@ -174,6 +174,12 @@ The backend runs an automated pipeline via cron jobs:
 | Fetch prices     | Every minute     | `CRON_FETCH_PRICES`     |
 | Health check     | Every 6 hours    | `CRON_HEALTH_CHECK`     |
 
+### Fund SOL (USDC → SOL for gas fees)
+
+Users need SOL to pay Solana transaction fees. The Fund SOL flow lets them swap $1–$10 USDC to SOL from the profile screen. The backend builds a partially-signed transaction (platform pays the Solana tx fee), and the user signs via Privy wallet on device.
+
+See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentation.
+
 ### Database Models
 
 - **User** — Privy-authenticated users
@@ -254,8 +260,13 @@ CRON_FETCH_PRICES="* * * * *"
 CRON_HEALTH_CHECK="0 */6 * * *"
 
 
-# Withdraw vault window before available to claim
+# Withdrawal queue
 WITHDRAWAL_BATCH_WINDOW_MS=600000
+WITHDRAWAL_MAX_RETRIES=3
+CRON_RECOVERY_WITHDRAWALS="*/5 * * * *"
+
+# Portfolio snapshots (weekly safety-net)
+CRON_SNAPSHOT_PORTFOLIOS="0 0 * * 0"
 
 # Telegram Alerts (optional)
 TELEGRAM_BOT_TOKEN=

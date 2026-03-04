@@ -107,6 +107,8 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 
 ### Fund SOL Modal Screen (March 2026)
 
+> Full flow documentation: [`docs/flow/FUND-SOL.md`](../../docs/flow/FUND-SOL.md)
+
 - **Route**: `app/(app)/(tabs)/(profile)/fund-sol.tsx`
 - **Components**:
   - `FundSolSheet.tsx` - Main modal container ($/amount, confirm, success states)

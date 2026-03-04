@@ -6,6 +6,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native), Prisma ORM, and TypeScript. The monorepo contains three applications and shared packages managed via pnpm workspaces.
 
+### Flow Documentation
+
+- [Fund SOL (USDC → SOL for gas fees)](./docs/flow/FUND-SOL.md) — Full transaction flow from mobile UI to on-chain swap
+
 ### Apps
 
 Each app has its own detailed CLAUDE.md file:

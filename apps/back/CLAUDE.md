@@ -29,11 +29,12 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 
 ## Key Documentation
 
-| Doc                      | What it covers                                                                                  | Read before touching...                                                                                          |
-| ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `docs/ASSET-PIPELINE.md` | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
-| `docs/DATA-PIPELINE.md`  | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
-| `docs/backtest.md`       | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
+| Doc                                                    | What it covers                                                                                  | Read before touching...                                                                                          |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `docs/ASSET-PIPELINE.md`                               | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
+| `docs/DATA-PIPELINE.md`                                | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
+| `docs/backtest.md`                                     | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
+| [`docs/flow/FUND-SOL.md`](../../docs/flow/FUND-SOL.md) | USDC → SOL swap flow for transaction fees: API, services, tx builder, mobile UI                 | `fund-sol.service.ts`, `fund-sol-tx.builder.ts`, `solana/config.ts`, native fund-sol components                  |
 
 ## Tech Stack
 
@@ -214,9 +215,9 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 
 ### WebSocket
 
-| Protocol | Endpoint            | Description                              |
-| -------- | ------------------- | ---------------------------------------- |
-| WS       | `/ws/withdrawals`   | Real-time withdrawal status updates      |
+| Protocol | Endpoint          | Description                         |
+| -------- | ----------------- | ----------------------------------- |
+| WS       | `/ws/withdrawals` | Real-time withdrawal status updates |
 
 **Connection**: `ws://localhost:4001/ws/withdrawals?token=<privy_auth_token>`
 
@@ -225,22 +226,24 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 **Heartbeat**: Server pings every 30 seconds to keep connections alive.
 
 **Message format** (server → client):
+
 ```json
 { "event": "<event_name>", "data": { ... } }
 ```
 
 **Events**:
 
-| Event | Status | Triggered When | Extra Fields |
-| ----- | ------ | -------------- | ------------ |
+| Event               | Status       | Triggered When               | Extra Fields        |
+| ------------------- | ------------ | ---------------------------- | ------------------- |
 | `withdrawal:status` | `PROCESSING` | Redeem tx confirmed on-chain | `redeemTxSignature` |
-| `withdrawal:status` | `CLAIMABLE` | Fulfill batch tx succeeded | — |
-| `withdrawal:status` | `CLAIMED` | Claim tx confirmed on-chain | `claimTxSignature` |
-| `withdrawal:status` | `FAILED` | Fulfill batch failed | `errorMessage` |
+| `withdrawal:status` | `CLAIMABLE`  | Fulfill batch tx succeeded   | —                   |
+| `withdrawal:status` | `CLAIMED`    | Claim tx confirmed on-chain  | `claimTxSignature`  |
+| `withdrawal:status` | `FAILED`     | Fulfill batch failed         | `errorMessage`      |
 
 All payloads include `withdrawalId`, `status`, and `timestamp`.
 
 **Source files**:
+
 - `src/infra/websocket.ts` — Server setup, connection tracking, `notifyUser()` broadcast
 - `src/routes/withdrawals/handlers/confirm-redeem.ts` — Sends PROCESSING
 - `src/routes/withdrawals/handlers/confirm-claim.ts` — Sends CLAIMED
@@ -248,11 +251,12 @@ All payloads include `withdrawalId`, `status`, and `timestamp`.
 
 ### Swap & Fund SOL
 
-| Method | Endpoint           | Description                                                           |
-| ------ | ------------------ | --------------------------------------------------------------------- |
-| POST   | `/api/swap/fund-sol` | Swap USDC → SOL for gas fees (auth required, $1-$10 limit, 2% fee)    |
+| Method | Endpoint             | Description                                                        |
+| ------ | -------------------- | ------------------------------------------------------------------ |
+| POST   | `/api/swap/fund-sol` | Swap USDC → SOL for gas fees (auth required, $1-$10 limit, 2% fee) |
 
 **Fund SOL Details:**
+
 - **Request**: `{ amountUsd: number (1-10), signerPublicKey: string }`
 - **Response**: `{ success: true, data: { transaction: base64, quote: FundSolQuote } }`
 - **Auth**: Requires valid Privy auth token
@@ -324,12 +328,14 @@ return reply.status(400).send({
 ## Environment Variables
 
 ### Core
+
 - `PORT` - Server port (default: 3001)
 - `HOST` - Server host (default: 0.0.0.0)
 - `DATABASE_URL` - PostgreSQL connection string
 - `NODE_ENV` - Environment (development/production)
 
 ### Fund SOL (Swap USDC → SOL)
+
 - `FEE_PAYER_PRIVATE_KEY` (optional) - Base64 or JSON array keypair for fee payer wallet
 - `FUND_SOL_FEE_PCT` (optional, default: 2) - Platform fee percentage for fund-sol swaps
 
