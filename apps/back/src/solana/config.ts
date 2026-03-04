@@ -1,5 +1,7 @@
 import { Connection, Keypair, PublicKey } from "@solana/web3.js";
+import bs58 from "bs58";
 import { env } from "../utils/env.js";
+import { logger } from "../utils/logger.js";
 
 // ── Constants ──────────────────────────────────────────────────
 export const SHARE_TOKEN_DECIMALS = 6;
@@ -30,16 +32,31 @@ export function getConnection(): Connection {
   return _connection;
 }
 
-// ── Keypair ────────────────────────────────────────────────────
+// ── Keypair helpers ─────────────────────────────────────────────
+function keypairFromEnv(raw: string): Keypair {
+  const bytes = (() => {
+    try {
+      return Uint8Array.from(JSON.parse(raw));
+    } catch {
+      // Try base58 first (Phantom export format), then base64
+      try {
+        return bs58.decode(raw);
+      } catch {
+        return Buffer.from(raw, "base64");
+      }
+    }
+  })();
+
+  // 64 bytes = full secret key, 32 bytes = seed-only (private key)
+  if (bytes.length === 64) return Keypair.fromSecretKey(bytes);
+  if (bytes.length === 32) return Keypair.fromSeed(bytes);
+  throw new Error(`unexpected key length: ${bytes.length} (expected 32 or 64)`);
+}
+
 function loadKeypair(): Keypair | null {
   const envKey = env.KEEPER_PRIVATE_KEY;
   if (!envKey) return null;
-
-  try {
-    return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(envKey)));
-  } catch {
-    return Keypair.fromSecretKey(Buffer.from(envKey, "base64"));
-  }
+  return keypairFromEnv(envKey);
 }
 
 const _keeperKeypair = loadKeypair();
@@ -54,12 +71,19 @@ export function getKeeper(): Keypair {
 // ── Fee Payer Keypair ──────────────────────────────────────────
 function loadFeePayerKeypair(): Keypair | null {
   const envKey = env.FEE_PAYER_PRIVATE_KEY;
-  if (!envKey) return null;
+  if (!envKey) {
+    logger.info("FEE_PAYER_PRIVATE_KEY not set — fund-sol fee payer disabled");
+    return null;
+  }
 
   try {
-    return Keypair.fromSecretKey(Uint8Array.from(JSON.parse(envKey)));
-  } catch {
-    return Keypair.fromSecretKey(Buffer.from(envKey, "base64"));
+    return keypairFromEnv(envKey);
+  } catch (err) {
+    logger.error(
+      { err },
+      "FEE_PAYER_PRIVATE_KEY is set but could not be parsed",
+    );
+    return null;
   }
 }
 
@@ -76,7 +100,7 @@ export function getFeePayer(): Keypair {
 export function deriveVaultPda(statePda: PublicKey): PublicKey {
   const [vaultPda] = PublicKey.findProgramAddressSync(
     [Buffer.from("vault"), statePda.toBuffer()],
-    GLAM_PROGRAM_ID
+    GLAM_PROGRAM_ID,
   );
   return vaultPda;
 }

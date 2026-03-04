@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { logger } from "./logger.js";
 
 const envSchema = z.object({
   DATABASE_URL: z.string().min(1),
@@ -88,4 +89,34 @@ function validateEnv(): Env {
   return parsed.data;
 }
 
+function findDefault(def: Record<string, unknown>): (() => unknown) | null {
+  if (def["typeName"] === "ZodDefault" && typeof def["defaultValue"] === "function") {
+    return def["defaultValue"] as () => unknown;
+  }
+  const inner = def["innerType"] as { _def?: unknown } | undefined;
+  if (inner && typeof inner._def === "object") {
+    return findDefault(inner._def as Record<string, unknown>);
+  }
+  return null;
+}
+
+function logMissingEnvVars(): void {
+  for (const key of Object.keys(envSchema.shape)) {
+    if (process.env[key] !== undefined) continue;
+
+    const field = envSchema.shape[key as keyof typeof envSchema.shape];
+    const isOptional = field.isOptional();
+    const getDefault = findDefault(field._def as unknown as Record<string, unknown>);
+
+    if (!isOptional && !getDefault) continue; // required — Zod already throws
+
+    if (getDefault) {
+      logger.info(`ENV ${key} is not set (using default: ${getDefault()})`);
+    } else {
+      logger.info(`ENV ${key} is not set`);
+    }
+  }
+}
+
 export const env = validateEnv();
+logMissingEnvVars();
