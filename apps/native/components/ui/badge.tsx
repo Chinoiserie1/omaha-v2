@@ -47,8 +47,7 @@ const badgeTextVariants = cva("text-xs font-medium", {
   defaultVariants: { variant: "default" },
 });
 
-type BadgeProps = ViewProps &
-  React.RefAttributes<View> & { asChild?: boolean } & VariantProps<
+type BadgeProps = ViewProps & { asChild?: boolean } & VariantProps<
     typeof badgeVariants
   >;
 

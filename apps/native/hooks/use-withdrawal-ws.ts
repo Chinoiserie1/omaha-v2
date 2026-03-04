@@ -25,7 +25,7 @@ export function useWithdrawalWebSocket() {
   const { getAccessToken } = usePrivy();
   const queryClient = useQueryClient();
   const wsRef = useRef<WebSocket | null>(null);
-  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>();
+  const reconnectTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   const connect = useCallback(async () => {
     try {

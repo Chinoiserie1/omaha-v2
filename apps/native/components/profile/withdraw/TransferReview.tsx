@@ -81,7 +81,7 @@ export function TransferReview({
       {isNonSol && (
         <GlassView className="mb-4 rounded-xl px-5 py-3">
           <Text className="text-xs text-muted-foreground">
-            If the recipient doesn't have a token account for {token.symbol}, one
+            If the recipient doesn&apos;t have a token account for {token.symbol}, one
             will be created automatically. A small rent fee (~0.002 SOL) will be
             deducted from your wallet.
           </Text>
