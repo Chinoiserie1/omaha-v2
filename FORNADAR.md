@@ -272,3 +272,9 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 5. **Fixed "bitcoin"/"btc" alias bug**: These mapped to `"BTC"` which didn't exist in curated assets. Now correctly map to `"cbBTC"`.
 
 **Result**: 184 curated assets (107 crypto, 68 stock, 5 index, 2 commodity, 2 fixed_income). All invariants pass.
+
+### Backtest Chart Endpoint (Mar 2026)
+
+**Added**: `GET /api/kols/:kolId/backtest/chart` — transforms existing backtest periods into chart-consumable `{ timestamp, value }` points. Reuses `runBacktest()` from `backtest.service.ts` without duplicating any computation logic. Response includes `points`, `totalReturn`, `percentChange`, `startValue`, `currentValue`, and the raw `periods` array. Empty backtest returns `points: []` with zero-value defaults.
+
+**Files**: `apps/back/src/routes/backtest/handlers/get-backtest-chart.ts` (new handler), `apps/back/src/routes/backtest/index.ts` (route registration).
