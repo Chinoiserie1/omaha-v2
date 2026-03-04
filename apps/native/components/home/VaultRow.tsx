@@ -1,7 +1,6 @@
 import { View, Text, Pressable } from "react-native";
 import { memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Badge } from "@/components/ui/badge";
 import { VaultProfilePicture } from "@/components/vault/VaultProfilePicture";
 
 interface VaultRowProps {
@@ -14,20 +13,13 @@ interface VaultRowProps {
   onPress?: () => void;
 }
 
-function formatFollowers(count: number): string {
-  if (count >= 1000) {
-    return `${(count / 1000).toFixed(1).replace(/\.0$/, "")}k`;
-  }
-  return String(count);
-}
-
 export const VaultRow = memo(function VaultRow({
   name,
   avatarUrl,
   description,
-  category,
+  category: _category,
   performancePercent,
-  followersCount,
+  followersCount: _followersCount,
   onPress,
 }: VaultRowProps) {
   const hasPerf = performancePercent !== null;

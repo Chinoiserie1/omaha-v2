@@ -1,12 +1,14 @@
 import { StyleSheet, Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Image } from "expo-image";
+// eslint-disable-next-line @typescript-eslint/no-require-imports
+const iconSource = require("../../assets/icon.png") as number;
 
 export function HeroCard() {
   return (
     <View style={styles.card}>
       <Image
-        source={require("../../assets/icon.png")}
+        source={iconSource}
         style={styles.image}
         contentFit="cover"
       />

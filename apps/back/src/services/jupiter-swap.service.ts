@@ -1,5 +1,5 @@
 import axios from "axios";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
 import { deriveVaultPda } from "../solana/config.js";

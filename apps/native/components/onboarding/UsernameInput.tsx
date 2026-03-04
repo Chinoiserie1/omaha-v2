@@ -16,7 +16,7 @@ export function UsernameInput({
 }: UsernameInputProps) {
   const [debouncedValue, setDebouncedValue] = useState("");
   const [localError, setLocalError] = useState<string | null>(null);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
