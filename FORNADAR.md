@@ -278,3 +278,13 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 **Added**: `GET /api/kols/:kolId/backtest/chart` — transforms existing backtest periods into chart-consumable `{ timestamp, value }` points. Reuses `runBacktest()` from `backtest.service.ts` without duplicating any computation logic. Response includes `points`, `totalReturn`, `percentChange`, `startValue`, `currentValue`, and the raw `periods` array. Empty backtest returns `points: []` with zero-value defaults.
 
 **Files**: `apps/back/src/routes/backtest/handlers/get-backtest-chart.ts` (new handler), `apps/back/src/routes/backtest/index.ts` (route registration).
+
+### Twitter API: profile-conversation Author Investigation (Mar 2026)
+
+**Investigation**: Analyzed `profile-conversation` entries from `user-tweets` API to understand tweet authorship. Found that `legacy.screen_name` is **null** in this API — screen name lives at `core.user_results.result.core.screen_name`, which `TweetResultSchema` does not parse. Only `legacy.user_id_str` is available for author identification.
+
+**Finding**: On Mert's page 1, 2 out of 23 extracted tweets belong to other users (parent tweets in reply conversations). These are kept intentionally — they provide context needed for accurate classification of the KOL's replies.
+
+**Pagination limit**: RapidAPI degrades after ~43 pages (~1 tweet/page). This causes the 70-day gap in Mert's backfill.
+
+**Documented in**: `apps/back/docs/TWITTER-API.md`
