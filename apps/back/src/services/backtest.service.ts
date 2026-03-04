@@ -10,7 +10,7 @@ interface Allocation {
   [key: string]: unknown;
 }
 
-interface PeriodResult {
+export interface PeriodResult {
   fromSnapshotId: string;
   toSnapshotId: string;
   fromDate: string;

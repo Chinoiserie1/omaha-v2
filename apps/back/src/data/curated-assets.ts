@@ -28,6 +28,9 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "ETH", name: "Ether (Portal)", mint: "7vfCXTUXx5WJV5JADk17DUJ4ksgau7utNKj4b963voxs", decimals: 8, category: "crypto" },
   { symbol: "cbBTC", name: "Coinbase Wrapped BTC", mint: "cbbtcf3aa214zXHbiAZQwf4122FBYbraNdFqgw4iMij", decimals: 8, category: "crypto" },
 
+  // Liquid Staking
+  { symbol: "hSOL", name: "Helius Staked SOL", mint: "he1iusmfkpAdwvxLNGV8Y1iSbj4rUy6yMhEA3fotn9A", decimals: 9, category: "crypto" },
+
   // DeFi / Infrastructure (from aliases)
   { symbol: "JUP", name: "Jupiter", mint: "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN", decimals: 6, category: "crypto" },
   { symbol: "RAY", name: "Raydium", mint: "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R", decimals: 6, category: "crypto" },

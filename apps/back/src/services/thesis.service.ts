@@ -12,6 +12,19 @@ import * as classificationRepo from "../store/classification.repository.js";
 import { findActiveKols } from "../store/kol.repository.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
 import { getCuratedAssetSymbols } from "../data/curated-assets.js";
+import { readFileSync } from "node:fs";
+import { resolve, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const assetAliases: Record<string, string> = JSON.parse(
+  readFileSync(resolve(__dirname, "../data/asset-aliases.json"), "utf-8")
+);
+
+function normalizeAsset(raw: string): string {
+  const lower = raw.toLowerCase().trim();
+  return assetAliases[lower] ?? raw.toUpperCase();
+}
 import { classifyUnclassifiedTweets } from "./classifier.service.js";
 import { computeLatestPeriod } from "./backtest.service.js";
 import { computeTweetImpacts } from "./tweet-impact.service.js";
@@ -169,6 +182,11 @@ async function synthesizeSingleSnapshot(
       { kolId, asset: alloc.asset, percentage: alloc.percentage, conviction: alloc.conviction, reasoning: alloc.reasoning, since: alloc.since, lastSignal: alloc.lastSignal },
       "Allocation"
     );
+  }
+
+  // Normalize LLM output symbols via aliases (e.g. BTC → cbBTC)
+  for (const alloc of portfolio.allocations) {
+    alloc.asset = normalizeAsset(alloc.asset);
   }
 
   // Resolve mints from tradeable assets map
