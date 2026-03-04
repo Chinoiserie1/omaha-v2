@@ -80,6 +80,16 @@ RULES:
 - If there are ZERO new relevant tweets, return the current state completely unchanged
 - For each changed position, reference the tweet that triggered the change
 
+TWEET PRIORITY (critical — follow this hierarchy):
+- Tweets are tagged with categories. Use them to weigh information:
+  1. "investment_call" = KOL states a position or lists holdings. This is the STRONGEST signal.
+     If a KOL explicitly lists their current holdings/portfolio, treat it as the PRIMARY basis for allocation.
+     Every tradeable asset named in such a tweet MUST get a meaningful allocation (>= 5%).
+  2. "thesis_update" = KOL changes a position (trimming, rotating). Modify the most recent allocation accordingly.
+  3. "market_analysis" = KOL analyzes without stating a position. Use to adjust conviction, NOT to add/remove positions.
+- A single explicit holdings disclosure outweighs dozens of market_analysis tweets.
+- When an investment_call lists multiple assets (e.g. "ZEC, hSOL, BTC, HYPE, NEAR"), distribute weight across ALL of them proportionally — do not drop any.
+
 Respond ONLY with valid JSON:
 {
   "kol": "@username",
