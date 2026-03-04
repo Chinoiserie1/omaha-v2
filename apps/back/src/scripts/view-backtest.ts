@@ -19,11 +19,12 @@ import { prisma } from "@repo/database";
 import { runBacktest } from "../services/backtest.service.js";
 import type { BacktestResult } from "../services/backtest.service.js";
 
-const username = process.argv[2];
-if (!username) {
+const usernameArg = process.argv[2];
+if (!usernameArg) {
   console.error("Usage: tsx src/scripts/view-backtest.ts <username>");
   process.exit(1);
 }
+const username: string = usernameArg;
 
 function buildHtml(result: BacktestResult, displayName: string): string {
   const json = JSON.stringify(result);
