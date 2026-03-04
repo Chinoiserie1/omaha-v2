@@ -115,6 +115,26 @@ function extractTweetsFromResponse(data: unknown): TweetResult[] {
             );
           }
         }
+
+        // Handle profile-conversation entries (threads) with nested items[]
+        const items = content?.["items"] as unknown[] | undefined;
+        if (Array.isArray(items)) {
+          for (const item of items) {
+            const i = (item as Record<string, unknown>)?.["item"] as
+              | Record<string, unknown>
+              | undefined;
+            const ic = i?.["itemContent"] as
+              | Record<string, unknown>
+              | undefined;
+            const tr = ic?.["tweet_results"] as
+              | Record<string, unknown>
+              | undefined;
+            if (tr?.["result"]) {
+              const parsed = TweetResultSchema.safeParse(tr["result"]);
+              if (parsed.success) tweets.push(parsed.data);
+            }
+          }
+        }
       }
     }
   }
