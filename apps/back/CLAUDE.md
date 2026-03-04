@@ -29,11 +29,12 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 
 ## Key Documentation
 
-| Doc                      | What it covers                                                                                  | Read before touching...                                                                                          |
-| ------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `docs/ASSET-PIPELINE.md` | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
-| `docs/DATA-PIPELINE.md`  | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
-| `docs/backtest.md`       | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
+| Doc                                                    | What it covers                                                                                  | Read before touching...                                                                                          |
+| ------------------------------------------------------ | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `docs/ASSET-PIPELINE.md`                               | Two-tier asset system (aliases vs curated), stock deduplication logic, how to add/remove assets | `curated-assets.ts`, `asset-aliases.json`, `sync-asset-aliases.ts`, `classifier.service.ts`, `thesis.service.ts` |
+| `docs/DATA-PIPELINE.md`                                | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
+| `docs/backtest.md`                                     | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
+| [`docs/flow/FUND-SOL.md`](../../docs/flow/FUND-SOL.md) | USDC → SOL swap flow for transaction fees: API, services, tx builder, mobile UI                 | `fund-sol.service.ts`, `fund-sol-tx.builder.ts`, `solana/config.ts`, native fund-sol components                  |
 
 ## Tech Stack
 
@@ -53,12 +54,17 @@ src/
 ├── data/           # Static data files
 │   ├── curated-assets.ts    # ~155 assets the thesis LLM can invest in
 │   └── asset-aliases.json   # ~500 aliases for classifier normalization
+├── infra/          # Infrastructure (WebSocket, queues)
+│   └── websocket.ts         # WebSocket server + notifyUser broadcast
 ├── scripts/        # One-off scripts (seed, sync, debug)
 ├── services/       # Business logic
 │   ├── classifier.service.ts   # Tweet classification (uses aliases)
 │   ├── thesis.service.ts       # Portfolio synthesis (uses curated assets)
 │   ├── rebalancer.service.ts   # Vault rebalancing (uses Jupiter tradeableAssets)
-│   └── ...
+│   ├── withdrawal.service.ts   # Multi-step withdrawal flow (triggers WS notifications)
+│   ├── fund-sol.service.ts     # Jupiter quote + swap plan builder for USDC → SOL
+│   ├── fund-sol-tx.builder.ts  # Transaction builder with fee payer partial sign
+│   └── jupiter-instruction.util.ts  # Shared Jupiter instruction deserializer
 ├── store/          # Prisma repository layer
 ├── solana/         # On-chain interaction (GLAM, Jupiter swaps)
 └── utils/          # Shared utilities (logger, LLM client, env)
@@ -124,6 +130,8 @@ Uses `@repo/config-eslint/node` which includes:
 - **TwitterService** - Fetches tweets via RapidAPI
 - **PortfolioSnapshotService** - Captures portfolio value snapshots on-demand (March 2026)
 - **WithdrawalService** - Manages user withdrawals with multi-step flow
+- **FundSolService** - Gets Jupiter USDC→SOL quotes and builds swap plans with platform fees
+- **FundSolTxBuilder** - Builds funded swap transactions with fee payer partial signing
 
 ## Key Repositories
 
@@ -205,6 +213,56 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | GET    | `/api/withdrawals/:id/claim`             | Claim withdrawn tokens (after batch window) |
 | POST   | `/api/withdrawals/:id/confirm-claim`     | Finalize claim                              |
 
+### WebSocket
+
+| Protocol | Endpoint          | Description                         |
+| -------- | ----------------- | ----------------------------------- |
+| WS       | `/ws/withdrawals` | Real-time withdrawal status updates |
+
+**Connection**: `ws://localhost:4001/ws/withdrawals?token=<privy_auth_token>`
+
+**Authentication**: Privy token passed as `token` query parameter. Invalid tokens close the connection with code 4001.
+
+**Heartbeat**: Server pings every 30 seconds to keep connections alive.
+
+**Message format** (server → client):
+
+```json
+{ "event": "<event_name>", "data": { ... } }
+```
+
+**Events**:
+
+| Event               | Status       | Triggered When               | Extra Fields        |
+| ------------------- | ------------ | ---------------------------- | ------------------- |
+| `withdrawal:status` | `PROCESSING` | Redeem tx confirmed on-chain | `redeemTxSignature` |
+| `withdrawal:status` | `CLAIMABLE`  | Fulfill batch tx succeeded   | —                   |
+| `withdrawal:status` | `CLAIMED`    | Claim tx confirmed on-chain  | `claimTxSignature`  |
+| `withdrawal:status` | `FAILED`     | Fulfill batch failed         | `errorMessage`      |
+
+All payloads include `withdrawalId`, `status`, and `timestamp`.
+
+**Source files**:
+
+- `src/infra/websocket.ts` — Server setup, connection tracking, `notifyUser()` broadcast
+- `src/routes/withdrawals/handlers/confirm-redeem.ts` — Sends PROCESSING
+- `src/routes/withdrawals/handlers/confirm-claim.ts` — Sends CLAIMED
+- `src/services/withdrawal.service.ts` — Sends PROCESSING / FAILED
+
+### Swap & Fund SOL
+
+| Method | Endpoint             | Description                                                        |
+| ------ | -------------------- | ------------------------------------------------------------------ |
+| POST   | `/api/swap/fund-sol` | Swap USDC → SOL for gas fees (auth required, $1-$10 limit, 2% fee) |
+
+**Fund SOL Details:**
+
+- **Request**: `{ amountUsd: number (1-10), signerPublicKey: string }`
+- **Response**: `{ success: true, data: { transaction: base64, quote: FundSolQuote } }`
+- **Auth**: Requires valid Privy auth token
+- **Fee**: Platform takes `FUND_SOL_FEE_PCT` (default 2%) from swap
+- **Fee Payer**: Optional fee payer wallet (`FEE_PAYER_PRIVATE_KEY`) covers Solana tx fees
+
 ### Content Ingestion
 
 | Method | Endpoint       | Description                                      |
@@ -269,10 +327,17 @@ return reply.status(400).send({
 
 ## Environment Variables
 
+### Core
+
 - `PORT` - Server port (default: 3001)
 - `HOST` - Server host (default: 0.0.0.0)
 - `DATABASE_URL` - PostgreSQL connection string
 - `NODE_ENV` - Environment (development/production)
+
+### Fund SOL (Swap USDC → SOL)
+
+- `FEE_PAYER_PRIVATE_KEY` (optional) - Base64 or JSON array keypair for fee payer wallet
+- `FUND_SOL_FEE_PCT` (optional, default: 2) - Platform fee percentage for fund-sol swaps
 
 ## Build Output
 

@@ -40,3 +40,5 @@ export * from "./follow.js";
 export * from "./wallet.js";
 export * from "./tweet-impact.js";
 export * from "./withdrawal.js";
+export * from "./vault-favorite.js";
+export * from "./fund-sol.js";

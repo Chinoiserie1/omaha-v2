@@ -55,3 +55,4 @@ export * from "./holdings.schema.js";
 export * from "./tweet-impact.schema.js";
 export * from "./content.schema.js";
 export * from "./withdrawal.schema.js";
+export * from "./fund-sol.schema.js";

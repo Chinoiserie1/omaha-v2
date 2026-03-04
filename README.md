@@ -9,7 +9,7 @@ AI-powered KOL (Key Opinion Leader) trading pipeline on Solana. Fetches tweets, 
 | Monorepo        | Turborepo                | 2.7.x    |
 | Package Manager | pnpm                     | 9.15.0   |
 | Web Frontend    | Next.js                  | 15.x     |
-| Mobile          | Expo / React Native      | SDK 52   |
+| Mobile          | Expo / React Native      | SDK 54   |
 | Backend         | Fastify                  | 5.x      |
 | Database        | PostgreSQL + Prisma      | 16 / 6.x |
 | Validation      | Zod                      | 3.x      |
@@ -26,7 +26,7 @@ autopilot/
 ├── apps/
 │   ├── web/           # Next.js 15 web app (port 3000)
 │   ├── back/          # Fastify 5 REST API (port 3001)
-│   └── native/        # Expo SDK 52 mobile app
+│   └── native/        # Expo SDK 54 mobile app
 ├── packages/
 │   ├── shared/        # Shared types, DTOs, Zod schemas
 │   ├── database/      # Prisma ORM setup, schema, client
@@ -55,6 +55,7 @@ autopilot/
 | `SOLANA_RPC_URL`           | Solana RPC endpoint (optional) |
 | `JUPITER_API_KEY`          | Jupiter swap API (optional)    |
 | `BIRDEYE_API_KEY`          | Price data / backtesting       |
+| `FEE_PAYER_PRIVATE_KEY`    | Fund SOL fee payer (optional)  |
 
 ## Quick Start
 
@@ -173,6 +174,12 @@ The backend runs an automated pipeline via cron jobs:
 | Fetch prices     | Every minute     | `CRON_FETCH_PRICES`     |
 | Health check     | Every 6 hours    | `CRON_HEALTH_CHECK`     |
 
+### Fund SOL (USDC → SOL for gas fees)
+
+Users need SOL to pay Solana transaction fees. The Fund SOL flow lets them swap $1–$10 USDC to SOL from the profile screen. The backend builds a partially-signed transaction (platform pays the Solana tx fee), and the user signs via Privy wallet on device.
+
+See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentation.
+
 ### Database Models
 
 - **User** — Privy-authenticated users
@@ -198,6 +205,7 @@ Copy `.env.example` to `.env` and configure:
 ```bash
 # Database (matches docker-compose.yml defaults)
 DATABASE_URL="postgresql://user:password@localhost:5456/autopilot"
+REDIS_URL="redis://localhost:6380"
 NODE_ENV=development
 
 # Privy Authentication
@@ -232,6 +240,10 @@ JUPITER_API_KEY=
 # Birdeye (price data / backtesting)
 BIRDEYE_API_KEY=
 
+# Fund SOL (USDC → SOL swap for gas fees)
+FEE_PAYER_PRIVATE_KEY=
+FUND_SOL_FEE_PCT=2
+
 # Rebalancing
 REBALANCE_DRY_RUN=true
 MAX_PRICE_IMPACT_BPS=100
@@ -246,6 +258,15 @@ CRON_REBALANCE_VAULTS="0 */6 * * *"
 CRON_SYNC_PROFILES="0 3 * * 0"
 CRON_FETCH_PRICES="* * * * *"
 CRON_HEALTH_CHECK="0 */6 * * *"
+
+
+# Withdrawal queue
+WITHDRAWAL_BATCH_WINDOW_MS=600000
+WITHDRAWAL_MAX_RETRIES=3
+CRON_RECOVERY_WITHDRAWALS="*/5 * * * *"
+
+# Portfolio snapshots (weekly safety-net)
+CRON_SNAPSHOT_PORTFOLIOS="0 0 * * 0"
 
 # Telegram Alerts (optional)
 TELEGRAM_BOT_TOKEN=

@@ -89,3 +89,8 @@ export type CreateWithdrawalDto = z.infer<typeof createWithdrawalSchema>;
 export type ClaimWithdrawalDto = z.infer<typeof claimWithdrawalSchema>;
 export type ConfirmClaimDto = z.infer<typeof confirmClaimSchema>;
 export type RetryWithdrawalDto = z.infer<typeof retryWithdrawalSchema>;
+
+// Fund SOL DTOs
+import type { fundSolRequestSchema } from "../schemas/index.js";
+
+export type FundSolRequestDto = z.infer<typeof fundSolRequestSchema>;

@@ -10,12 +10,16 @@ import { redeemFromVault } from "./handlers/redeem.js";
 import { getInvestorStatus } from "./handlers/investor-status.js";
 import { claimRedemption } from "./handlers/claim.js";
 import { confirmSubscribe } from "./handlers/confirm-subscribe.js";
+import { getFavoriteStatus } from "./handlers/favorite-status.js";
+import { toggleFavorite } from "./handlers/toggle-favorite.js";
+import { getRebalances } from "./handlers/rebalances.js";
 
 export async function vaultRoutes(app: FastifyInstance) {
   app.get("/", listVaults);
   app.get("/:id", getVault);
   app.get("/:id/performance", getVaultPerformance);
   app.get("/:id/holdings", getVaultHoldingsHandler);
+  app.get("/:id/rebalances", getRebalances);
   app.post("/:id/holdings/snapshot", snapshotHoldingsHandler);
 
   // Auth-protected routes
@@ -26,5 +30,7 @@ export async function vaultRoutes(app: FastifyInstance) {
     authRoutes.post("/:id/redeem", redeemFromVault);
     authRoutes.post("/:id/claim", claimRedemption);
     authRoutes.post("/:id/confirm-subscribe", confirmSubscribe);
+    authRoutes.get("/:id/favorite", getFavoriteStatus);
+    authRoutes.post("/:id/favorite", toggleFavorite);
   });
 }

@@ -17,6 +17,10 @@ export default function ProfileStack() {
         name="withdraw"
         options={{ presentation: "modal" }}
       />
+      <Stack.Screen
+        name="fund-sol"
+        options={{ presentation: "modal" }}
+      />
     </Stack>
   );
 }

@@ -1,4 +1,10 @@
-import { View, Text, ActivityIndicator, Pressable, RefreshControl } from "react-native";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+} from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
@@ -12,8 +18,11 @@ import { VaultChanges } from "./VaultChanges";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
 import { InvestHeaderButton } from "./InvestHeaderButton";
+import { FavoriteHeaderButton } from "./FavoriteHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
 import { useVault } from "../../hooks/queries/use-vaults";
+import { useVaultRebalances } from "../../hooks/queries/use-vault-rebalances";
+import type { RebalanceWithSnapshot } from "../../hooks/queries/use-vault-rebalances";
 
 interface Allocation {
   asset: string;
@@ -62,7 +71,7 @@ type VaultSection =
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
   | { type: "allocations-header"; data: { count: number } }
   | { type: "allocation"; data: Allocation }
-  | { type: "changes"; data: string[] }
+  | { type: "changes"; data: { rebalances: RebalanceWithSnapshot[] } }
   | { type: "description"; data: string }
   | { type: "about"; data: { title: string; content: string } }
   | { type: "data-source"; data: { title: string; content: string } }
@@ -76,7 +85,10 @@ interface VaultDetailProps {
   onWithdraw: () => void;
 }
 
-function buildSections(vault: VaultData): VaultSection[] {
+function buildSections(
+  vault: VaultData,
+  rebalances: RebalanceWithSnapshot[],
+): VaultSection[] {
   const sections: VaultSection[] = [{ type: "header", data: vault }];
 
   if (vault.portfolio?.thesisSummary) {
@@ -97,16 +109,21 @@ function buildSections(vault: VaultData): VaultSection[] {
 
   const allocations = vault.portfolio?.allocations ?? [];
   if (allocations.length > 0) {
-    sections.push({ type: "allocations-header", data: { count: allocations.length } });
+    sections.push({
+      type: "allocations-header",
+      data: { count: allocations.length },
+    });
     for (const alloc of allocations) {
       sections.push({ type: "allocation", data: alloc });
     }
   }
 
-  if (vault.portfolio?.changes && vault.portfolio.changes.length > 0) {
-    sections.push({ type: "changes", data: vault.portfolio.changes });
+  if (rebalances.length > 0) {
+    sections.push({
+      type: "changes",
+      data: { rebalances },
+    });
   }
-
 
   if (vault.about) {
     sections.push({
@@ -139,120 +156,137 @@ function buildSections(vault: VaultData): VaultSection[] {
   return sections;
 }
 
-
-export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDetailProps) {
+export function VaultDetail({
+  vaultId,
+  onBack,
+  onInvest,
+  onWithdraw,
+}: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
+  const { data: rebalances } = useVaultRebalances(vaultId);
   const queryClient = useQueryClient();
   const iconColor = "#F8FAFC";
+
+  console.log("rebalance events", rebalances);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await queryClient.invalidateQueries({
-      queryKey: queryKeys.vaults.detail(vaultId),
-    });
+    await Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vaults.detail(vaultId),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.vaults.rebalances(vaultId),
+      }),
+    ]);
     setIsRefreshing(false);
   }, [queryClient, vaultId]);
 
   const sections = useMemo(
-    () => (vault ? buildSections(vault as VaultData) : []),
-    [vault],
+    () => (vault ? buildSections(vault as VaultData, rebalances ?? []) : []),
+    [vault, rebalances],
   );
 
-  const renderItem = useCallback(({ item }: { item: VaultSection }) => {
-    let content: React.ReactNode = null;
+  const renderItem = useCallback(
+    ({ item }: { item: VaultSection }) => {
+      let content: React.ReactNode = null;
 
-    switch (item.type) {
-      case "header":
-        content = (
-          <VaultHeader
-            name={item.data.name}
-            kolUsername={item.data.kolUsername}
-            isActive={item.data.isActive}
-            avatarUrl={item.data.kol.avatarUrl}
-            updatedAt={item.data.portfolio?.updatedAt}
-          />
-        );
-        break;
-      case "description":
-        content = (
-          <Text className="px-5 mx-4 text-sm leading-5 text-center text-muted-foreground">
-            {item.data}
-          </Text>
-        );
-        break;
-      case "performance":
-        return <VaultPerformanceChart vaultId={item.data.vaultId} />;
-      case "investment":
-        content = (
-          <VaultInvestmentCard
-            vaultId={item.data.id}
-            mintAddress={item.data.mintAddress}
-            onInvest={onInvest}
-            onWithdraw={onWithdraw}
-          />
-        );
-        break;
-      case "thesis":
-        content = (
-          <VaultThesis
-            thesisSummary={item.data.thesisSummary}
-            updatedAt={item.data.updatedAt}
-          />
-        );
-        break;
-      case "allocations-header":
-        content = (
-          <View className="px-5 flex-row items-center">
-            <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
-              Assets Involved
+      switch (item.type) {
+        case "header":
+          content = (
+            <VaultHeader
+              name={item.data.name}
+              kolUsername={item.data.kolUsername}
+              isActive={item.data.isActive}
+              avatarUrl={item.data.kol.avatarUrl}
+              updatedAt={item.data.portfolio?.updatedAt}
+            />
+          );
+          break;
+        case "description":
+          content = (
+            <Text className="px-5 mx-4 text-sm leading-5 text-center text-muted-foreground">
+              {item.data}
             </Text>
-            <View
-              className="ml-2 rounded-full items-center justify-center"
-              style={{
-                backgroundColor: "rgba(59, 130, 246, 0.15)",
-                paddingHorizontal: 8,
-                paddingVertical: 2,
-              }}
-            >
-              <Text style={{ color: "#3B82F6", fontSize: 10, fontWeight: "600" }}>
-                {item.data.count}
+          );
+          break;
+        case "performance":
+          return <VaultPerformanceChart vaultId={item.data.vaultId} />;
+        case "investment":
+          content = (
+            <VaultInvestmentCard
+              vaultId={item.data.id}
+              mintAddress={item.data.mintAddress}
+              onInvest={onInvest}
+              onWithdraw={onWithdraw}
+            />
+          );
+          break;
+        case "thesis":
+          content = (
+            <VaultThesis
+              thesisSummary={item.data.thesisSummary}
+              updatedAt={item.data.updatedAt}
+            />
+          );
+          break;
+        case "allocations-header":
+          content = (
+            <View className="flex-row items-center px-5">
+              <Text className="text-xs font-semibold tracking-wider uppercase text-muted-foreground">
+                Assets Involved
               </Text>
+              <View
+                className="justify-center items-center ml-2 rounded-full"
+                style={{
+                  backgroundColor: "rgba(59, 130, 246, 0.15)",
+                  paddingHorizontal: 8,
+                  paddingVertical: 2,
+                }}
+              >
+                <Text
+                  style={{ color: "#3B82F6", fontSize: 10, fontWeight: "600" }}
+                >
+                  {item.data.count}
+                </Text>
+              </View>
             </View>
-          </View>
-        );
-        break;
-      case "allocation":
-        content = (
-          <VaultAllocationCard
-            asset={item.data.asset}
-            percentage={item.data.percentage}
-            conviction={item.data.conviction}
-            reasoning={item.data.reasoning}
-          />
-        );
-        break;
-      case "changes":
-        content = <VaultChanges changes={item.data} />;
-        break;
-      case "about":
-      case "data-source":
-      case "performance-calc":
-      case "disclosure":
-        content = (
-          <VaultTextSection
-            title={item.data.title}
-            content={item.data.content}
-          />
-        );
-        break;
-      default:
-        return null;
-    }
+          );
+          break;
+        case "allocation":
+          content = (
+            <VaultAllocationCard
+              asset={item.data.asset}
+              percentage={item.data.percentage}
+              conviction={item.data.conviction}
+              reasoning={item.data.reasoning}
+            />
+          );
+          break;
+        case "changes":
+          content = <VaultChanges {...item.data} />;
+          break;
+        case "about":
+        case "data-source":
+        case "performance-calc":
+        case "disclosure":
+          content = (
+            <VaultTextSection
+              title={item.data.title}
+              content={item.data.content}
+            />
+          );
+          break;
+        default:
+          return null;
+      }
 
-    return <View className="mb-4">{content}</View>;
-  }, [onInvest, onWithdraw]);
+      return <View className="mb-4">{content}</View>;
+    },
+    [onInvest, onWithdraw],
+  );
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);
   const keyExtractor = useCallback(
@@ -269,12 +303,15 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
         >
           <Ionicons name="chevron-back" size={20} color={iconColor} />
         </Pressable>
-        <Text
-          className="flex-1 ml-3 text-base font-semibold text-foreground"
-          numberOfLines={1}
-        >
-          {vault?.name ?? ""}
-        </Text>
+        <View className="flex-row flex-1 items-center ml-3">
+          <Text
+            className="text-base font-semibold shrink text-foreground"
+            numberOfLines={1}
+          >
+            {vault?.name ?? ""}
+          </Text>
+          {vault && <FavoriteHeaderButton vaultId={vaultId} />}
+        </View>
         {vault && <InvestHeaderButton onPress={onInvest} />}
       </View>
 
@@ -307,7 +344,6 @@ export function VaultDetail({ vaultId, onBack, onInvest, onWithdraw }: VaultDeta
           }
         />
       )}
-
     </SafeAreaView>
   );
 }

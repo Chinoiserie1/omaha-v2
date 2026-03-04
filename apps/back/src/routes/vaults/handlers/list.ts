@@ -17,6 +17,7 @@ function formatVaultSummary(
     glamVaultPda: string | null;
     mintAddress: string | null;
     isActive: boolean;
+    kol: { avatarUrl: string | null };
   },
   portfolio: PortfolioSnapshot | null,
   performancePercent: number | null
@@ -31,6 +32,7 @@ function formatVaultSummary(
     glamVaultPda: vault.glamVaultPda,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
+    kolAvatarUrl: vault.kol.avatarUrl,
     performancePercent,
     portfolio: portfolio
       ? {

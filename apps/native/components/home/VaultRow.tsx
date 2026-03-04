@@ -6,6 +6,7 @@ import { VaultProfilePicture } from "@/components/vault/VaultProfilePicture";
 
 interface VaultRowProps {
   name: string;
+  avatarUrl?: string | null;
   description: string;
   category: string;
   performancePercent: number | null;
@@ -22,6 +23,7 @@ function formatFollowers(count: number): string {
 
 export const VaultRow = memo(function VaultRow({
   name,
+  avatarUrl,
   description,
   category,
   performancePercent,
@@ -40,15 +42,21 @@ export const VaultRow = memo(function VaultRow({
   return (
     <Pressable
       className="flex-row items-center py-4 active:opacity-70"
-      style={{ borderBottomWidth: 0.5, borderBottomColor: "rgba(248,250,252,0.15)" }}
+      style={{
+        borderBottomWidth: 0.5,
+        borderBottomColor: "rgba(248,250,252,0.15)",
+      }}
       onPress={onPress}
     >
-      <VaultProfilePicture name={name} size={52} />
+      <VaultProfilePicture name={name} avatarUrl={avatarUrl} size={52} />
 
-      <View className="ml-3 flex-1">
-        <View className="flex-row items-center justify-between">
-          <Text className="text-xs font-medium text-muted-foreground">
-            {category}
+      <View className="flex-1 ml-3">
+        <View className="flex-row justify-between items-center">
+          <Text
+            className="mt-0.5 text-base font-semibold text-foreground"
+            numberOfLines={1}
+          >
+            {name}
           </Text>
           <Text className={`text-xs font-bold ${perfColor}`}>
             {hasPerf ? `${perfSign}${performancePercent}%` : "--"}
@@ -56,32 +64,25 @@ export const VaultRow = memo(function VaultRow({
         </View>
 
         <Text
-          className="mt-0.5 text-base font-semibold text-foreground"
-          numberOfLines={1}
-        >
-          {name}
-        </Text>
-
-        <Text
           className="mt-0.5 text-sm italic text-muted-foreground"
-          numberOfLines={1}
+          numberOfLines={2}
         >
           {description}
         </Text>
 
-        <View className="mt-1.5 flex-row items-center gap-2">
+        {/* <View className="mt-1.5 flex-row items-center gap-2">
           <Badge variant="secondary" className="px-2 py-0.5">
             <Text className="text-xs font-medium text-muted-foreground">
               BETA
             </Text>
           </Badge>
-          <View className="flex-row items-center gap-1">
+          <View className="flex-row gap-1 items-center">
             <Ionicons name="people-outline" size={12} color="#94A3B8" />
             <Text className="text-xs text-muted-foreground">
               {formatFollowers(followersCount)}
             </Text>
           </View>
-        </View>
+        </View> */}
       </View>
 
       <Ionicons

@@ -1,18 +1,31 @@
-import { ScrollView, ActivityIndicator } from "react-native";
+import { ScrollView } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useRouter } from "expo-router";
 import { useEmbeddedSolanaWallet } from "@privy-io/expo";
+import type { PortfolioItem } from "@repo/shared";
 import { useMyProfile } from "../../../../hooks/queries/use-profile";
 import { useWalletPortfolio } from "../../../../hooks/queries/use-wallet-portfolio";
 import { usePortfolioChart } from "../../../../hooks/queries/use-portfolio-chart";
 import { useActiveTheses } from "../../../../hooks/queries/use-active-theses";
 import { PortfolioHeader } from "../../../../components/profile/PortfolioHeader";
 import { NetWorthDisplay } from "../../../../components/profile/NetWorthDisplay";
-import { AssetCardsGrid } from "../../../../components/profile/AssetCardsGrid";
+import { UsdcBalanceLabel } from "../../../../components/profile/UsdcBalanceLabel";
+import { GasGaugeBar } from "../../../../components/profile/GasGaugeBar";
 import { QuickActions } from "../../../../components/profile/QuickActions";
 import { PortfolioPerformanceChart } from "../../../../components/profile/PortfolioPerformanceChart";
 import { ActiveThesisList } from "../../../../components/profile/ActiveThesisList";
 import { PortfolioSignOutButton } from "../../../../components/profile/PortfolioSignOutButton";
+import { ProfileScreenSkeleton } from "../../../../components/profile/skeletons";
+
+function findToken(
+  items: PortfolioItem[],
+  symbol: string,
+): Extract<PortfolioItem, { type: "token" }> | undefined {
+  return items.find(
+    (item): item is Extract<PortfolioItem, { type: "token" }> =>
+      item.type === "token" && item.symbol.toUpperCase() === symbol,
+  );
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -26,12 +39,12 @@ export default function ProfileScreen() {
   const { data: dailyChart } = usePortfolioChart(walletAddress, "1d");
   const { data: activeTheses } = useActiveTheses(walletAddress);
 
+  const portfolioItems = portfolio?.items ?? [];
+  const solToken = findToken(portfolioItems, "SOL");
+  const usdcToken = findToken(portfolioItems, "USDC");
+
   if (profileLoading) {
-    return (
-      <SafeAreaView className="flex-1 items-center justify-center bg-background">
-        <ActivityIndicator size="large" color="#94A3B8" />
-      </SafeAreaView>
-    );
+    return <ProfileScreenSkeleton />;
   }
 
   return (
@@ -53,9 +66,13 @@ export default function ProfileScreen() {
           isLoading={portfolioLoading}
         />
 
-        <AssetCardsGrid
-          items={portfolio?.items ?? []}
-          isLoading={portfolioLoading}
+        <UsdcBalanceLabel amount={usdcToken?.amount ?? 0} />
+        <GasGaugeBar
+          solAmount={solToken?.amount ?? 0}
+          solValueUsd={solToken?.valueUsd ?? 0}
+          onTopUp={() =>
+            router.push("/(app)/(tabs)/(profile)/fund-sol" as never)
+          }
         />
 
         <QuickActions
