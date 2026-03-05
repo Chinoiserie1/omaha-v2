@@ -1,0 +1,21 @@
+diff --git a/lib/module/unstable/NativeBottomTabView.native.js b/lib/module/unstable/NativeBottomTabView.native.js
+--- a/lib/module/unstable/NativeBottomTabView.native.js
++++ b/lib/module/unstable/NativeBottomTabView.native.js
+@@ -179,7 +179,7 @@
+             route
+           }),
+           tabKey: route.key,
+-          icon: icon,
++          icon: icon?.ios ?? icon?.shared,
+           selectedIcon: selectedIcon?.ios ?? selectedIcon?.shared,
+           tabBarItemBadgeBackgroundColor: badgeBackgroundColor,
+           tabBarItemBadgeTextColor: badgeTextColor,
+@@ -261,7 +261,7 @@
+ }
+ function getPlatformIcon(icon) {
+   return {
+-    ios: icon?.type === 'sfSymbol' ? icon : icon?.type === 'image' && icon.tinted !== false ? {
++    ios: icon?.type === 'sfSymbol' ? { sfSymbolName: icon.name } : icon?.type === 'image' && icon.tinted !== false ? {
+       type: 'templateSource',
+       templateSource: icon.source
+     } : undefined,
