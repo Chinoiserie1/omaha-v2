@@ -246,7 +246,7 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   // COMMODITIES
   // ═══════════════════════════════════════════════
   { symbol: "GLDx", name: "Gold ETF", mint: "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re", decimals: 8, category: "commodity" },
-  // { symbol: "SLVon", name: "Silver ETF", mint: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo", decimals: 9, category: "commodity" },
+  { symbol: "SLVon", name: "Silver ETF", mint: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo", decimals: 9, category: "commodity" }, // Ondo — tradeable via Meteora DLMM
 
   // ═══════════════════════════════════════════════
   // FIXED INCOME
