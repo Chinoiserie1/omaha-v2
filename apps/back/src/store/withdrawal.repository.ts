@@ -3,7 +3,7 @@ import type { WithdrawalRequest } from "@repo/database";
 
 export async function createRequest(data: {
   userId: string;
-  kolVaultId: string;
+  vaultId: string;
   amount: number;
   idempotencyKey: string;
   batchId: string;
@@ -51,22 +51,22 @@ export async function findByUser(
 
 export async function findByUserAndVault(
   userId: string,
-  kolVaultId: string,
+  vaultId: string,
 ): Promise<WithdrawalRequest[]> {
   return prisma.withdrawalRequest.findMany({
-    where: { userId, kolVaultId, status: { not: "REMOVED" } },
+    where: { userId, vaultId, status: { not: "REMOVED" } },
     orderBy: { requestedAt: "desc" },
   });
 }
 
 export async function findActiveByUserAndVault(
   userId: string,
-  kolVaultId: string,
+  vaultId: string,
 ): Promise<WithdrawalRequest | null> {
   return prisma.withdrawalRequest.findFirst({
     where: {
       userId,
-      kolVaultId,
+      vaultId,
       status: { in: ["REQUESTED", "PROCESSING", "CLAIMABLE"] },
     },
     orderBy: { requestedAt: "desc" },
@@ -170,10 +170,10 @@ export async function reassignBatch(
 }
 
 export async function findPendingFulfill(
-  kolVaultId: string,
+  vaultId: string,
 ): Promise<WithdrawalRequest[]> {
   return prisma.withdrawalRequest.findMany({
-    where: { kolVaultId, status: "PROCESSING" },
+    where: { vaultId, status: "PROCESSING" },
     orderBy: { requestedAt: "asc" },
   });
 }

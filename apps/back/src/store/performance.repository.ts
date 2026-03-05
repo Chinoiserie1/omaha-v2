@@ -12,26 +12,26 @@ export async function findBySnapshotPair(
   });
 }
 
-export async function findByKol(
-  kolId: string
+export async function findByQuant(
+  quantId: string
 ): Promise<SnapshotPerformance[]> {
   return prisma.snapshotPerformance.findMany({
-    where: { kolId },
+    where: { quantId },
     orderBy: { computedAt: "asc" },
   });
 }
 
-export async function findLatestByKol(
-  kolId: string
+export async function findLatestByQuant(
+  quantId: string
 ): Promise<SnapshotPerformance | null> {
   return prisma.snapshotPerformance.findFirst({
-    where: { kolId },
+    where: { quantId },
     orderBy: { computedAt: "desc" },
   });
 }
 
 export async function upsert(data: {
-  kolId: string;
+  quantId: string;
   fromSnapshotId: string;
   toSnapshotId: string;
   periodReturn: number;

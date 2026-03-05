@@ -11,8 +11,8 @@ export interface VaultSummary {
   id: string;
   name: string;
   description: string;
-  kolUsername: string;
-  kolAvatarUrl: string | null;
+  quantUsername: string;
+  quantAvatarUrl: string | null;
   performancePercent: number | null;
   portfolio: {
     allocations: Allocation[];
@@ -41,8 +41,8 @@ interface VaultData {
   id: string;
   name: string;
   description: string;
-  kolUsername: string;
-  kolId: string;
+  quantUsername: string;
+  quantId: string;
   glamStatePda: string;
   glamVaultPda: string | null;
   mintAddress: string | null;
@@ -51,7 +51,7 @@ interface VaultData {
   dataSource: string;
   performanceCalc: string;
   disclosure: string;
-  kol: {
+  quant: {
     id: string;
     username: string;
     displayName: string | null;

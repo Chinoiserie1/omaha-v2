@@ -47,7 +47,7 @@ export async function snapshotHoldingsHandler(
     }));
 
     const snapshot = await holdingsRepo.createSnapshot({
-      kolVaultId: vault.id,
+      vaultId: vault.id,
       holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
       totalEquityUsd,
     });

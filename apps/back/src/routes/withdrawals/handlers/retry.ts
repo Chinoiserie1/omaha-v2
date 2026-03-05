@@ -66,7 +66,7 @@ export async function retryWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  const vault = await vaultRepo.findVaultById(withdrawal.kolVaultId);
+  const vault = await vaultRepo.findVaultById(withdrawal.vaultId);
   if (!vault?.statePda) {
     return reply.status(404).send({
       success: false,

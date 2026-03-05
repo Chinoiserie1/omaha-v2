@@ -1,7 +1,7 @@
 import { logger } from "../utils/logger.js";
 import { alertOnError } from "../utils/alert.js";
 import { env } from "../utils/env.js";
-import { rebalanceAllKolVaults } from "../services/rebalancer.service.js";
+import { rebalanceAllVaults } from "../services/rebalancer.service.js";
 
 export async function rebalanceVaults(): Promise<void> {
   logger.info("Cron job started: rebalance-vaults");
@@ -18,7 +18,7 @@ export async function rebalanceVaults(): Promise<void> {
   logger.info({ dryRun: env.REBALANCE_DRY_RUN }, "Rebalance mode");
 
   try {
-    await rebalanceAllKolVaults();
+    await rebalanceAllVaults();
     logger.info("Cron job completed: rebalance-vaults");
   } catch (error) {
     await alertOnError("cron:rebalance-vaults", error);

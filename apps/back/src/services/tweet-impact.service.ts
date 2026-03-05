@@ -55,13 +55,13 @@ function determineImpactType(
 }
 
 export async function computeTweetImpacts({
-  kolId,
+  quantId,
   snapshotId,
   sourceTweetIds,
   oldAllocations,
   newAllocations,
 }: {
-  kolId: string;
+  quantId: string;
   snapshotId: string;
   sourceTweetIds: string[];
   oldAllocations: Allocation[] | null;
@@ -85,7 +85,7 @@ export async function computeTweetImpacts({
     await classificationRepo.findClassificationsByTweetIds(sourceTweetIds);
 
   if (classifications.length === 0) {
-    logger.info({ kolId }, "No classifications found for source tweets, skipping impact computation");
+    logger.info({ quantId }, "No classifications found for source tweets, skipping impact computation");
     return 0;
   }
 
@@ -118,7 +118,7 @@ export async function computeTweetImpacts({
 
       impactRecords.push({
         tweetId: tweet.id,
-        kolId,
+        quantId,
         snapshotId,
         assets: [asset],
         impactType,
@@ -137,7 +137,7 @@ export async function computeTweetImpacts({
   const result = await tweetImpactRepo.createTweetImpacts(impactRecords);
 
   logger.info(
-    { kolId, snapshotId, impactsCreated: result.count },
+    { quantId, snapshotId, impactsCreated: result.count },
     "Tweet impacts computed and saved"
   );
 

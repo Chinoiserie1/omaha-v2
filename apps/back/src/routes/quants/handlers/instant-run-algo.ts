@@ -1,12 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
 import * as classificationRepo from "../../../store/classification.repository.js";
 import { classifyUnclassifiedTweets } from "../../../services/classifier.service.js";
 import { synthesizeThesis } from "../../../services/thesis.service.js";
 
 type InstantRunAlgoRequest = FastifyRequest<{
-  Params: { kolId: string };
+  Params: { quantId: string };
   Querystring: { force?: string };
 }>;
 
@@ -14,20 +14,20 @@ export async function instantRunAlgo(
   request: InstantRunAlgoRequest,
   reply: FastifyReply,
 ): Promise<unknown> {
-  const kol = await kolRepo.findKolById(request.params.kolId);
-  if (!kol) return reply.status(404).send({ error: "KOL not found" });
+  const quant = await quantRepo.findQuantById(request.params.quantId);
+  if (!quant) return reply.status(404).send({ error: "Quant not found" });
 
   const force = request.query.force === "true";
   let deletedSnapshots = 0;
   let deletedClassifications = 0;
 
   if (force) {
-    deletedClassifications = await classificationRepo.deleteAllClassifications(kol.id);
-    deletedSnapshots = await portfolioRepo.deleteAllSnapshots(kol.id);
+    deletedClassifications = await classificationRepo.deleteAllClassifications(quant.id);
+    deletedSnapshots = await portfolioRepo.deleteAllSnapshots(quant.id);
   }
 
-  const classified = await classifyUnclassifiedTweets(kol.id);
-  const didUpdate = await synthesizeThesis(kol.id);
+  const classified = await classifyUnclassifiedTweets(quant.id);
+  const didUpdate = await synthesizeThesis(quant.id);
 
-  return { kolId: kol.id, username: kol.username, classified, didUpdate, force, deletedSnapshots, deletedClassifications };
+  return { quantId: quant.id, username: quant.user.twitterUsername, classified, didUpdate, force, deletedSnapshots, deletedClassifications };
 }

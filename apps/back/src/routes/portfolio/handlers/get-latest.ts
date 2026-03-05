@@ -1,29 +1,29 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { PortfolioSnapshot } from "@repo/database";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
 
 type GetLatestRequest = FastifyRequest<{
-  Params: { kolId: string };
+  Params: { quantId: string };
 }>;
 
 export async function getLatestPortfolio(
   request: GetLatestRequest,
   reply: FastifyReply
-): Promise<{ error: string } | { kolId: string; username: string; snapshot: PortfolioSnapshot }> {
-  const kol = await kolRepo.findKolById(request.params.kolId);
-  if (!kol) {
-    return reply.status(404).send({ error: "KOL not found" });
+): Promise<{ error: string } | { quantId: string; username: string | null; snapshot: PortfolioSnapshot }> {
+  const quant = await quantRepo.findQuantById(request.params.quantId);
+  if (!quant) {
+    return reply.status(404).send({ error: "Quant not found" });
   }
 
-  const snapshot = await portfolioRepo.findLatestSnapshot(kol.id);
+  const snapshot = await portfolioRepo.findLatestSnapshot(quant.id);
   if (!snapshot) {
     return reply.status(404).send({ error: "No portfolio snapshot yet" });
   }
 
   return {
-    kolId: kol.id,
-    username: kol.username,
+    quantId: quant.id,
+    username: quant.user.twitterUsername,
     snapshot,
   };
 }

@@ -33,10 +33,10 @@ export async function buildClaimTransaction(
     );
   }
 
-  const vault = await vaultRepo.findVaultById(withdrawal.kolVaultId);
+  const vault = await vaultRepo.findVaultById(withdrawal.vaultId);
   if (!vault?.statePda) {
     logger.error(
-      { withdrawalId, kolVaultId: withdrawal.kolVaultId },
+      { withdrawalId, vaultId: withdrawal.vaultId },
       "Vault not found or missing state PDA",
     );
     throw new Error("Vault not found or missing state PDA");

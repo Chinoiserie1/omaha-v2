@@ -1,9 +1,6 @@
-export interface KolVault {
+export interface Vault {
   id: string;
-  kolId: string;
-  kolUsername: string;
-  name: string;
-  description: string;
+  quantId: string;
   glamVaultPda: string | null;
   statePda: string;
   mintAddress: string | null;
@@ -11,6 +8,10 @@ export interface KolVault {
   vaultSymbol: string;
   isActive: boolean;
   jupiterEnabled: boolean;
+  about: string;
+  dataSource: string;
+  performanceCalc: string;
+  disclosure: string;
   lastRebalancedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
@@ -71,7 +72,7 @@ export type RebalanceStatus =
 
 export interface RebalanceEvent {
   id: string;
-  kolVaultId: string;
+  vaultId: string;
   snapshotId: string;
   status: string;
   sellCount: number;

@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 
 interface VaultHeaderProps {
   name: string;
-  kolUsername: string;
+  quantUsername: string;
   isActive: boolean;
   avatarUrl?: string | null | undefined;
   updatedAt?: string | null | undefined;
@@ -34,7 +34,7 @@ function formatTimeAgo(dateStr: string): string {
 
 export const VaultHeader = memo(function VaultHeader({
   name,
-  kolUsername,
+  quantUsername,
   isActive,
   avatarUrl,
   updatedAt,
@@ -67,7 +67,7 @@ export const VaultHeader = memo(function VaultHeader({
       <View className="flex-1 ml-3">
         <Text className="text-lg font-bold">{name}</Text>
         <Text className="text-xs text-muted-foreground">
-          @{kolUsername}
+          @{quantUsername}
           {timeAgo ? ` \u00B7 ${timeAgo}` : ""}
         </Text>
       </View>

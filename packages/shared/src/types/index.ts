@@ -1,6 +1,6 @@
 export interface User {
   id: string;
-  privyId: string;
+  privyId: string | null;
   email: string | null;
   username: string | null;
   name: string | null;

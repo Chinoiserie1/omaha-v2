@@ -87,7 +87,7 @@ See `docs/ASSET-PIPELINE.md` § "How to Add an Asset". You need to update BOTH t
 ### Running the algo for one Quant
 
 ```bash
-set -a && source .env && set +a && pnpm --filter @repo/back exec tsx src/scripts/run-algo-one-kol.ts <username>
+set -a && source .env && set +a && pnpm --filter @repo/back exec tsx src/scripts/run-algo-one-quant.ts <username>
 ```
 
 ### Typecheck

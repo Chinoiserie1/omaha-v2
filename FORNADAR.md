@@ -2,7 +2,7 @@
 
 ## What This Project Does
 
-Autopilot is a KOL (Key Opinion Leader) tracking platform for crypto. It monitors Twitter influencers, analyzes their trading signals, backtests portfolio strategies, and manages tokenized vaults on Solana via GLAM Protocol. Users can view KOL dashboards showing portfolios, significant tweets, and backtest results.
+Autopilot (Omaha) is a Quant strategy platform for crypto, stocks, and commodities on Solana. It monitors Twitter influencers (Quants), analyzes their trading signals via AI, backtests portfolio strategies, and manages tokenized vaults on Solana via GLAM Protocol. Users can browse Quant dashboards showing portfolios, significant tweets, and backtest results. Users can also become Quant creators and manage their own vaults.
 
 ## Technical Architecture & How Parts Connect
 
@@ -24,7 +24,22 @@ Autopilot is a KOL (Key Opinion Leader) tracking platform for crypto. It monitor
   - Classification and synthesis pipelines are **thread-aware**: tweets sharing a `conversationId` are grouped and concatenated into a single `[THREAD]` text block before being sent to the LLM, so a 5-tweet thread counts as one cohesive signal rather than 5 independent entries
 - **Shared package** (`packages/shared`) provides Zod schemas, DTOs, and types used by all apps
 - **Database package** (`packages/database`) wraps Prisma client and schema
-- **`algoEnabled` flag** on the `Kol` model allows opting out individual KOLs from the automated pipeline (tweet sync, classification, thesis generation). KOLs with `algoEnabled: false` (e.g. those using a predefined strategy) remain listed but skip all cron-driven processing
+- **`algoEnabled` flag** on the `Quant` model allows opting out individual Quants from the automated pipeline (tweet sync, classification, thesis generation). Quants with `algoEnabled: false` (e.g. those using a predefined strategy) remain listed but skip all cron-driven processing
+
+### Entity Model (March 2026)
+
+```
+User (1) ──── (0..1) Quant (1) ──── (0..1) Vault
+                       │                      │
+                       ├── Tweet[]            ├── RebalanceEvent[]
+                       ├── PortfolioSnapshot[]├── HoldingsSnapshot[]
+                       └── TweetImpact[]      ├── WithdrawalRequest[]
+                                              └── VaultFavorite[]
+```
+
+- **User** — Identity anchor (REAL via Privy auth, or PLACEHOLDER for Quants not yet signed up)
+- **Quant** — Strategy profile linked 1:1 to User, owns tweets/portfolios/vault
+- **Vault** — Tokenized on-chain vault (GLAM Protocol) owned by a Quant
 
 ## Tech Stack & Why These Choices
 
@@ -32,7 +47,7 @@ Autopilot is a KOL (Key Opinion Leader) tracking platform for crypto. It monitor
 |-------|------|-----|
 | Monorepo | Turborepo + pnpm | Fast builds, workspace isolation |
 | Web | Next.js 15 (App Router) | SSR, React 19, file-based routing |
-| Mobile | Expo SDK 52 / React Native | Cross-platform, Privy auth |
+| Mobile | Expo SDK 54 / React Native | Cross-platform, Privy auth |
 | Backend | Fastify 5 | High perf, schema validation |
 | Database | PostgreSQL + Prisma 6 | Type-safe queries, migrations |
 | Styling | Tailwind CSS v4 | Utility-first, fast iteration |
@@ -97,7 +112,7 @@ Autopilot is a KOL (Key Opinion Leader) tracking platform for crypto. It monitor
 
 ### Try-It-Out Buttons Invisible (Mar 2026)
 
-**Problem**: API try-it-out buttons on KOL cards/detail pages were `text-xs` with muted `bg-zinc-100 text-zinc-600` — nearly invisible to users.
+**Problem**: API try-it-out buttons on Quant cards/detail pages were `text-xs` with muted `bg-zinc-100 text-zinc-600` — nearly invisible to users.
 
 **Fix**: Changed to `text-sm`, `px-4 py-2`, `bg-indigo-600 text-white`, `hover:bg-indigo-700`, `rounded-md`. Added "Try:" prefix to labels for clarity.
 
@@ -140,6 +155,30 @@ Three interrelated bugs:
 
 3. Changed `getPriceOnDate` return type from `number | null` to `PriceResult { price, date, isFallback }`. `computePeriod` now detects when both from/to prices resolved to the same date and logs a warning. Only caller is `computePeriod`, so blast radius is contained.
 
+### Kol → Quant Database Refactor (Mar 2026)
+
+**Problem**: The original data model used a single `Kol` table that mixed identity data (username, avatarUrl, bio) with pipeline config (isActive, algoEnabled). This prevented regular users from becoming Quants (they'd need a separate Kol record), and Quant creators who hadn't signed up had no User record to link to.
+
+**Fix**: Split into a proper three-tier model:
+1. **User** — Identity anchor with `userType: REAL | PLACEHOLDER`. Real users auth via Privy, placeholder users are created for Quants not yet signed up. `privyId` made optional.
+2. **Quant** — Strategy profile linked 1:1 to User via `userId` FK. Owns pipeline config and data (tweets, portfolios, impacts).
+3. **Vault** (renamed from `KolVault`) — Owned by Quant via `quantId` FK.
+
+**Migration strategy** (5 sequential migrations):
+1. Add User fields (`twitterFollowerCount`, `bio`, `hasTwitter`, `userType` enum, make `privyId` optional)
+2. Create Quant table
+3. Migrate Kol data → create placeholder Users + Quants with same IDs
+4. Rename FK columns (`kolId` → `quantId`, `kolVaultId` → `vaultId`, `KolVault` → `Vault`)
+5. Drop Kol table
+
+**Scope of rename**:
+- Database: All FK columns, indexes, unique constraints
+- Backend: All repositories, services, cron jobs, route handlers, scripts
+- Shared types: All interfaces (`KolVault` → `Vault`, `kolId` → `quantId`, etc.)
+- Shared schemas: `kolQuerySchema` → `quantQuerySchema`, `ingestContentSchema` fields
+- Native app: Local type definitions, component props (`kolUsername` → `quantUsername`)
+- DTOs: `KolQueryDto` → `QuantQueryDto`
+
 ## Lessons Learned & Best Practices
 
 1. **Never touch root mobile dependencies** — `expo`, `react@18.3.1`, `react-native` in root `package.json` are sacred. Changing them breaks the mobile app.
@@ -160,6 +199,8 @@ Three interrelated bugs:
 
 9. **Keep alias/lookup tables comprehensive** — A 14-token alias file silently drops most assets. Expand proactively to cover major ecosystems rather than waiting for each miss. Use automated sync scripts (Birdeye + Jupiter verified filter) to stay current rather than manually curating.
 
+10. **Treat tweet threads as atomic units** — When classifying or synthesizing Quant signals, individual thread tweets lack context ("as I said above", "adding more here"). Concatenating the full thread before LLM analysis fixes misclassification and prevents over-weighting. The classifier fetches the full thread (including already-classified tweets) via `findThreadByConversationId` for maximum context, then applies the same classification to all unclassified tweets in the thread. The synthesizer groups by `conversationId` and emits one entry per thread so a multi-tweet thread doesn't inflate signal strength.
+
 11. **Filter external token lists through a verified source** — Birdeye's top 300 includes scam squatters and low-quality tokens. Cross-referencing mint addresses against Jupiter's verified token list (synced to `TradeableAsset`) filters out 80%+ of noise. Always validate external data against a trusted registry.
 
 12. **Rate-limit API pagination with retry** — Birdeye's free tier rate-limits aggressively (429 on second page with 200ms delay). Use 1.5s delays between pages and exponential backoff retry (2s, 4s, 6s) on 429s.
@@ -176,7 +217,7 @@ Three interrelated bugs:
 
 18. **Fallback mechanisms can hide bugs** — The ±3 day price fallback was designed for legitimate gaps (weekends for SPX). In crypto, it masked the fact that prices stopped being fetched. When both sides of a comparison fall back to the same value, the result (0%) looks plausible but is wrong. Add observability (return metadata, log fallback usage) so silent failures become visible.
 
-10. **Treat tweet threads as atomic units** — When classifying or synthesizing KOL signals, individual thread tweets lack context ("as I said above", "adding more here"). Concatenating the full thread before LLM analysis fixes misclassification and prevents over-weighting. The classifier fetches the full thread (including already-classified tweets) via `findThreadByConversationId` for maximum context, then applies the same classification to all unclassified tweets in the thread. The synthesizer groups by `conversationId` and emits one entry per thread so a multi-tweet thread doesn't inflate signal strength.
+19. **Database renames need end-to-end sweep** — When renaming a model (Kol → Quant), the blast radius includes: Prisma schema, migrations, all repositories, all services, all route handlers, all scripts, shared type interfaces, shared Zod schemas, DTOs, native app local types, native app component props, and documentation. A grep for the old name across the entire monorepo is essential to catch stragglers.
 
 ## Telegram Health Monitor Bot
 
@@ -184,7 +225,7 @@ The bot sends alerts on cron/API failures and supports an on-demand `/health` co
 
 ### What `/health` Actually Checks
 
-| Probe | What a ✅ means | What a ❌ means | Cost |
+| Probe | What a means | What a means | Cost |
 |-------|----------------|----------------|------|
 | **Twitter (RapidAPI)** | API key valid, credits not exhausted, API up | Credits exhausted (429), key invalid, or API down | 1 credit per call |
 | **Anthropic** | API key valid, service up (calls `/v1/models`, no tokens used) | Key invalid/revoked, or service outage | Free |
@@ -210,7 +251,7 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 ### Asset Aliases ↔ Curated Assets Sync (Mar 2026)
 
 **Problem**: The two-tier asset system was out of sync:
-- 30 curated symbols had no aliases → classifier couldn't normalize KOL mentions
+- 30 curated symbols had no aliases → classifier couldn't normalize Quant mentions
 - 33 alias targets were tradeable on Jupiter but missing from curated → thesis LLM couldn't allocate
 - 10 alias targets had case mismatches with curated symbols (e.g. `BONK` vs `Bonk`)
 - `"fartcoin "` (trailing space) was a broken alias key
@@ -227,7 +268,7 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 
 ### Retroactive Portfolio Snapshots on Cold Start (Mar 2026)
 
-**Problem**: When a KOL was first added to the DB, the cold start path in `synthesizeThesis()` took ALL historical tweets and created a **single** snapshot. This meant the backtest had no temporal granularity — it could only start from the day the KOL was added, even if their tweets went back months (e.g. Mert: tweets since Nov 2025, but snapshots only from Feb 23 2026).
+**Problem**: When a Quant was first added to the DB, the cold start path in `synthesizeThesis()` took ALL historical tweets and created a **single** snapshot. This meant the backtest had no temporal granularity — it could only start from the day the Quant was added, even if their tweets went back months (e.g. Mert: tweets since Nov 2025, but snapshots only from Feb 23 2026).
 
 **Fix**: Replaced the single-snapshot cold start with `generateRetroactiveSnapshots()`:
 1. Sorts all relevant tweets by `tweet.postedAt` (not `classifiedAt`)
@@ -238,7 +279,7 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 
 Also extracted the LLM call → parse → validate → save logic into `synthesizeSingleSnapshot()` for reuse by both retroactive and incremental paths.
 
-**Cost**: ~N Haiku calls per KOL cold start where N = number of non-empty weeks. For a KOL with 17 weeks of sparse tweets: ~5-8 calls (~$0.20).
+**Cost**: ~N Haiku calls per Quant cold start where N = number of non-empty weeks. For a Quant with 17 weeks of sparse tweets: ~5-8 calls (~$0.20).
 
 **Files changed**: `thesis.service.ts` (refactored), `portfolio.repository.ts` (added optional `createdAt` param)
 
@@ -275,7 +316,7 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 
 ### Backtest Chart Endpoint (Mar 2026)
 
-**Added**: `GET /api/kols/:kolId/backtest/chart` — transforms existing backtest periods into chart-consumable `{ timestamp, value }` points. Reuses `runBacktest()` from `backtest.service.ts` without duplicating any computation logic. Response includes `points`, `totalReturn`, `percentChange`, `startValue`, `currentValue`, and the raw `periods` array. Empty backtest returns `points: []` with zero-value defaults.
+**Added**: `GET /api/quants/:quantId/backtest/chart` — transforms existing backtest periods into chart-consumable `{ timestamp, value }` points. Reuses `runBacktest()` from `backtest.service.ts` without duplicating any computation logic. Response includes `points`, `totalReturn`, `percentChange`, `startValue`, `currentValue`, and the raw `periods` array. Empty backtest returns `points: []` with zero-value defaults.
 
 **Files**: `apps/back/src/routes/backtest/handlers/get-backtest-chart.ts` (new handler), `apps/back/src/routes/backtest/index.ts` (route registration).
 
@@ -313,7 +354,7 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 
 **Investigation**: Analyzed `profile-conversation` entries from `user-tweets` API to understand tweet authorship. Found that `legacy.screen_name` is **null** in this API — screen name lives at `core.user_results.result.core.screen_name`, which `TweetResultSchema` does not parse. Only `legacy.user_id_str` is available for author identification.
 
-**Finding**: On Mert's page 1, 2 out of 23 extracted tweets belong to other users (parent tweets in reply conversations). These are kept intentionally — they provide context needed for accurate classification of the KOL's replies.
+**Finding**: On Mert's page 1, 2 out of 23 extracted tweets belong to other users (parent tweets in reply conversations). These are kept intentionally — they provide context needed for accurate classification of the Quant's replies.
 
 **Pagination limit**: RapidAPI degrades after ~43 pages (~1 tweet/page). This causes the 70-day gap in Mert's backfill.
 

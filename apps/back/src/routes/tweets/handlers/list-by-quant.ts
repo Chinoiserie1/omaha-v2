@@ -1,10 +1,10 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Tweet } from "@repo/database";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import * as tweetRepo from "../../../store/tweet.repository.js";
 
-type ListByKolRequest = FastifyRequest<{
-  Params: { kolId: string };
+type ListByQuantRequest = FastifyRequest<{
+  Params: { quantId: string };
   Querystring: {
     limit?: string;
     offset?: string;
@@ -13,13 +13,13 @@ type ListByKolRequest = FastifyRequest<{
   };
 }>;
 
-export async function listTweetsByKol(
-  request: ListByKolRequest,
+export async function listTweetsByQuant(
+  request: ListByQuantRequest,
   reply: FastifyReply
-): Promise<{ error: string } | { kolId: string; username: string; tweets: Tweet[]; total: number; limit: number; offset: number }> {
-  const kol = await kolRepo.findKolById(request.params.kolId);
-  if (!kol) {
-    return reply.status(404).send({ error: "KOL not found" });
+): Promise<{ error: string } | { quantId: string; username: string | null; tweets: Tweet[]; total: number; limit: number; offset: number }> {
+  const quant = await quantRepo.findQuantById(request.params.quantId);
+  if (!quant) {
+    return reply.status(404).send({ error: "Quant not found" });
   }
 
   const limit = Math.min(parseInt(request.query.limit ?? "50", 10) || 50, 100);
@@ -27,8 +27,8 @@ export async function listTweetsByKol(
   const from = request.query.from ? new Date(request.query.from) : undefined;
   const to = request.query.to ? new Date(request.query.to) : undefined;
 
-  const result = await tweetRepo.findTweetsByKol({
-    kolId: kol.id,
+  const result = await tweetRepo.findTweetsByQuant({
+    quantId: quant.id,
     limit,
     offset,
     from,
@@ -36,8 +36,8 @@ export async function listTweetsByKol(
   });
 
   return {
-    kolId: kol.id,
-    username: kol.username,
+    quantId: quant.id,
+    username: quant.user.twitterUsername,
     tweets: result.tweets,
     total: result.total,
     limit,

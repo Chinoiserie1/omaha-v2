@@ -41,7 +41,7 @@ export function VaultList({ search }: VaultListProps) {
       return (
         <VaultRow
           name={item.name}
-          avatarUrl={item.kolAvatarUrl}
+          avatarUrl={item.quantAvatarUrl}
           description={item.description}
           category={mock.category}
           performancePercent={item.performancePercent}

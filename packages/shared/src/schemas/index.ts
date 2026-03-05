@@ -19,7 +19,7 @@ export const updateUserSchema = z.object({
 
 export const userResponseSchema = z.object({
   id: z.string(),
-  privyId: z.string(),
+  privyId: z.string().nullable(),
   email: z.string().email().nullable(),
   username: z.string().nullable(),
   name: z.string().nullable(),

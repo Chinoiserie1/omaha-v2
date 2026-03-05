@@ -1,18 +1,17 @@
-import type { Kol, Tweet } from "@repo/database";
+import type { Quant, Tweet } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import { env } from "../utils/env.js";
 import { delay } from "../utils/delay.js";
 import { RateLimitError } from "../utils/errors.js";
 import * as twitterService from "./twitter.service.js";
-import * as kolRepo from "../store/kol.repository.js";
-import * as kolVaultRepo from "../store/kol-vault.repository.js";
+import * as quantRepo from "../store/quant.repository.js";
 import * as tweetRepo from "../store/tweet.repository.js";
 import type { TweetResult } from "@repo/shared";
 import type { CreateTweetInput } from "../store/tweet.repository.js";
 
 export function mapTweetResultToInput(
   tweet: TweetResult,
-  kolId: string,
+  quantId: string,
   opts?: { isThread?: boolean },
 ): CreateTweetInput {
   const isRetweet = tweet.legacy.retweeted_status_result !== undefined;
@@ -28,7 +27,7 @@ export function mapTweetResultToInput(
 
   return {
     tweetId: tweet.legacy.id_str,
-    kolId,
+    quantId: quantId,
     fullText: tweet.legacy.full_text,
     postedAt: new Date(tweet.legacy.created_at),
     favoriteCount: tweet.legacy.favorite_count,
@@ -60,44 +59,49 @@ function findThreadCandidates(tweets: TweetResult[]): TweetResult[] {
   );
 }
 
-export async function syncKolProfile(kolId: string): Promise<void> {
-  const kol = await kolRepo.findKolById(kolId);
-  if (!kol) {
-    logger.warn({ kolId }, "KOL not found");
+export async function syncQuantProfile(quantId: string): Promise<void> {
+  const quant = await quantRepo.findQuantById(quantId);
+  if (!quant) {
+    logger.warn({ quantId }, "Quant not found");
     return;
   }
 
-  const user = await twitterService.fetchUserDetails(kol.username);
+  if (!quant.user.twitterUsername) {
+    logger.warn({ quantId }, "Quant user has no twitterUsername, skipping profile sync");
+    return;
+  }
+
+  const user = await twitterService.fetchUserDetails(quant.user.twitterUsername);
   if (!user) {
-    logger.warn({ username: kol.username }, "Could not fetch user details");
+    logger.warn({ username: quant.user.twitterUsername }, "Could not fetch user details");
     return;
   }
 
   const avatarUrl =
     user.avatar?.image_url ?? user.legacy.profile_image_url_https;
 
-  await kolRepo.updateKolProfile(kolId, {
-    restId: user.rest_id,
+  await quantRepo.updateUserProfile(quant.userId, {
+    twitterId: user.rest_id,
     ...(user.legacy.name !== undefined
-      ? { displayName: user.legacy.name }
+      ? { name: user.legacy.name }
       : {}),
     ...(user.legacy.followers_count !== undefined
-      ? { followersCount: user.legacy.followers_count }
+      ? { twitterFollowerCount: user.legacy.followers_count }
       : {}),
-    ...(avatarUrl !== undefined ? { avatarUrl } : {}),
+    ...(avatarUrl !== undefined ? { profileImageUrl: avatarUrl } : {}),
     ...(user.legacy.description !== undefined
       ? { bio: user.legacy.description }
       : {}),
   });
 
   logger.info(
-    { username: kol.username, restId: user.rest_id },
-    "KOL profile synced",
+    { username: quant.user.twitterUsername, restId: user.rest_id },
+    "Quant profile synced",
   );
 }
 
-async function syncKolThreads(
-  kolId: string,
+async function syncQuantThreads(
+  quantId: string,
   tweets: TweetResult[],
   userIdStr: string,
 ): Promise<number> {
@@ -115,7 +119,7 @@ async function syncKolThreads(
   }
 
   logger.info(
-    { kolId, candidates: candidates.length, fetching: toFetch.length },
+    { quantId, candidates: candidates.length, fetching: toFetch.length },
     "Fetching potential threads",
   );
 
@@ -145,7 +149,7 @@ async function syncKolThreads(
       }
 
       for (const tweet of selfTweets) {
-        const input = mapTweetResultToInput(tweet, kolId, { isThread: true });
+        const input = mapTweetResultToInput(tweet, quantId, { isThread: true });
         await tweetRepo.upsertTweet(input);
         threadTweetCount++;
       }
@@ -172,55 +176,55 @@ async function syncKolThreads(
   return threadTweetCount;
 }
 
-export async function syncKolTweets(kolId: string): Promise<number> {
-  const kol = await kolRepo.findKolById(kolId);
-  if (!kol) {
-    logger.warn({ kolId }, "KOL not found");
+export async function syncQuantTweets(quantId: string): Promise<number> {
+  let quant = await quantRepo.findQuantById(quantId);
+  if (!quant) {
+    logger.warn({ quantId }, "Quant not found");
     return 0;
   }
 
-  if (!kol.restId) {
+  if (!quant.user.twitterId) {
     logger.warn(
-      { username: kol.username },
-      "KOL has no restId, syncing profile first",
+      { username: quant.user.twitterUsername },
+      "Quant has no restId, syncing profile first",
     );
-    await syncKolProfile(kolId);
+    await syncQuantProfile(quantId);
 
-    const updated = await kolRepo.findKolById(kolId);
-    if (!updated?.restId) {
+    quant = await quantRepo.findQuantById(quantId);
+    if (!quant?.user.twitterId) {
       logger.error(
-        { username: kol.username },
-        "Could not resolve restId for KOL",
+        { quantId },
+        "Could not resolve restId for Quant",
       );
       return 0;
     }
   }
 
-  const freshKol = await kolRepo.findKolById(kolId);
-  if (!freshKol?.restId) return 0;
+  const freshQuant = quant;
+  if (!freshQuant.user.twitterId) return 0;
 
-  const { tweets } = await twitterService.fetchUserTweets(freshKol.restId);
+  const { tweets } = await twitterService.fetchUserTweets(freshQuant.user.twitterId);
   logger.info(
-    { username: freshKol.username, count: tweets.length },
+    { username: freshQuant.user.twitterUsername, count: tweets.length },
     "Fetched tweets from API",
   );
 
   let newCount = 0;
   for (const tweet of tweets) {
-    const input = mapTweetResultToInput(tweet, freshKol.id);
+    const input = mapTweetResultToInput(tweet, freshQuant.id);
     await tweetRepo.upsertTweet(input);
     newCount++;
   }
 
   // Fetch full threads for any detected thread starters
-  const userIdStr = freshKol.restId;
-  const threadCount = await syncKolThreads(freshKol.id, tweets, userIdStr);
+  const userIdStr = freshQuant.user.twitterId;
+  const threadCount = await syncQuantThreads(freshQuant.id, tweets, userIdStr);
 
-  await kolRepo.updateKolLastFetched(freshKol.id);
+  await quantRepo.updateQuantLastFetched(freshQuant.id);
 
   logger.info(
     {
-      username: freshKol.username,
+      username: freshQuant.user.twitterUsername,
       upserted: newCount,
       threadTweets: threadCount,
     },
@@ -233,7 +237,7 @@ const TWEET_URL_REGEX = /(?:twitter\.com|x\.com)\/(\w+)\/status\/(\d+)/;
 
 export async function addTweetByUrl(
   url: string,
-): Promise<{ kol: Kol; tweet: Tweet }> {
+): Promise<{ quant: Quant & { user: { twitterUsername: string | null } }; tweet: Tweet }> {
   const match = url.match(TWEET_URL_REGEX);
   if (!match) {
     throw new Error(
@@ -244,54 +248,58 @@ export async function addTweetByUrl(
   const username = match[1]!;
   const tweetId = match[2]!;
 
-  // Find-or-create the KOL
-  const kol = await kolRepo.upsertKol(username);
+  // Find-or-create the Quant
+  const quant = await quantRepo.upsertQuantByUsername(username);
 
-  // Ensure KOL has a restId (needed for profile data)
-  if (!kol.restId) {
-    await syncKolProfile(kol.id);
+  // Ensure Quant has a restId (needed for profile data)
+  if (!quant.user.twitterId) {
+    await syncQuantProfile(quant.id);
   }
 
-  // Fetch tweet data from Twitter241
+  // Fetch tweet data from Twitter
   const tweetResults = await twitterService.fetchTweetDetail(tweetId);
   const target = tweetResults.find((t) => t.legacy.id_str === tweetId);
   if (!target) {
     throw new Error(`Tweet ${tweetId} not found on Twitter`);
   }
 
-  const input = mapTweetResultToInput(target, kol.id);
+  const input = mapTweetResultToInput(target, quant.id);
   const tweet = await tweetRepo.upsertTweet(input);
 
-  // Re-fetch KOL to get potentially updated profile
-  const freshKol = await kolRepo.findKolById(kol.id);
+  // Re-fetch Quant to get potentially updated profile
+  const freshQuant = await quantRepo.findQuantById(quant.id);
 
   logger.info({ username, tweetId }, "Tweet added by URL");
 
-  return { kol: freshKol ?? kol, tweet };
+  return { quant: freshQuant ?? quant, tweet };
 }
 
-export async function backfillKolTweets(
-  kolId: string,
+export async function backfillQuantTweets(
+  quantId: string,
   maxPages: number,
 ): Promise<{ totalUpserted: number; oldestDate: Date | null }> {
-  const kol = await kolRepo.findKolById(kolId);
-  if (!kol) {
-    throw new Error(`KOL "${kolId}" not found`);
+  let quant = await quantRepo.findQuantById(quantId);
+  if (!quant) {
+    throw new Error(`Quant "${quantId}" not found`);
   }
 
-  if (!kol.restId) {
-    await syncKolProfile(kolId);
-    const updated = await kolRepo.findKolById(kolId);
-    if (!updated?.restId) {
+  if (!quant.user.twitterId) {
+    await syncQuantProfile(quantId);
+    quant = await quantRepo.findQuantById(quantId);
+    if (!quant?.user.twitterId) {
       throw new Error(
-        `KOL "${kol.username}" has no restId and profile sync failed`,
+        `Quant "${quantId}" has no restId and profile sync failed`,
       );
     }
-    kol.restId = updated.restId;
+  }
+
+  const freshQuant = quant;
+  if (!freshQuant.user.twitterId) {
+    throw new Error(`Quant "${quantId}" has no restId after sync`);
   }
 
   logger.info(
-    { username: kol.username, restId: kol.restId, maxPages },
+    { username: freshQuant.user.twitterUsername, restId: freshQuant.user.twitterId, maxPages },
     "Starting tweet backfill",
   );
 
@@ -305,7 +313,7 @@ export async function backfillKolTweets(
     }
 
     const result = await twitterService.fetchUserTweets(
-      kol.restId,
+      freshQuant.user.twitterId,
       cursor ?? undefined,
     );
 
@@ -316,7 +324,7 @@ export async function backfillKolTweets(
 
     let pageUpserted = 0;
     for (const tweet of result.tweets) {
-      const input = mapTweetResultToInput(tweet, kol.id);
+      const input = mapTweetResultToInput(tweet, freshQuant.id);
       await tweetRepo.upsertTweet(input);
       pageUpserted++;
 
@@ -346,7 +354,7 @@ export async function backfillKolTweets(
 
   logger.info(
     {
-      username: kol.username,
+      username: freshQuant.user.twitterUsername,
       totalUpserted,
       oldest: oldestDate?.toISOString() ?? "N/A",
     },
@@ -356,40 +364,40 @@ export async function backfillKolTweets(
   return { totalUpserted, oldestDate };
 }
 
-export async function syncAllKols(): Promise<void> {
-  const kols = await kolRepo.findActiveKols();
-  logger.info({ count: kols.length }, "Starting sync for all active KOLs");
+export async function syncAllQuants(): Promise<void> {
+  const quants = await quantRepo.findActiveQuants();
+  logger.info({ count: quants.length }, "Starting sync for all active Quants");
 
   let synced = 0;
-  for (const kol of kols) {
-    if (!kol.hasTwitter) {
-      logger.info({ username: kol.username }, "Skipping non-Twitter KOL");
+  for (const quant of quants) {
+    if (!quant.user.hasTwitter) {
+      logger.info({ username: quant.user.twitterUsername }, "Skipping non-Twitter Quant");
       continue;
     }
 
-    if (!kol.algoEnabled) {
-      logger.info({ username: kol.username }, "Algo disabled, skipping tweet fetch");
+    if (!quant.algoEnabled) {
+      logger.info({ username: quant.user.twitterUsername }, "Algo disabled, skipping tweet fetch");
       continue;
     }
 
     try {
-      logger.info({ username: kol.username }, "Syncing KOL");
+      logger.info({ username: quant.user.twitterUsername }, "Syncing Quant");
 
-      if (!kol.restId) {
-        await syncKolProfile(kol.id);
+      if (!quant.user.twitterId) {
+        await syncQuantProfile(quant.id);
         await delay(env.FETCH_DELAY_MS);
       }
 
-      await syncKolTweets(kol.id);
+      await syncQuantTweets(quant.id);
       synced++;
       await delay(env.FETCH_DELAY_MS);
     } catch (error) {
       if (error instanceof RateLimitError) {
         logger.warn(
           {
-            username: kol.username,
+            username: quant.user.twitterUsername,
             synced,
-            remaining: kols.length - synced,
+            remaining: quants.length - synced,
             retryAfterMs: error.retryAfterMs,
           },
           "Rate limited, aborting batch",
@@ -398,60 +406,43 @@ export async function syncAllKols(): Promise<void> {
       }
       logger.error(
         {
-          username: kol.username,
+          username: quant.user.twitterUsername,
           error: error instanceof Error ? error.message : error,
         },
-        "Failed to sync KOL, continuing with next",
+        "Failed to sync Quant, continuing with next",
       );
     }
   }
 
-  logger.info({ synced }, "All KOLs synced");
+  logger.info({ synced }, "All Quants synced");
 }
 
-export async function syncAllKolProfiles(): Promise<void> {
-  const kols = await kolRepo.findActiveKols();
+export async function syncAllQuantProfiles(): Promise<void> {
+  const quants = await quantRepo.findActiveQuants();
   logger.info(
-    { count: kols.length },
-    "Starting profile sync for all active KOLs",
+    { count: quants.length },
+    "Starting profile sync for all active Quants",
   );
 
   let synced = 0;
-  for (const kol of kols) {
-    if (!kol.hasTwitter) {
-      logger.info({ username: kol.username }, "Skipping non-Twitter KOL");
+  for (const quant of quants) {
+    if (!quant.user.hasTwitter) {
+      logger.info({ username: quant.user.twitterUsername }, "Skipping non-Twitter Quant");
       continue;
     }
 
     try {
-      await syncKolProfile(kol.id);
+      await syncQuantProfile(quant.id);
       synced++;
-
-      // Update denormalized fields on KolVault
-      const freshKol = await kolRepo.findKolById(kol.id);
-      if (freshKol) {
-        const vaultData: {
-          kolUsername: string;
-          avatarUrl?: string;
-          name?: string;
-          description?: string;
-        } = {
-          kolUsername: freshKol.username,
-        };
-        if (freshKol.avatarUrl) vaultData.avatarUrl = freshKol.avatarUrl;
-        if (freshKol.displayName) vaultData.name = freshKol.displayName;
-        if (freshKol.bio) vaultData.description = freshKol.bio;
-        await kolVaultRepo.updateVaultProfile(kol.id, vaultData);
-      }
 
       await delay(env.FETCH_DELAY_MS);
     } catch (error) {
       if (error instanceof RateLimitError) {
         logger.warn(
           {
-            username: kol.username,
+            username: quant.user.twitterUsername,
             synced,
-            remaining: kols.length - synced,
+            remaining: quants.length - synced,
             retryAfterMs: error.retryAfterMs,
           },
           "Rate limited during profile sync, aborting batch",
@@ -460,13 +451,13 @@ export async function syncAllKolProfiles(): Promise<void> {
       }
       logger.error(
         {
-          username: kol.username,
+          username: quant.user.twitterUsername,
           error: error instanceof Error ? error.message : error,
         },
-        "Failed to sync KOL profile, continuing with next",
+        "Failed to sync Quant profile, continuing with next",
       );
     }
   }
 
-  logger.info({ synced }, "All KOL profiles synced");
+  logger.info({ synced }, "All Quant profiles synced");
 }

@@ -110,7 +110,7 @@ export async function confirmRedeemHandler(
     });
 
     // Enqueue fulfill job for this vault
-    await enqueueFulfillJob(withdrawal.kolVaultId);
+    await enqueueFulfillJob(withdrawal.vaultId);
 
     // Reload to log the full state
     const updated = await withdrawalRepo.findById(withdrawalId);
@@ -122,7 +122,7 @@ export async function confirmRedeemHandler(
           ? {
               id: updated.id,
               userId: updated.userId,
-              kolVaultId: updated.kolVaultId,
+              vaultId: updated.vaultId,
               amount: updated.amount,
               status: updated.status,
               batchId: updated.batchId,

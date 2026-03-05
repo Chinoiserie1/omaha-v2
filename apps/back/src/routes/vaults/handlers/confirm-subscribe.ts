@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as vaultRepo from "../../../store/vault.repository.js";
-import { rebalanceKolVault } from "../../../services/rebalancer.service.js";
+import { rebalanceVault } from "../../../services/rebalancer.service.js";
 import { captureSnapshotIfChanged } from "../../../services/portfolio-snapshot.service.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -26,15 +26,15 @@ export async function confirmSubscribe(
   }
 
   logger.info(
-    { vaultId: id, kolId: vault.kolId, txSignature },
+    { vaultId: id, quantId: vault.quantId, txSignature },
     "Deposit confirmed, triggering rebalance",
   );
 
   // Fire rebalance asynchronously — don't block the response
   setImmediate(() => {
-    rebalanceKolVault(vault.kolId).catch((err) => {
+    rebalanceVault(vault.quantId).catch((err) => {
       logger.error(
-        { err, vaultId: id, kolId: vault.kolId },
+        { err, vaultId: id, quantId: vault.quantId },
         "Post-deposit rebalance failed",
       );
     });

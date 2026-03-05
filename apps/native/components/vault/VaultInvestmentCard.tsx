@@ -244,7 +244,7 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
   // Check for active queued withdrawals for this vault
   const activeWithdrawal = withdrawals?.find(
     (w: WithdrawalRequest) =>
-      w.kolVaultId === vaultId &&
+      w.vaultId === vaultId &&
       (w.status === "REQUESTED" ||
         w.status === "PROCESSING" ||
         w.status === "CLAIMABLE"),

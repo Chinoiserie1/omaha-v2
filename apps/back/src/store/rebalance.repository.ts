@@ -2,7 +2,7 @@ import { prisma } from "@repo/database";
 import type { RebalanceEvent, Prisma } from "@repo/database";
 
 export async function createEvent(data: {
-  kolVaultId: string;
+  vaultId: string;
   snapshotId: string;
   status: string;
   vaultEquityUsd?: number;
@@ -27,32 +27,32 @@ export async function completeEvent(
   });
 }
 
-export async function findByKolVault(
-  kolVaultId: string,
+export async function findByVault(
+  vaultId: string,
   limit = 20
 ): Promise<RebalanceEvent[]> {
   return prisma.rebalanceEvent.findMany({
-    where: { kolVaultId },
+    where: { vaultId },
     orderBy: { startedAt: "desc" },
     take: limit,
   });
 }
 
-export async function findLatestByKolVault(
-  kolVaultId: string
+export async function findLatestByVault(
+  vaultId: string
 ): Promise<RebalanceEvent | null> {
   return prisma.rebalanceEvent.findFirst({
-    where: { kolVaultId },
+    where: { vaultId },
     orderBy: { startedAt: "desc" },
   });
 }
 
 export async function findByVaultWithSnapshots(
-  kolVaultId: string,
+  vaultId: string,
   limit = 10
 ) {
   return prisma.rebalanceEvent.findMany({
-    where: { kolVaultId },
+    where: { vaultId },
     orderBy: { startedAt: "desc" },
     take: limit,
     include: {

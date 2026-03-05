@@ -6,7 +6,7 @@ import { getVaultHoldings } from "../solana/vault-holdings.js";
 import { allowlistTokensOnVault } from "../solana/vault-setup.js";
 import { executeJupiterSwap } from "./jupiter-swap.service.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
-import * as kolVaultRepo from "../store/kol-vault.repository.js";
+import * as vaultRepo from "../store/vault.repository.js";
 import * as rebalanceRepo from "../store/rebalance.repository.js";
 import * as portfolioRepo from "../store/portfolio.repository.js";
 import * as holdingsRepo from "../store/holdings.repository.js";
@@ -114,48 +114,48 @@ function isSnapshotFresh(createdAt: Date): boolean {
   return ageMs <= maxMs;
 }
 
-async function hasActiveRebalance(kolVaultId: string): Promise<boolean> {
-  const latest = await rebalanceRepo.findLatestByKolVault(kolVaultId);
+async function hasActiveRebalance(vaultId: string): Promise<boolean> {
+  const latest = await rebalanceRepo.findLatestByVault(vaultId);
   return latest?.status === "EXECUTING";
 }
 
 // ── Single Vault Rebalance ─────────────────────────────────────
 
-export async function rebalanceKolVault(
-  kolId: string
+export async function rebalanceVault(
+  quantId: string
 ): Promise<string | null> {
-  // 1. Look up KolVault
-  const kolVault = await kolVaultRepo.findByKolId(kolId);
-  if (!kolVault || !kolVault.isActive) {
-    logger.debug({ kolId }, "No active vault for KOL, skipping");
+  // 1. Look up Vault
+  const vault = await vaultRepo.findByQuantId(quantId);
+  if (!vault || !vault.isActive) {
+    logger.debug({ quantId }, "No active vault for Quant, skipping");
     return null;
   }
-  if (!kolVault.jupiterEnabled) {
-    logger.warn({ kolId }, "Jupiter not enabled on vault, skipping");
+  if (!vault.jupiterEnabled) {
+    logger.warn({ quantId }, "Jupiter not enabled on vault, skipping");
     return null;
   }
 
-  const statePda = new PublicKey(kolVault.statePda);
+  const statePda = new PublicKey(vault.statePda);
 
   // 2. Get latest PortfolioSnapshot
-  const snapshot = await portfolioRepo.findLatestSnapshot(kolId);
+  const snapshot = await portfolioRepo.findLatestSnapshot(quantId);
   if (!snapshot) {
-    logger.debug({ kolId }, "No portfolio snapshot found, skipping");
+    logger.debug({ quantId }, "No portfolio snapshot found, skipping");
     return null;
   }
 
   // 3. Check staleness
   if (!isSnapshotFresh(snapshot.createdAt)) {
     logger.warn(
-      { kolId, snapshotAge: snapshot.createdAt },
+      { quantId, snapshotAge: snapshot.createdAt },
       "Portfolio snapshot too stale, skipping"
     );
     return null;
   }
 
   // 4. Prevent concurrent rebalances
-  if (await hasActiveRebalance(kolVault.id)) {
-    logger.warn({ kolId }, "Rebalance already in progress, skipping");
+  if (await hasActiveRebalance(vault.id)) {
+    logger.warn({ quantId }, "Rebalance already in progress, skipping");
     return null;
   }
 
@@ -163,7 +163,7 @@ export async function rebalanceKolVault(
   const { holdings, totalEquityUsd } = await getVaultHoldings(statePda);
 
   if (totalEquityUsd <= 0) {
-    logger.debug({ kolId }, "Vault has no equity, skipping");
+    logger.debug({ quantId }, "Vault has no equity, skipping");
     return null;
   }
 
@@ -188,16 +188,16 @@ export async function rebalanceKolVault(
   );
 
   if (sells.length === 0 && buys.length === 0) {
-    logger.info({ kolId }, "Vault already balanced, no swaps needed");
+    logger.info({ quantId }, "Vault already balanced, no swaps needed");
     return null;
   }
 
-  const isDryRun = env.REBALANCE_DRY_RUN || kolVault.dryRun;
+  const isDryRun = env.REBALANCE_DRY_RUN || vault.dryRun;
   const status: RebalanceStatus = isDryRun ? "DRY_RUN" : "EXECUTING";
 
   // 8. Create RebalanceEvent
   const event = await rebalanceRepo.createEvent({
-    kolVaultId: kolVault.id,
+    vaultId: vault.id,
     snapshotId: snapshot.id,
     status,
     vaultEquityUsd: totalEquityUsd,
@@ -205,7 +205,7 @@ export async function rebalanceKolVault(
 
   logger.info(
     {
-      kolId,
+      quantId,
       status,
       sells: sells.length,
       buys: buys.length,
@@ -318,8 +318,8 @@ export async function rebalanceKolVault(
       : {}),
   });
 
-  // 14. Update KolVault.lastRebalancedAt
-  await kolVaultRepo.updateLastRebalanced(kolVault.id);
+  // 14. Update Vault.lastRebalancedAt
+  await vaultRepo.updateLastRebalanced(vault.id);
 
   // 15. Snapshot post-rebalance holdings
   if (finalStatus === "COMPLETED") {
@@ -335,14 +335,14 @@ export async function rebalanceKolVault(
         }),
       );
       await holdingsRepo.createSnapshot({
-        kolVaultId: kolVault.id,
+        vaultId: vault.id,
         holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
         totalEquityUsd: postHoldings.totalEquityUsd,
       });
-      logger.info({ kolId }, "Post-rebalance holdings snapshot created");
+      logger.info({ quantId }, "Post-rebalance holdings snapshot created");
     } catch (snapErr) {
       logger.error(
-        { kolId, error: snapErr instanceof Error ? snapErr.message : snapErr },
+        { quantId, error: snapErr instanceof Error ? snapErr.message : snapErr },
         "Failed to create post-rebalance holdings snapshot",
       );
     }
@@ -350,7 +350,7 @@ export async function rebalanceKolVault(
 
   logger.info(
     {
-      kolId,
+      quantId,
       status: finalStatus,
       executed: sells.length + buys.length - failedCount,
       failed: failedCount,
@@ -363,8 +363,8 @@ export async function rebalanceKolVault(
 
 // ── Rebalance All ──────────────────────────────────────────────
 
-export async function rebalanceAllKolVaults(): Promise<void> {
-  const vaults = await kolVaultRepo.findAllActive();
+export async function rebalanceAllVaults(): Promise<void> {
+  const vaults = await vaultRepo.findAllActive();
 
   logger.info({ count: vaults.length }, "Starting rebalance for all active vaults");
 
@@ -374,7 +374,7 @@ export async function rebalanceAllKolVaults(): Promise<void> {
 
   for (const vault of vaults) {
     try {
-      const result = await rebalanceKolVault(vault.kolId);
+      const result = await rebalanceVault(vault.quantId);
       if (result) {
         rebalanced++;
       } else {
@@ -384,7 +384,7 @@ export async function rebalanceAllKolVaults(): Promise<void> {
       failed++;
       logger.error(
         {
-          kolId: vault.kolId,
+          quantId: vault.quantId,
           error: err instanceof Error ? err.message : err,
         },
         "Rebalance failed for vault"

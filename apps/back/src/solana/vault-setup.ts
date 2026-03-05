@@ -25,16 +25,16 @@ const VAULT_FEE_STRUCTURE: FeeStructure = {
 };
 
 /**
- * Create a new GLAM tokenized vault for a KOL.
+ * Create a new GLAM tokenized vault for a Quant.
  */
-export async function createKolVault(
-  kolUsername: string
+export async function createQuantVault(
+  quantUsername: string
 ): Promise<{ txSig: string; statePda: string }> {
   const client = getGlamClientForCreation();
   const keeper = getKeeper();
 
-  const vaultName = `kol-${kolUsername}`;
-  const vaultSymbol = `KOL-${kolUsername.slice(0, 6).toUpperCase()}`;
+  const vaultName = `quant-${quantUsername}`;
+  const vaultSymbol = `Q-${quantUsername.slice(0, 6).toUpperCase()}`;
   const nameBytes = Array.from(Buffer.from(vaultName));
 
   const initMintParams = {
@@ -52,7 +52,7 @@ export async function createKolVault(
 
   logger.info(
     { vaultName, vaultSymbol, keeper: keeper.publicKey.toBase58() },
-    "Creating KOL vault"
+    "Creating Quant vault"
   );
 
   const txSig = await client.mint.initializeWithStateParams(
@@ -61,7 +61,7 @@ export async function createKolVault(
   );
 
   const statePda = client.statePda.toBase58();
-  logger.info({ txSig, statePda }, "KOL vault created");
+  logger.info({ txSig, statePda }, "Quant vault created");
 
   return { txSig, statePda };
 }

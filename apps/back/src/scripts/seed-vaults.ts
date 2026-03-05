@@ -8,12 +8,10 @@ interface HoldingsSeed {
 }
 
 interface VaultSeed {
-  kolUsername: string;
+  quantUsername: string;
   hasTwitter: boolean;
   vaultName: string;
   vaultSymbol: string;
-  name: string;
-  description: string;
   about: string;
   dataSource: string;
   performanceCalc: string;
@@ -28,17 +26,14 @@ interface VaultSeed {
 
 const VAULTS: VaultSeed[] = [
   {
-    kolUsername: "SBC7H7La",
+    quantUsername: "SBC7H7La",
     hasTwitter: false,
     vaultName: "SBC7H7La",
     vaultSymbol: "SBC",
-    name: "SBC7H7La Vault",
-    description:
-      "Bitcoin-focused trading strategies informed by macro analysis and on-chain data.",
     about:
-      "This vault follows a Bitcoin-focused strategy driven by macro analysis, on-chain metrics, and sentiment signals. The AI agent monitors the KOL's public commentary and translates their conviction into portfolio allocations across BTC and correlated assets. Rebalancing occurs automatically when new signals are detected.",
+      "This vault follows a Bitcoin-focused strategy driven by macro analysis, on-chain metrics, and sentiment signals. The AI agent monitors the Quant's public commentary and translates their conviction into portfolio allocations across BTC and correlated assets. Rebalancing occurs automatically when new signals are detected.",
     dataSource:
-      "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+      "Portfolio positions are derived from the Quant's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
     performanceCalc:
       "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
     disclosure:
@@ -71,17 +66,14 @@ const VAULTS: VaultSeed[] = [
     },
   },
   {
-    kolUsername: "mert",
+    quantUsername: "mert",
     hasTwitter: true,
     vaultName: "Mert",
     vaultSymbol: "MERT",
-    name: "Mert Vault",
-    description:
-      "Trading strategies curated by Mert, focused on Solana ecosystem insights.",
     about:
       "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
     dataSource:
-      "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+      "Portfolio positions are derived from the Quant's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
     performanceCalc:
       "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
     disclosure:
@@ -127,32 +119,46 @@ async function seedVaults(): Promise<void> {
   console.log(`Seeding ${VAULTS.length} vaults...`);
 
   for (const v of VAULTS) {
-    // Upsert KOL
-    const kol = await prisma.kol.upsert({
-      where: { username: v.kolUsername },
-      update: { hasTwitter: v.hasTwitter },
-      create: { username: v.kolUsername, hasTwitter: v.hasTwitter },
+    // Find or create User + Quant
+    let vUser = await prisma.user.findFirst({
+      where: { twitterUsername: v.quantUsername },
     });
-    console.log(`  Upserted KOL: ${kol.username} (${kol.id})`);
+    if (vUser) {
+      vUser = await prisma.user.update({
+        where: { id: vUser.id },
+        data: { hasTwitter: v.hasTwitter },
+      });
+    } else {
+      vUser = await prisma.user.create({
+        data: {
+          twitterUsername: v.quantUsername,
+          hasTwitter: v.hasTwitter,
+          userType: "PLACEHOLDER",
+        },
+      });
+    }
+    const quant = await prisma.quant.upsert({
+      where: { userId: vUser.id },
+      update: {},
+      create: { userId: vUser.id },
+    });
+    console.log(`  Upserted Quant: ${vUser.twitterUsername} (${quant.id})`);
 
     // Check if vault already exists
-    const existing = await prisma.kolVault.findUnique({
-      where: { kolId: kol.id },
+    const existing = await prisma.vault.findUnique({
+      where: { quantId: quant.id },
     });
 
     if (existing) {
       console.log(
-        `  Vault already exists: ${existing.name} (${existing.id}) — updating`,
+        `  Vault already exists: ${existing.vaultName} (${existing.id}) — updating`,
       );
     }
 
     // Upsert vault
-    const vault = await prisma.kolVault.upsert({
-      where: { kolId: kol.id },
+    const vault = await prisma.vault.upsert({
+      where: { quantId: quant.id },
       update: {
-        kolUsername: v.kolUsername,
-        name: v.name,
-        description: v.description,
         about: v.about,
         dataSource: v.dataSource,
         performanceCalc: v.performanceCalc,
@@ -163,10 +169,7 @@ async function seedVaults(): Promise<void> {
         dryRun: v.dryRun,
       },
       create: {
-        kolId: kol.id,
-        kolUsername: v.kolUsername,
-        name: v.name,
-        description: v.description,
+        quantId: quant.id,
         about: v.about,
         dataSource: v.dataSource,
         performanceCalc: v.performanceCalc,
@@ -182,49 +185,58 @@ async function seedVaults(): Promise<void> {
     });
 
     const action = existing ? "Updated" : "Created";
-    console.log(`  ${action} vault: ${vault.name} (${vault.id})`);
+    console.log(`  ${action} vault: ${vault.vaultName} (${vault.id})`);
 
     // Seed holdings snapshot
     if (v.holdings) {
       const existingSnapshot = await prisma.holdingsSnapshot.findFirst({
-        where: { kolVaultId: vault.id, endDate: null },
+        where: { vaultId: vault.id, endDate: null },
       });
 
       if (existingSnapshot) {
-        console.log(`  Holdings snapshot already exists for ${vault.name} — skipping`);
+        console.log(`  Holdings snapshot already exists for ${vault.vaultName} — skipping`);
       } else {
         await prisma.holdingsSnapshot.create({
           data: {
-            kolVaultId: vault.id,
+            vaultId: vault.id,
             holdings: v.holdings.holdings as unknown as Prisma.InputJsonValue,
             totalEquityUsd: v.holdings.totalEquityUsd,
           },
         });
-        console.log(`  Created holdings snapshot for ${vault.name}`);
+        console.log(`  Created holdings snapshot for ${vault.vaultName}`);
       }
     }
   }
 
-  // Upsert mert KOL
-  const mertKol = await prisma.kol.upsert({
-    where: { username: "mert" },
-    update: { hasTwitter: true },
-    create: { username: "mert", hasTwitter: true },
+  // Find or create mert User + Quant
+  let mertUser = await prisma.user.findFirst({
+    where: { twitterUsername: "maboroshi0001" },
   });
-  console.log(`  Upserted KOL: ${mertKol.username} (${mertKol.id})`);
+  if (mertUser) {
+    mertUser = await prisma.user.update({
+      where: { id: mertUser.id },
+      data: { hasTwitter: true },
+    });
+  } else {
+    mertUser = await prisma.user.create({
+      data: { twitterUsername: "maboroshi0001", hasTwitter: true, userType: "PLACEHOLDER" },
+    });
+  }
+  const mertQuant = await prisma.quant.upsert({
+    where: { userId: mertUser.id },
+    update: {},
+    create: { userId: mertUser.id },
+  });
+  console.log(`  Upserted Quant: ${mertUser.twitterUsername} (${mertQuant.id})`);
 
   // Upsert mert vault
-  const mertVault = await prisma.kolVault.upsert({
-    where: { kolId: mertKol.id },
+  const mertVault = await prisma.vault.upsert({
+    where: { quantId: mertQuant.id },
     update: {
-      kolUsername: "mert",
-      name: "mert Vault",
-      description:
-        "Crypto-native trading strategies by mert.",
       about:
         "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
       dataSource:
-        "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+        "Portfolio positions are derived from the Quant's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
       performanceCalc:
         "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
       disclosure:
@@ -234,15 +246,11 @@ async function seedVaults(): Promise<void> {
       dryRun: true,
     },
     create: {
-      kolId: mertKol.id,
-      kolUsername: "mert",
-      name: "mert Vault",
-      description:
-        "Crypto-native trading strategies by mert.",
+      quantId: mertQuant.id,
       about:
         "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
       dataSource:
-        "Portfolio positions are derived from the KOL's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
+        "Portfolio positions are derived from the Quant's public tweets and on-chain wallet activity. The AI pipeline classifies each tweet for asset mentions, sentiment, and conviction level, then maps those signals to target allocations. On-chain data is fetched directly from Solana via RPC.",
       performanceCalc:
         "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
       disclosure:
@@ -255,16 +263,16 @@ async function seedVaults(): Promise<void> {
       dryRun: true,
     },
   });
-  console.log(`  Upserted vault: ${mertVault.name} (${mertVault.id})`);
+  console.log(`  Upserted vault: ${mertVault.vaultName} (${mertVault.id})`);
 
   // Seed holdings snapshot for mert vault
   const mertHoldingsExists = await prisma.holdingsSnapshot.findFirst({
-    where: { kolVaultId: mertVault.id, endDate: null },
+    where: { vaultId: mertVault.id, endDate: null },
   });
   if (!mertHoldingsExists) {
     await prisma.holdingsSnapshot.create({
       data: {
-        kolVaultId: mertVault.id,
+        vaultId: mertVault.id,
         holdings: [
           {
             mint: "So11111111111111111111111111111111111111112",
@@ -294,9 +302,9 @@ async function seedVaults(): Promise<void> {
         totalEquityUsd: 38720.0,
       },
     });
-    console.log(`  Created holdings snapshot for ${mertVault.name}`);
+    console.log(`  Created holdings snapshot for ${mertVault.vaultName}`);
   } else {
-    console.log(`  Holdings snapshot already exists for ${mertVault.name} — skipping`);
+    console.log(`  Holdings snapshot already exists for ${mertVault.vaultName} — skipping`);
   }
 
   // ── Seed rebalance events with full chain: Tweet → PortfolioSnapshot → TweetImpact → RebalanceEvent ──
@@ -307,7 +315,7 @@ async function seedVaults(): Promise<void> {
 }
 
 interface RebalanceSeed {
-  kolUsername: string;
+  quantUsername: string;
   tweets: {
     tweetId: string;
     fullText: string;
@@ -356,7 +364,7 @@ interface RebalanceSeed {
 
 const REBALANCE_SEEDS: RebalanceSeed[] = [
   {
-    kolUsername: "SBC7H7La",
+    quantUsername: "SBC7H7La",
     tweets: [
       {
         tweetId: "seed_sbc_tweet_001",
@@ -593,7 +601,7 @@ const REBALANCE_SEEDS: RebalanceSeed[] = [
     ],
   },
   {
-    kolUsername: "mert",
+    quantUsername: "mert",
     tweets: [
       {
         tweetId: "seed_mert_tweet_001",
@@ -865,28 +873,28 @@ async function seedRebalanceData(): Promise<void> {
   console.log("\nSeeding rebalance data...");
 
   for (const seed of REBALANCE_SEEDS) {
-    const kol = await prisma.kol.findUnique({
-      where: { username: seed.kolUsername },
+    const quant = await prisma.quant.findFirst({
+      where: { user: { twitterUsername: seed.quantUsername } },
     });
-    if (!kol) {
-      console.log(`  KOL ${seed.kolUsername} not found — skipping`);
+    if (!quant) {
+      console.log(`  Quant ${seed.quantUsername} not found — skipping`);
       continue;
     }
 
-    const vault = await prisma.kolVault.findUnique({
-      where: { kolId: kol.id },
+    const vault = await prisma.vault.findUnique({
+      where: { quantId: quant.id },
     });
     if (!vault) {
-      console.log(`  Vault for ${seed.kolUsername} not found — skipping`);
+      console.log(`  Vault for ${seed.quantUsername} not found — skipping`);
       continue;
     }
 
     // Check if rebalance data already seeded
     const existingEvents = await prisma.rebalanceEvent.findFirst({
-      where: { kolVaultId: vault.id },
+      where: { vaultId: vault.id },
     });
     if (existingEvents) {
-      console.log(`  Rebalance data already exists for ${seed.kolUsername} — skipping`);
+      console.log(`  Rebalance data already exists for ${seed.quantUsername} — skipping`);
       continue;
     }
 
@@ -898,7 +906,7 @@ async function seedRebalanceData(): Promise<void> {
         update: {},
         create: {
           tweetId: t.tweetId,
-          kolId: kol.id,
+          quantId: quant.id,
           fullText: t.fullText,
           postedAt: t.postedAt,
           favoriteCount: t.favoriteCount,
@@ -926,7 +934,7 @@ async function seedRebalanceData(): Promise<void> {
 
       const snapshot = await prisma.portfolioSnapshot.create({
         data: {
-          kolId: kol.id,
+          quantId: quant.id,
           thesisSummary: snap.thesisSummary,
           allocations: snap.allocations,
           changes: snap.changes,
@@ -946,7 +954,7 @@ async function seedRebalanceData(): Promise<void> {
         await prisma.tweetImpact.create({
           data: {
             tweetId: tweetDbId,
-            kolId: kol.id,
+            quantId: quant.id,
             snapshotId: snapshot.id,
             assets: impact.assets,
             impactType: impact.impactType,
@@ -965,7 +973,7 @@ async function seedRebalanceData(): Promise<void> {
       const rb = snap.rebalance;
       await prisma.rebalanceEvent.create({
         data: {
-          kolVaultId: vault.id,
+          vaultId: vault.id,
           snapshotId: snapshot.id,
           status: rb.status,
           sellCount: rb.sellCount,
@@ -981,7 +989,7 @@ async function seedRebalanceData(): Promise<void> {
       console.log(`    Created rebalance: ${rb.status} (${rb.totalSwaps} swaps, $${rb.vaultEquityUsd})`);
     }
 
-    console.log(`  Seeded rebalance data for ${seed.kolUsername}`);
+    console.log(`  Seeded rebalance data for ${seed.quantUsername}`);
   }
 
   console.log("Rebalance seed completed.");

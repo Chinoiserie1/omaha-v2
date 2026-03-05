@@ -12,13 +12,13 @@ export const CONTENT_SOURCES = [
 
 export const ingestContentSchema = z
   .object({
-    kolId: z.string().min(1).optional(),
-    kolUsername: z.string().min(1).optional(),
+    quantId: z.string().min(1).optional(),
+    quantUsername: z.string().min(1).optional(),
     text: z.string().min(1, "text is required"),
     source: z.enum(CONTENT_SOURCES),
     sourceUrl: z.string().url().optional(),
     postedAt: z.coerce.date().optional(),
   })
-  .refine((d) => d.kolId !== undefined || d.kolUsername !== undefined, {
-    message: "Either kolId or kolUsername must be provided",
+  .refine((d) => d.quantId !== undefined || d.quantUsername !== undefined, {
+    message: "Either quantId or quantUsername must be provided",
   });

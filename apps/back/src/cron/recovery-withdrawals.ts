@@ -44,9 +44,9 @@ export async function recoverWithdrawals(): Promise<void> {
       const enqueuedVaults = new Set<string>();
 
       for (const req of stuckProcessing) {
-        if (!enqueuedVaults.has(req.kolVaultId)) {
-          await enqueueFulfillJob(req.kolVaultId, { delayMs: 0 });
-          enqueuedVaults.add(req.kolVaultId);
+        if (!enqueuedVaults.has(req.vaultId)) {
+          await enqueueFulfillJob(req.vaultId, { delayMs: 0 });
+          enqueuedVaults.add(req.vaultId);
         }
       }
     }

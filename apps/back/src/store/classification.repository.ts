@@ -33,10 +33,10 @@ export async function createClassification(data: {
   });
 }
 
-export async function findUnclassifiedTweetsByKol(kolId: string) {
+export async function findUnclassifiedTweetsByQuant(quantId: string) {
   return prisma.tweet.findMany({
     where: {
-      kolId,
+      quantId,
       classification: null,
     },
     orderBy: { postedAt: "asc" },
@@ -62,12 +62,12 @@ export async function deleteAllClassifications(kolId: string): Promise<number> {
 }
 
 export async function findRelevantClassificationsSince(
-  kolId: string,
+  quantId: string,
   since: Date
 ) {
   return prisma.classifiedTweet.findMany({
     where: {
-      tweet: { kolId },
+      tweet: { quantId },
       category: { not: "noise" },
       classifiedAt: { gt: since },
     },

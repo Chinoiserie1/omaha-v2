@@ -1,17 +1,13 @@
-export interface Kol {
+export interface Quant {
   id: string;
-  username: string;
-  displayName: string | null;
-  restId: string | null;
-  followersCount: number | null;
-  avatarUrl: string | null;
-  bio: string | null;
+  userId: string;
   isActive: boolean;
+  algoEnabled: boolean;
   lastFetchedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface KolWithStats extends Kol {
+export interface QuantWithStats extends Quant {
   tweetCount: number;
 }

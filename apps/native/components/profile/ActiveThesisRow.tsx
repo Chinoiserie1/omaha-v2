@@ -3,7 +3,7 @@ import { Text } from "@/components/ui/text";
 
 interface ActiveThesisRowProps {
   name: string;
-  kolUsername: string;
+  quantUsername: string;
   assetCount: number;
   valueUsd: number;
   pnlPercent: number;
@@ -16,7 +16,7 @@ function formatUsd(value: number): string {
 
 export function ActiveThesisRow({
   name,
-  kolUsername,
+  quantUsername,
   assetCount,
   valueUsd,
   pnlPercent,
@@ -34,7 +34,7 @@ export function ActiveThesisRow({
       <View className="flex-1 gap-0.5">
         <Text className="text-sm font-semibold">{name}</Text>
         <Text className="text-xs text-muted-foreground">
-          @{kolUsername} · {assetCount} assets
+          @{quantUsername} · {assetCount} assets
         </Text>
       </View>
 

@@ -12,21 +12,21 @@ const envSchema = z.object({
   // Auth
   PRIVY_APP_SECRET: z.string().optional(),
 
-  // KOL Pipeline — Twitter
+  // Quant Pipeline — Twitter
   RAPIDAPI_KEY: z.string().min(1),
   RAPIDAPI_HOST: z.string().default("twitter241.p.rapidapi.com"),
   FETCH_DELAY_MS: z.coerce.number().default(1500),
 
-  // KOL Pipeline — AI
+  // Quant Pipeline — AI
   ANTHROPIC_API_KEY: z.string().min(1),
 
-  // KOL Pipeline — Jupiter
+  // Quant Pipeline — Jupiter
   JUPITER_API_KEY: z.string().min(1),
 
-  // KOL Pipeline — Birdeye (price data)
+  // Quant Pipeline — Birdeye (price data)
   BIRDEYE_API_KEY: z.string().min(1),
 
-  // KOL Pipeline — Solana (optional — crons work without these)
+  // Quant Pipeline — Solana (optional — crons work without these)
   SOLANA_RPC_URL: z.string().optional(),
   KEEPER_PRIVATE_KEY: z.string().optional(),
   FEE_PAYER_PRIVATE_KEY: z.string().optional(),
@@ -35,7 +35,7 @@ const envSchema = z.object({
     .string()
     .default("GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"),
 
-  // KOL Pipeline — Rebalancing
+  // Quant Pipeline — Rebalancing
   REBALANCE_DRY_RUN: z
     .enum(["true", "false"])
     .default("true")
@@ -45,12 +45,12 @@ const envSchema = z.object({
   MAX_SWAP_EQUITY_PCT: z.coerce.number().default(25),
   SNAPSHOT_STALENESS_H: z.coerce.number().default(24),
 
-  // KOL Pipeline — Cron schedules
+  // Quant Pipeline — Cron schedules
   CRON_FETCH_TWEETS: z.string().default("*/15 * * * *"),
   CRON_RUN_ALGO: z.string().default("*/30 * * * *"),
   CRON_REBALANCE_VAULTS: z.string().default("0 */6 * * *"),
 
-  // KOL Pipeline — Profile sync
+  // Quant Pipeline — Profile sync
   CRON_SYNC_PROFILES: z.string().default("0 3 * * 0"),
 
   // Token prices — Cron schedule

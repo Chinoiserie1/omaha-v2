@@ -31,12 +31,12 @@ interface ClassificationUnit {
 }
 
 export async function classifyUnclassifiedTweets(
-  kolId: string
+  quantId: string
 ): Promise<number> {
-  const tweets = await classificationRepo.findUnclassifiedTweetsByKol(kolId);
+  const tweets = await classificationRepo.findUnclassifiedTweetsByQuant(quantId);
 
   if (tweets.length === 0) {
-    logger.info({ kolId }, "No unclassified tweets found");
+    logger.info({ quantId }, "No unclassified tweets found");
     return 0;
   }
 
@@ -77,7 +77,7 @@ export async function classifyUnclassifiedTweets(
 
   const batches = Math.ceil(units.length / BATCH_SIZE);
   logger.info(
-    { kolId, tweetCount: tweets.length, units: units.length, threads: threadGroups.size, batches },
+    { quantId, tweetCount: tweets.length, units: units.length, threads: threadGroups.size, batches },
     "Starting classification"
   );
 
@@ -90,7 +90,7 @@ export async function classifyUnclassifiedTweets(
     const batchNum = Math.floor(i / BATCH_SIZE) + 1;
 
     logger.info(
-      { kolId, batch: `${batchNum}/${batches}`, batchSize: batch.length },
+      { quantId, batch: `${batchNum}/${batches}`, batchSize: batch.length },
       "Sending batch to LLM"
     );
 
@@ -102,7 +102,7 @@ export async function classifyUnclassifiedTweets(
     try {
       rawResponse = await llmComplete(CLASSIFICATION_SYSTEM_PROMPT, formatted);
     } catch (err) {
-      logger.error({ err, kolId, batch: batchNum }, "LLM call failed for batch");
+      logger.error({ err, quantId, batch: batchNum }, "LLM call failed for batch");
       continue;
     }
 
@@ -110,28 +110,28 @@ export async function classifyUnclassifiedTweets(
     try {
       parsed = extractJson(rawResponse);
     } catch {
-      logger.error({ kolId, batch: batchNum, rawResponse }, "Failed to parse LLM JSON response");
+      logger.error({ quantId, batch: batchNum, rawResponse }, "Failed to parse LLM JSON response");
       continue;
     }
 
     const result = ClassificationBatchSchema.safeParse(parsed);
     if (!result.success) {
       logger.error(
-        { kolId, batch: batchNum, errors: result.error.issues },
+        { quantId, batch: batchNum, errors: result.error.issues },
         "LLM response failed schema validation"
       );
       continue;
     }
 
     logger.info(
-      { kolId, batch: batchNum, classifications: result.data.classifications.length },
+      { quantId, batch: batchNum, classifications: result.data.classifications.length },
       "Batch parsed successfully"
     );
 
     for (const classification of result.data.classifications) {
       if (classification.index < 0 || classification.index >= batch.length) {
         logger.warn(
-          { kolId, index: classification.index, batchSize: batch.length },
+          { quantId, index: classification.index, batchSize: batch.length },
           "LLM returned out-of-bounds index, skipping"
         );
         continue;
@@ -147,7 +147,7 @@ export async function classifyUnclassifiedTweets(
         relevantCount++;
         logger.info(
           {
-            kolId,
+            quantId,
             tweetIds: unit.tweetIds,
             category: classification.category,
             assets: normalizedAssets,
@@ -181,7 +181,7 @@ export async function classifyUnclassifiedTweets(
   }
 
   logger.info(
-    { kolId, totalClassified, relevant: relevantCount, noise: noiseCount },
+    { quantId, totalClassified, relevant: relevantCount, noise: noiseCount },
     "Classification complete"
   );
 

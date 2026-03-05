@@ -21,9 +21,9 @@ export type CompleteOnboardingDto = z.infer<typeof completeOnboardingSchema>;
 export type UpdateUsernameDto = z.infer<typeof updateUsernameSchema>;
 export type SyncTwitterDto = z.infer<typeof syncTwitterSchema>;
 
-// KOL Pipeline DTOs
+// Quant Pipeline DTOs
 import type {
-  kolQuerySchema,
+  quantQuerySchema,
   createTweetByUrlSchema,
   tweetQuerySchema,
   portfolioHistoryQuerySchema,
@@ -31,7 +31,7 @@ import type {
   PortfolioOutputSchema,
 } from "../schemas/index.js";
 
-export type KolQueryDto = z.infer<typeof kolQuerySchema>;
+export type QuantQueryDto = z.infer<typeof quantQuerySchema>;
 export type CreateTweetByUrlDto = z.infer<typeof createTweetByUrlSchema>;
 export type TweetQueryDto = z.infer<typeof tweetQuerySchema>;
 export type PortfolioHistoryQueryDto = z.infer<typeof portfolioHistoryQuerySchema>;

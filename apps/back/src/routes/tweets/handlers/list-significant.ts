@@ -1,10 +1,10 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { significantTweetsQuerySchema } from "@repo/shared";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import * as tweetImpactRepo from "../../../store/tweet-impact.repository.js";
 
 type ListSignificantRequest = FastifyRequest<{
-  Params: { kolId: string };
+  Params: { quantId: string };
   Querystring: {
     limit?: string;
     offset?: string;
@@ -18,9 +18,9 @@ export async function listSignificantTweets(
   request: ListSignificantRequest,
   reply: FastifyReply
 ) {
-  const kol = await kolRepo.findKolById(request.params.kolId);
-  if (!kol) {
-    return reply.status(404).send({ error: "KOL not found" });
+  const quant = await quantRepo.findQuantById(request.params.quantId);
+  if (!quant) {
+    return reply.status(404).send({ error: "Quant not found" });
   }
 
   const parsed = significantTweetsQuerySchema.safeParse(request.query);
@@ -33,7 +33,7 @@ export async function listSignificantTweets(
   const { limit, offset, asset, impactType, minScore } = parsed.data;
 
   const result = await tweetImpactRepo.findSignificantTweets({
-    kolId: kol.id,
+    quantId: quant.id,
     limit,
     offset,
     asset,
@@ -42,8 +42,8 @@ export async function listSignificantTweets(
   });
 
   return {
-    kolId: kol.id,
-    username: kol.username,
+    quantId: quant.id,
+    username: quant.user.twitterUsername,
     significantTweets: result.impacts,
     total: result.total,
     limit,

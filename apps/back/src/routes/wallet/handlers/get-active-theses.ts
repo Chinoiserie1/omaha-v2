@@ -66,7 +66,7 @@ export async function getActiveTheses(
       ...vaultTokens.map(async (token) => {
         const vault = vaultByMint.get(token.mint)!;
         const [snapshot, sharePrice] = await Promise.all([
-          portfolioRepo.findLatestSnapshot(vault.kolId),
+          portfolioRepo.findLatestSnapshot(vault.quantId),
           getSharePrice(new PublicKey(vault.statePda)).catch(() => null),
         ]);
         return { vault, token, snapshot, sharePrice };
@@ -91,8 +91,8 @@ export async function getActiveTheses(
 
         return {
           vaultId: vault.id,
-          name: vault.name,
-          kolUsername: vault.kolUsername,
+          name: vault.vaultName,
+          quantUsername: vault.quant?.user?.twitterUsername ?? null,
           assetCount,
           shares: token.uiAmount,
           sharePrice: price,

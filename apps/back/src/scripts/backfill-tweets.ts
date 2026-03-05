@@ -1,6 +1,6 @@
 import { prisma } from "@repo/database";
 import { RateLimitError } from "../utils/errors.js";
-import { backfillKolTweets } from "../services/kol.service.js";
+import { backfillQuantTweets } from "../services/quant.service.js";
 
 const username = process.argv[2];
 const maxPages = parseInt(process.argv[3] ?? "10", 10);
@@ -14,18 +14,21 @@ if (!username) {
 }
 
 async function run(): Promise<void> {
-  const kol = await prisma.kol.findFirst({ where: { username: username! } });
-  if (!kol) {
-    console.error(`KOL "${username}" not found`);
+  const quant = await prisma.quant.findFirst({
+    where: { user: { twitterUsername: username! } },
+    include: { user: true },
+  });
+  if (!quant) {
+    console.error(`Quant "${username}" not found`);
     process.exit(1);
   }
 
   console.info(
-    `Backfilling tweets for ${kol.username}, max ${maxPages} pages`,
+    `Backfilling tweets for ${quant.user.twitterUsername}, max ${maxPages} pages`,
   );
 
-  const { totalUpserted, oldestDate } = await backfillKolTweets(
-    kol.id,
+  const { totalUpserted, oldestDate } = await backfillQuantTweets(
+    quant.id,
     maxPages,
   );
 

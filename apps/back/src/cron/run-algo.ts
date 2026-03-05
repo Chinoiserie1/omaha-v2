@@ -1,7 +1,7 @@
 import { logger } from "../utils/logger.js";
 import { alertOnError } from "../utils/alert.js";
 import { syncTradeableAssets } from "../services/jupiter.service.js";
-import { synthesizeAllKols } from "../services/thesis.service.js";
+import { synthesizeAllQuants } from "../services/thesis.service.js";
 
 export async function runAlgo(): Promise<void> {
   logger.info("Cron job started: run-algo");
@@ -10,7 +10,7 @@ export async function runAlgo(): Promise<void> {
     const synced = await syncTradeableAssets();
     logger.info({ synced }, "Tradeable assets synced");
 
-    await synthesizeAllKols();
+    await synthesizeAllQuants();
     logger.info("Cron job completed: run-algo");
   } catch (error) {
     await alertOnError("cron:run-algo", error);

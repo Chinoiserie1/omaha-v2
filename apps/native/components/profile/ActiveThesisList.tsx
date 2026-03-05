@@ -23,7 +23,7 @@ export function ActiveThesisList({
           <View key={thesis.vaultId}>
             <ActiveThesisRow
               name={thesis.name}
-              kolUsername={thesis.kolUsername}
+              quantUsername={thesis.quantUsername ?? "unknown"}
               assetCount={thesis.assetCount}
               valueUsd={thesis.valueUsd}
               pnlPercent={thesis.pnlPercent}

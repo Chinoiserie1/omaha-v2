@@ -1,12 +1,64 @@
 import { prisma } from "@repo/database";
-import type { Kol, KolVault } from "@repo/database";
+import type { Vault } from "@repo/database";
 
-type VaultWithKol = KolVault & { kol: Kol };
+// ── Vault CRUD ──────────────────────────────────────────────────
 
-export async function findAllActiveVaults(): Promise<VaultWithKol[]> {
-  return prisma.kolVault.findMany({
+export async function create(data: {
+  quantId: string;
+  statePda: string;
+  vaultName: string;
+  vaultSymbol: string;
+}): Promise<Vault> {
+  return prisma.vault.create({ data });
+}
+
+export async function findByQuantId(
+  quantId: string
+): Promise<Vault | null> {
+  return prisma.vault.findUnique({ where: { quantId } });
+}
+
+export async function findByStatePda(
+  statePda: string
+): Promise<Vault | null> {
+  return prisma.vault.findUnique({ where: { statePda } });
+}
+
+export async function findAllActive(): Promise<Vault[]> {
+  return prisma.vault.findMany({ where: { isActive: true } });
+}
+
+export async function updateLastRebalanced(id: string): Promise<Vault> {
+  return prisma.vault.update({
+    where: { id },
+    data: { lastRebalancedAt: new Date() },
+  });
+}
+
+export async function markJupiterEnabled(id: string): Promise<Vault> {
+  return prisma.vault.update({
+    where: { id },
+    data: { jupiterEnabled: true },
+  });
+}
+
+export async function setDryRun(id: string, dryRun: boolean): Promise<Vault> {
+  return prisma.vault.update({ where: { id }, data: { dryRun } });
+}
+
+export async function deactivate(id: string): Promise<Vault> {
+  return prisma.vault.update({
+    where: { id },
+    data: { isActive: false },
+  });
+}
+
+// ── Query helpers (with Quant + User relations) ─────────────────
+
+export async function findAllActiveVaults() {
+  return prisma.vault.findMany({
     where: { isActive: true },
-    include: { kol: true },
+    include: { quant: { include: { user: true } } },
   });
 }
 
@@ -18,17 +70,21 @@ export async function findActiveVaultsPaginated({
   skip: number;
   take: number;
   search?: string;
-}): Promise<{ vaults: VaultWithKol[]; total: number }> {
+}) {
   const where = {
     isActive: true,
     ...(search
       ? {
           OR: [
-            { name: { contains: search, mode: "insensitive" as const } },
+            { vaultName: { contains: search, mode: "insensitive" as const } },
             {
-              kolUsername: {
-                contains: search,
-                mode: "insensitive" as const,
+              quant: {
+                user: {
+                  twitterUsername: {
+                    contains: search,
+                    mode: "insensitive" as const,
+                  },
+                },
               },
             },
           ],
@@ -36,50 +92,28 @@ export async function findActiveVaultsPaginated({
       : {}),
   };
   const [vaults, total] = await Promise.all([
-    prisma.kolVault.findMany({
+    prisma.vault.findMany({
       where,
-      include: { kol: true },
+      include: { quant: { include: { user: true } } },
       orderBy: { createdAt: "desc" },
       skip,
       take,
     }),
-    prisma.kolVault.count({ where }),
+    prisma.vault.count({ where }),
   ]);
   return { vaults, total };
 }
 
-export async function findVaultById(id: string): Promise<VaultWithKol | null> {
-  return prisma.kolVault.findUnique({
+export async function findVaultById(id: string) {
+  return prisma.vault.findUnique({
     where: { id },
-    include: { kol: true },
+    include: { quant: { include: { user: true } } },
   });
 }
 
-export async function findVaultByKolId(kolId: string): Promise<VaultWithKol | null> {
-  return prisma.kolVault.findUnique({
-    where: { kolId },
-    include: { kol: true },
-  });
-}
-
-export async function upsertVault(data: {
-  kolId: string;
-  kolUsername: string;
-  name: string;
-  description: string;
-  statePda: string;
-  glamVaultPda?: string;
-  vaultName: string;
-  vaultSymbol: string;
-}) {
-  return prisma.kolVault.upsert({
-    where: { kolId: data.kolId },
-    update: {
-      kolUsername: data.kolUsername,
-      name: data.name,
-      description: data.description,
-      glamVaultPda: data.glamVaultPda ?? null,
-    },
-    create: data,
+export async function findVaultByQuantId(quantId: string) {
+  return prisma.vault.findUnique({
+    where: { quantId },
+    include: { quant: { include: { user: true } } },
   });
 }

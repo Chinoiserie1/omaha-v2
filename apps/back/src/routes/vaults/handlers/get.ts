@@ -12,14 +12,13 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     return reply.status(404).send({ error: "Vault not found" });
   }
 
-  const portfolio = await portfolioRepo.findLatestSnapshot(vault.kolId);
+  const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
 
   return {
     id: vault.id,
-    name: vault.name,
-    description: vault.description,
-    kolUsername: vault.kolUsername,
-    kolId: vault.kolId,
+    name: vault.vaultName,
+    quantUsername: vault.quant?.user?.twitterUsername,
+    quantId: vault.quantId,
     glamStatePda: vault.statePda,
     glamVaultPda: vault.glamVaultPda,
     mintAddress: vault.mintAddress,
@@ -28,12 +27,12 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     dataSource: vault.dataSource,
     performanceCalc: vault.performanceCalc,
     disclosure: vault.disclosure,
-    kol: {
-      id: vault.kol.id,
-      username: vault.kol.username,
-      displayName: vault.kol.displayName,
-      avatarUrl: vault.kol.avatarUrl,
-      bio: vault.kol.bio,
+    quant: {
+      id: vault.quant?.user?.id,
+      username: vault.quant?.user?.twitterUsername,
+      displayName: vault.quant?.user?.name,
+      avatarUrl: vault.quant?.user?.profileImageUrl,
+      bio: vault.quant?.user?.bio,
     },
     portfolio: portfolio
       ? {

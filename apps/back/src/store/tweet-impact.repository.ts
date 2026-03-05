@@ -11,21 +11,21 @@ export async function createTweetImpacts(
 }
 
 export async function findSignificantTweets({
-  kolId,
+  quantId,
   limit,
   offset,
   asset,
   impactType,
   minScore,
 }: {
-  kolId: string;
+  quantId: string;
   limit: number;
   offset: number;
   asset?: string | undefined;
   impactType?: string | undefined;
   minScore?: number | undefined;
 }) {
-  const where: Prisma.TweetImpactWhereInput = { kolId };
+  const where: Prisma.TweetImpactWhereInput = { quantId };
 
   if (asset) {
     where.assets = { has: asset };

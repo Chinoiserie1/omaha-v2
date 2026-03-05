@@ -88,7 +88,7 @@ export async function getPortfolio(
 
         items.push({
           type: "vault",
-          name: vault.name || vault.vaultName,
+          name: vault.vaultName,
           vaultId: vault.id,
           shares: token.uiAmount,
           sharePrice,

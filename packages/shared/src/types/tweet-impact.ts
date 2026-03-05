@@ -8,7 +8,7 @@ export type ImpactType =
 export interface TweetImpact {
   id: string;
   tweetId: string;
-  kolId: string;
+  quantId: string;
   snapshotId: string;
   assets: string[];
   impactType: ImpactType;

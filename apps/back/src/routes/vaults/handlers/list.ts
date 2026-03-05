@@ -9,30 +9,27 @@ import * as tokenPriceRepo from "../../../store/token-price.repository.js";
 function formatVaultSummary(
   vault: {
     id: string;
-    name: string;
-    description: string;
-    kolUsername: string;
-    kolId: string;
+    vaultName: string;
+    quantId: string;
     statePda: string;
     glamVaultPda: string | null;
     mintAddress: string | null;
     isActive: boolean;
-    kol: { avatarUrl: string | null };
+    quant?: { user?: { twitterUsername: string | null; profileImageUrl: string | null } | null } | null;
   },
   portfolio: PortfolioSnapshot | null,
   performancePercent: number | null
 ) {
   return {
     id: vault.id,
-    name: vault.name,
-    description: vault.description,
-    kolUsername: vault.kolUsername,
-    kolId: vault.kolId,
+    name: vault.vaultName,
+    quantUsername: vault.quant?.user?.twitterUsername,
+    quantId: vault.quantId,
     glamStatePda: vault.statePda,
     glamVaultPda: vault.glamVaultPda,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
-    kolAvatarUrl: vault.kol.avatarUrl,
+    quantAvatarUrl: vault.quant?.user?.profileImageUrl,
     performancePercent,
     portfolio: portfolio
       ? {
@@ -72,7 +69,7 @@ export async function listVaults(
 
   const items = await Promise.all(
     vaults.map(async (vault) => {
-      const portfolio = await portfolioRepo.findLatestSnapshot(vault.kolId);
+      const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
       const perf = vault.mintAddress
         ? (perfMap.get(vault.mintAddress) ?? null)
         : null;

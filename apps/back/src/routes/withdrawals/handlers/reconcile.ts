@@ -140,7 +140,7 @@ export async function reconcileWithdrawal(
 
   const withdrawal = await withdrawalRepo.createRequest({
     userId: user.id,
-    kolVaultId: vaultId,
+    vaultId: vaultId,
     amount: onChainAmount,
     idempotencyKey,
     batchId,

@@ -2,8 +2,8 @@ import Fastify from "fastify";
 import cors from "@fastify/cors";
 import { userRoutes } from "./routes/users/index.js";
 import { onboardingRoutes } from "./routes/onboarding/index.js";
-import { kolRoutes } from "./routes/kols/index.js";
-import { tweetRoutes, kolTweetRoutes } from "./routes/tweets/index.js";
+import { quantRoutes } from "./routes/quants/index.js";
+import { tweetRoutes, quantTweetRoutes } from "./routes/tweets/index.js";
 import { portfolioRoutes } from "./routes/portfolio/index.js";
 import { backtestRoutes } from "./routes/backtest/index.js";
 import { vaultRoutes } from "./routes/vaults/index.js";
@@ -40,12 +40,12 @@ export async function buildApp() {
   await app.register(userRoutes, { prefix: "/api/users" });
   await app.register(onboardingRoutes, { prefix: "/api/onboarding" });
 
-  // KOL pipeline routes
-  await app.register(kolRoutes, { prefix: "/api/kols" });
+  // Quant pipeline routes
+  await app.register(quantRoutes, { prefix: "/api/quants" });
   await app.register(tweetRoutes, { prefix: "/api/tweets" });
-  await app.register(kolTweetRoutes, { prefix: "/api/kols" });
-  await app.register(portfolioRoutes, { prefix: "/api/kols" });
-  await app.register(backtestRoutes, { prefix: "/api/kols" });
+  await app.register(quantTweetRoutes, { prefix: "/api/quants" });
+  await app.register(portfolioRoutes, { prefix: "/api/quants" });
+  await app.register(backtestRoutes, { prefix: "/api/quants" });
 
   // Content ingestion
   await app.register(contentRoutes, { prefix: "/api/content" });

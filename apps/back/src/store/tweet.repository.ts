@@ -3,7 +3,7 @@ import type { Tweet, Prisma } from "@repo/database";
 
 export interface CreateTweetInput {
   tweetId: string;
-  kolId: string;
+  quantId: string;
   fullText: string;
   postedAt: Date;
   favoriteCount: number;
@@ -23,7 +23,7 @@ export interface CreateTweetInput {
 export async function upsertTweet(input: CreateTweetInput): Promise<Tweet> {
   const createData: {
     tweetId: string;
-    kolId: string;
+    quantId: string;
     fullText: string;
     postedAt: Date;
     favoriteCount: number;
@@ -40,7 +40,7 @@ export async function upsertTweet(input: CreateTweetInput): Promise<Tweet> {
     sourceUrl?: string;
   } = {
     tweetId: input.tweetId,
-    kolId: input.kolId,
+    quantId: input.quantId,
     fullText: input.fullText,
     postedAt: input.postedAt,
     favoriteCount: input.favoriteCount,
@@ -79,20 +79,20 @@ export async function upsertTweet(input: CreateTweetInput): Promise<Tweet> {
 }
 
 export interface FindTweetsParams {
-  kolId: string;
+  quantId: string;
   limit: number;
   offset: number;
   from?: Date | undefined;
   to?: Date | undefined;
 }
 
-export async function findTweetsByKol(
+export async function findTweetsByQuant(
   params: FindTweetsParams
 ): Promise<{ tweets: Tweet[]; total: number }> {
   const where: {
-    kolId: string;
+    quantId: string;
     postedAt?: { gte?: Date; lte?: Date };
-  } = { kolId: params.kolId };
+  } = { quantId: params.quantId };
 
   if (params.from || params.to) {
     where.postedAt = {};

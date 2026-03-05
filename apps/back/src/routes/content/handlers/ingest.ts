@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import crypto from "node:crypto";
 import { ingestContentSchema } from "@repo/shared";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import * as tweetRepo from "../../../store/tweet.repository.js";
 
 export async function ingestContent(
@@ -15,21 +15,21 @@ export async function ingestContent(
     });
   }
 
-  const { kolId, kolUsername, text, source, sourceUrl, postedAt } = parsed.data;
+  const { quantId, quantUsername, text, source, sourceUrl, postedAt } = parsed.data;
 
-  const kol = kolId
-    ? await kolRepo.findKolById(kolId)
-    : await kolRepo.findKolByUsername(kolUsername!);
+  const quant = quantId
+    ? await quantRepo.findQuantById(quantId)
+    : await quantRepo.findQuantByUsername(quantUsername!);
 
-  if (!kol) {
-    return reply.status(404).send({ error: "KOL not found" });
+  if (!quant) {
+    return reply.status(404).send({ error: "Quant not found" });
   }
 
   const tweetId = `ext-${crypto.randomUUID().replace(/-/g, "")}`;
 
   const tweet = await tweetRepo.upsertTweet({
     tweetId,
-    kolId: kol.id,
+    quantId: quant.id,
     fullText: text,
     postedAt: postedAt ?? new Date(),
     favoriteCount: 0,

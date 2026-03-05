@@ -1,27 +1,27 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import { runBacktest } from "../../../services/backtest.service.js";
 
 type RunBacktestRequest = FastifyRequest<{
-  Params: { kolId: string };
+  Params: { quantId: string };
 }>;
 
 export async function runBacktestHandler(
   request: RunBacktestRequest,
   reply: FastifyReply
 ) {
-  const kol = await kolRepo.findKolById(request.params.kolId);
-  if (!kol) {
-    return reply.status(404).send({ error: "KOL not found" });
+  const quant = await quantRepo.findQuantById(request.params.quantId);
+  if (!quant) {
+    return reply.status(404).send({ error: "Quant not found" });
   }
 
   try {
-    const result = await runBacktest(kol.id);
+    const result = await runBacktest(quant.id);
     return result;
   } catch (err) {
-    request.log.error({ err, kolId: kol.id }, "Backtest computation failed");
+    request.log.error({ err, quantId: quant.id }, "Backtest computation failed");
     return {
-      kolId: kol.id,
+      quantId: quant.id,
       snapshotCount: 0,
       periods: [],
       totalReturn: 0,

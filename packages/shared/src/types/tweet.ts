@@ -1,7 +1,7 @@
 export interface Tweet {
   id: string;
   tweetId: string;
-  kolId: string;
+  quantId: string;
   fullText: string;
   postedAt: Date;
   favoriteCount: number;

@@ -22,7 +22,7 @@ export interface PeriodResult {
 }
 
 export interface BacktestResult {
-  kolId: string;
+  quantId: string;
   snapshotCount: number;
   periods: PeriodResult[];
   totalReturn: number;
@@ -131,10 +131,10 @@ async function computePeriod(
  * Auto-compute: called after thesis cron creates a new snapshot.
  * Stores one SnapshotPerformance row for the latest period.
  */
-export async function computeLatestPeriod(kolId: string): Promise<void> {
-  const snapshots = await portfolioRepo.findSnapshotHistory(kolId, 2);
+export async function computeLatestPeriod(quantId: string): Promise<void> {
+  const snapshots = await portfolioRepo.findSnapshotHistory(quantId, 2);
   if (snapshots.length < 2) {
-    logger.debug({ kolId }, "Need at least 2 snapshots to compute period performance");
+    logger.debug({ quantId }, "Need at least 2 snapshots to compute period performance");
     return;
   }
 
@@ -144,14 +144,14 @@ export async function computeLatestPeriod(kolId: string): Promise<void> {
 
   // Skip same-day pairs — daily price granularity would produce 0% return
   if (toDateKey(current.createdAt) === toDateKey(next.createdAt)) {
-    logger.debug({ kolId }, "Latest snapshots are same-day, skipping period computation");
+    logger.debug({ quantId }, "Latest snapshots are same-day, skipping period computation");
     return;
   }
 
   // Check if already computed
   const existing = await perfRepo.findBySnapshotPair(current.id, next.id);
   if (existing) {
-    logger.debug({ kolId }, "Period performance already computed");
+    logger.debug({ quantId }, "Period performance already computed");
     return;
   }
 
@@ -165,13 +165,13 @@ export async function computeLatestPeriod(kolId: string): Promise<void> {
   await ensurePricesForSymbols(symbols, fromDate, toDate);
 
   // Get previous cumulative value
-  const latestPerf = await perfRepo.findLatestByKol(kolId);
+  const latestPerf = await perfRepo.findLatestByQuant(quantId);
   const prevCumulativeValue = latestPerf?.cumulativeValue ?? 1;
 
   const result = await computePeriod(current, next, prevCumulativeValue);
 
   await perfRepo.upsert({
-    kolId,
+    quantId,
     fromSnapshotId: result.fromSnapshotId,
     toSnapshotId: result.toSnapshotId,
     periodReturn: result.periodReturn,
@@ -181,7 +181,7 @@ export async function computeLatestPeriod(kolId: string): Promise<void> {
   });
 
   logger.info(
-    { kolId, periodReturn: result.periodReturn, cumulativeValue: result.cumulativeValue },
+    { quantId, periodReturn: result.periodReturn, cumulativeValue: result.cumulativeValue },
     "Stored period performance"
   );
 }
@@ -190,12 +190,12 @@ export async function computeLatestPeriod(kolId: string): Promise<void> {
  * Full backtest: reads stored SnapshotPerformance rows, backfills any missing
  * periods, and returns the complete timeline.
  */
-export async function runBacktest(kolId: string): Promise<BacktestResult> {
-  const snapshots = await portfolioRepo.findSnapshotHistory(kolId, 500);
+export async function runBacktest(quantId: string): Promise<BacktestResult> {
+  const snapshots = await portfolioRepo.findSnapshotHistory(quantId, 500);
 
   if (snapshots.length < 2) {
     return {
-      kolId,
+      quantId,
       snapshotCount: snapshots.length,
       periods: [],
       totalReturn: 0,
@@ -221,7 +221,7 @@ export async function runBacktest(kolId: string): Promise<BacktestResult> {
   await ensurePricesForSymbols([...allSymbols], globalFrom, globalTo);
 
   // Load existing stored periods
-  const storedPeriods = await perfRepo.findByKol(kolId);
+  const storedPeriods = await perfRepo.findByQuant(quantId);
   const storedMap = new Map<string, typeof storedPeriods[number]>();
   for (const sp of storedPeriods) {
     storedMap.set(`${sp.fromSnapshotId}:${sp.toSnapshotId}`, sp);
@@ -258,7 +258,7 @@ export async function runBacktest(kolId: string): Promise<BacktestResult> {
 
     // Store it
     await perfRepo.upsert({
-      kolId,
+      quantId,
       fromSnapshotId: result.fromSnapshotId,
       toSnapshotId: result.toSnapshotId,
       periodReturn: result.periodReturn,
@@ -273,12 +273,12 @@ export async function runBacktest(kolId: string): Promise<BacktestResult> {
   const totalReturn = cumulativeValue - 1;
 
   logger.info(
-    { kolId, periods: periods.length, totalReturn, cumulativeValue },
+    { quantId, periods: periods.length, totalReturn, cumulativeValue },
     "Backtest complete"
   );
 
   return {
-    kolId,
+    quantId,
     snapshotCount: snapshots.length,
     periods,
     totalReturn,

@@ -9,7 +9,7 @@ export type WithdrawalStatus =
 export interface WithdrawalRequest {
   id: string;
   userId: string;
-  kolVaultId: string;
+  vaultId: string;
   amount: number;
   status: WithdrawalStatus;
   idempotencyKey: string;

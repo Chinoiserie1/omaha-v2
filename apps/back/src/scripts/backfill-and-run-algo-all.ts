@@ -1,7 +1,7 @@
 import { writeFileSync } from "node:fs";
 import { prisma } from "@repo/database";
 import { RateLimitError } from "../utils/errors.js";
-import { backfillKolTweets } from "../services/kol.service.js";
+import { backfillQuantTweets } from "../services/quant.service.js";
 import { classifyUnclassifiedTweets } from "../services/classifier.service.js";
 import { synthesizeThesis } from "../services/thesis.service.js";
 
@@ -17,13 +17,13 @@ if (args.includes("--help") || args.includes("-h")) {
   console.info(
     "Usage: tsx src/scripts/backfill-and-run-algo-all.ts [maxPages] [--skip-backfill] [--skip-algo]",
   );
-  console.info("  maxPages        Number of tweet pages to backfill per KOL (default: 10, ~400 tweets)");
+  console.info("  maxPages        Number of tweet pages to backfill per Quant (default: 10, ~400 tweets)");
   console.info("  --skip-backfill Skip tweet backfill, only run algo");
   console.info("  --skip-algo     Skip classify+thesis, only backfill tweets");
   process.exit(0);
 }
 
-interface KolResult {
+interface QuantResult {
   username: string;
   tweetsUpserted: number;
   classified: number;
@@ -32,26 +32,28 @@ interface KolResult {
 }
 
 async function run(): Promise<void> {
-  const kols = await prisma.kol.findMany({
-    where: { hasTwitter: true, isActive: true },
-    orderBy: { username: "asc" },
+  const quants = await prisma.quant.findMany({
+    where: { user: { hasTwitter: true }, isActive: true },
+    include: { user: true },
+    orderBy: { user: { twitterUsername: "asc" } },
   });
 
-  console.info(`Found ${kols.length} active Twitter KOLs`);
+  console.info(`Found ${quants.length} active Twitter Quants`);
   console.info(
     `Config: maxPages=${maxPages}, backfill=${!skipBackfill}, algo=${!skipAlgo}`,
   );
 
-  const results: KolResult[] = [];
+  const results: QuantResult[] = [];
   let failures = 0;
 
-  for (let i = 0; i < kols.length; i++) {
-    const kol = kols[i]!;
-    const progress = `[${i + 1}/${kols.length}]`;
-    console.info(`\n${progress} Processing ${kol.username}...`);
+  for (let i = 0; i < quants.length; i++) {
+    const quant = quants[i]!;
+    const username = quant.user.twitterUsername ?? quant.id;
+    const progress = `[${i + 1}/${quants.length}]`;
+    console.info(`\n${progress} Processing ${username}...`);
 
-    const result: KolResult = {
-      username: kol.username,
+    const result: QuantResult = {
+      username,
       tweetsUpserted: 0,
       classified: 0,
       thesisUpdated: false,
@@ -60,25 +62,25 @@ async function run(): Promise<void> {
     try {
       // Backfill tweets
       if (!skipBackfill) {
-        const { totalUpserted } = await backfillKolTweets(kol.id, maxPages);
+        const { totalUpserted } = await backfillQuantTweets(quant.id, maxPages);
         result.tweetsUpserted = totalUpserted;
-        console.info(`${progress} ${kol.username}: ${totalUpserted} tweets upserted`);
+        console.info(`${progress} ${username}: ${totalUpserted} tweets upserted`);
       }
 
       // Classify + Thesis
       if (!skipAlgo) {
-        const classified = await classifyUnclassifiedTweets(kol.id);
+        const classified = await classifyUnclassifiedTweets(quant.id);
         result.classified = classified;
-        console.info(`${progress} ${kol.username}: ${classified} tweets classified`);
+        console.info(`${progress} ${username}: ${classified} tweets classified`);
 
-        const didUpdate = await synthesizeThesis(kol.id);
+        const didUpdate = await synthesizeThesis(quant.id);
         result.thesisUpdated = didUpdate;
-        console.info(`${progress} ${kol.username}: thesis updated=${didUpdate}`);
+        console.info(`${progress} ${username}: thesis updated=${didUpdate}`);
       }
     } catch (error) {
       if (error instanceof RateLimitError) {
         console.error(
-          `\n${progress} Rate limited on ${kol.username}. Stopping batch.`,
+          `\n${progress} Rate limited on ${username}. Stopping batch.`,
         );
         result.error = "rate_limited";
         results.push(result);
@@ -87,7 +89,7 @@ async function run(): Promise<void> {
       }
 
       const msg = error instanceof Error ? error.message : String(error);
-      console.error(`${progress} ${kol.username} failed: ${msg}`);
+      console.error(`${progress} ${username} failed: ${msg}`);
       result.error = msg;
       failures++;
     }
@@ -97,7 +99,7 @@ async function run(): Promise<void> {
 
   // Summary
   console.info("\n=== SUMMARY ===");
-  console.info(`Total KOLs processed: ${results.length}/${kols.length}`);
+  console.info(`Total Quants processed: ${results.length}/${quants.length}`);
   console.info(
     `Tweets upserted: ${results.reduce((s, r) => s + r.tweetsUpserted, 0)}`,
   );
@@ -110,7 +112,7 @@ async function run(): Promise<void> {
   console.info(`Failures: ${failures}`);
 
   if (failures > 0) {
-    console.info("\nFailed KOLs:");
+    console.info("\nFailed Quants:");
     for (const r of results.filter((r) => r.error)) {
       console.info(`  - ${r.username}: ${r.error}`);
     }

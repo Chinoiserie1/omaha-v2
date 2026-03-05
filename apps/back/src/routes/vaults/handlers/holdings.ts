@@ -15,7 +15,7 @@ import type { Prisma } from "@repo/database";
 
 type GetHoldingsRequest = FastifyRequest<{ Params: { id: string } }>;
 type HoldingsSnapshot = Awaited<
-  ReturnType<typeof holdingsRepo.findCurrentByKolVault>
+  ReturnType<typeof holdingsRepo.findCurrentByVault>
 >;
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
@@ -45,7 +45,7 @@ export async function getVaultHoldingsHandler(
   }
 
   // Check for fresh cached snapshot
-  const cached = await holdingsRepo.findCurrentByKolVault(vault.id);
+  const cached = await holdingsRepo.findCurrentByVault(vault.id);
   if (cached && isFresh(cached.startDate)) {
     return snapshotToResponse(cached);
   }
@@ -72,7 +72,7 @@ export async function getVaultHoldingsHandler(
     }));
 
     const snapshot = await holdingsRepo.createSnapshot({
-      kolVaultId: vault.id,
+      vaultId: vault.id,
       holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
       totalEquityUsd,
     });

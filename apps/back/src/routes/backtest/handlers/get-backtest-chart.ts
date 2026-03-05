@@ -1,22 +1,22 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import * as kolRepo from "../../../store/kol.repository.js";
+import * as quantRepo from "../../../store/quant.repository.js";
 import { runBacktest } from "../../../services/backtest.service.js";
 
 type GetBacktestChartRequest = FastifyRequest<{
-  Params: { kolId: string };
+  Params: { quantId: string };
 }>;
 
 export async function getBacktestChartHandler(
   request: GetBacktestChartRequest,
   reply: FastifyReply
 ) {
-  const kol = await kolRepo.findKolById(request.params.kolId);
-  if (!kol) {
-    return reply.status(404).send({ success: false, error: "KOL not found" });
+  const quant = await quantRepo.findQuantById(request.params.quantId);
+  if (!quant) {
+    return reply.status(404).send({ success: false, error: "Quant not found" });
   }
 
   try {
-    const backtest = await runBacktest(kol.id);
+    const backtest = await runBacktest(quant.id);
     const { periods } = backtest;
 
     const points =
@@ -48,7 +48,7 @@ export async function getBacktestChartHandler(
     };
   } catch (err) {
     request.log.error(
-      { err, kolId: kol.id },
+      { err, quantId: quant.id },
       "Backtest chart computation failed"
     );
     return {

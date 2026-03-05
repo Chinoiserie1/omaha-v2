@@ -1,5 +1,5 @@
 /**
- * Run backtest for a KOL and output JSON for charting.
+ * Run backtest for a Quant and output JSON for charting.
  * Usage: DATABASE_URL="..." pnpm --filter @repo/back exec tsx src/scripts/run-backtest-chart.ts mert
  */
 import { prisma } from "@repo/database";
@@ -12,14 +12,17 @@ if (!username) {
 }
 
 async function run() {
-  const kol = await prisma.kol.findFirst({ where: { username: username as string } });
-  if (!kol) {
-    console.error(`KOL "${username}" not found`);
+  const quant = await prisma.quant.findFirst({
+    where: { user: { twitterUsername: username as string } },
+    include: { user: true },
+  });
+  if (!quant) {
+    console.error(`Quant "${username}" not found`);
     process.exit(1);
   }
 
-  console.error(`Running backtest for ${kol.username} (${kol.id})...`);
-  const result = await runBacktest(kol.id);
+  console.error(`Running backtest for ${quant.user.twitterUsername} (${quant.id})...`);
+  const result = await runBacktest(quant.id);
 
   // Output clean JSON to stdout
   console.log(JSON.stringify(result, null, 2));

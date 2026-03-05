@@ -2,7 +2,7 @@ import { prisma } from "@repo/database";
 import type { PortfolioSnapshot, Prisma } from "@repo/database";
 
 export async function createSnapshot(data: {
-  kolId: string;
+  quantId: string;
   thesisSummary: string;
   allocations: Prisma.InputJsonValue;
   changes: string[];
@@ -13,19 +13,19 @@ export async function createSnapshot(data: {
 }
 
 export async function findLatestSnapshot(
-  kolId: string
+  quantId: string
 ): Promise<PortfolioSnapshot | null> {
   return prisma.portfolioSnapshot.findFirst({
-    where: { kolId },
+    where: { quantId },
     orderBy: { createdAt: "desc" },
   });
 }
 
 export async function findEarliestSnapshot(
-  kolId: string
+  quantId: string
 ): Promise<PortfolioSnapshot | null> {
   return prisma.portfolioSnapshot.findFirst({
-    where: { kolId },
+    where: { quantId },
     orderBy: { createdAt: "asc" },
   });
 }
@@ -36,11 +36,11 @@ export async function deleteAllSnapshots(kolId: string): Promise<number> {
 }
 
 export async function findSnapshotHistory(
-  kolId: string,
+  quantId: string,
   limit = 50
 ): Promise<PortfolioSnapshot[]> {
   return prisma.portfolioSnapshot.findMany({
-    where: { kolId },
+    where: { quantId },
     orderBy: { createdAt: "desc" },
     take: limit,
   });

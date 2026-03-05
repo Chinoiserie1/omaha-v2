@@ -10,7 +10,7 @@ export interface Allocation {
 
 export interface PortfolioSnapshot {
   id: string;
-  kolId: string;
+  quantId: string;
   thesisSummary: string;
   allocations: Allocation[];
   changes: string[];

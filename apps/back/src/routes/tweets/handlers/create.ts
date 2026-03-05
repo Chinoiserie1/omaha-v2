@@ -1,6 +1,6 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import type { Tweet } from "@repo/database";
-import * as kolService from "../../../services/kol.service.js";
+import * as quantService from "../../../services/quant.service.js";
 
 type CreateRequest = FastifyRequest<{
   Body: { url: string };
@@ -9,16 +9,16 @@ type CreateRequest = FastifyRequest<{
 export async function createTweet(
   request: CreateRequest,
   reply: FastifyReply
-): Promise<{ error: string } | { kol: { id: string; username: string }; tweet: Tweet }> {
+): Promise<{ error: string } | { quant: { id: string; username: string | null }; tweet: Tweet }> {
   const { url } = request.body ?? {};
   if (!url || typeof url !== "string") {
     return reply.status(400).send({ error: "Missing required field: url" });
   }
 
   try {
-    const { kol, tweet } = await kolService.addTweetByUrl(url);
+    const { quant, tweet } = await quantService.addTweetByUrl(url);
     return {
-      kol: { id: kol.id, username: kol.username },
+      quant: { id: quant.id, username: quant.user.twitterUsername },
       tweet,
     };
   } catch (error) {

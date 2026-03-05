@@ -1,7 +1,7 @@
 /**
- * Run backtest for a KOL and open an interactive HTML chart in the browser.
+ * Run backtest for a Quant and open an interactive HTML chart in the browser.
  *
- * Looks up the KOL by username, runs the full backtest via backtest.service,
+ * Looks up the Quant by username, runs the full backtest via backtest.service,
  * then generates a self-contained HTML file (Chart.js CDN) with:
  *   - Cumulative portfolio value line chart
  *   - Per-period returns bar chart (green/red)
@@ -213,17 +213,20 @@ function buildHtml(result: BacktestResult, displayName: string): string {
 }
 
 async function run() {
-  const kol = await prisma.kol.findFirst({ where: { username } });
-  if (!kol) {
-    console.error(`KOL "${username}" not found`);
+  const quant = await prisma.quant.findFirst({
+    where: { user: { twitterUsername: username } },
+    include: { user: true },
+  });
+  if (!quant) {
+    console.error(`Quant "${username}" not found`);
     process.exit(1);
   }
 
-  console.error(`Running backtest for ${kol.username} (${kol.id})...`);
-  const result = await runBacktest(kol.id);
+  console.error(`Running backtest for ${quant.user.twitterUsername} (${quant.id})...`);
+  const result = await runBacktest(quant.id);
 
   const displayName =
-    kol.displayName || username.charAt(0).toUpperCase() + username.slice(1);
+    quant.user.name || username.charAt(0).toUpperCase() + username.slice(1);
   const html = buildHtml(result, displayName);
   const outPath = `/tmp/backtest-${username}.html`;
   writeFileSync(outPath, html);

@@ -117,7 +117,7 @@ export async function requestWithdrawal(
   // Create new request
   const withdrawal = await withdrawalRepo.createRequest({
     userId: user.id,
-    kolVaultId: vaultId,
+    vaultId: vaultId,
     amount,
     idempotencyKey,
     batchId,

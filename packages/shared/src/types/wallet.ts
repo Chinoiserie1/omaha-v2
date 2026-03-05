@@ -56,7 +56,7 @@ export interface PortfolioChartResponse {
 export interface ActiveThesisItem {
   vaultId: string;
   name: string;
-  kolUsername: string;
+  quantUsername: string | null;
   assetCount: number;
   shares: number;
   sharePrice: number;
