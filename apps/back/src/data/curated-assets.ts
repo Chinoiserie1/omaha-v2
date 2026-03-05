@@ -154,11 +154,13 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   // STOCKS — one best version per STOCK_TICKERS
   // ═══════════════════════════════════════════════
 
-  // xStock wins (decimals 8)
+  // xStock wins — 40 tradeable on Jupiter swap/v1 (decimals 8)
   { symbol: "AAPLx", name: "Apple", mint: "XsbEhLAtcf6HdfpFZ5xEMdqW8nfAvcsP5bdudRLJzJp", decimals: 8, category: "stock" },
   { symbol: "ABTx", name: "Abbott", mint: "XsHtf5RpxsQ7jeJ9ivNewouZKJHbPxhPoEy6yYvULr7", decimals: 8, category: "stock" },
+  { symbol: "ACNx", name: "Accenture", mint: "Xs5UJzmCRQ8DWZjskExdSQDnbE6iLkRu2jjrRAB1JSU", decimals: 8, category: "stock" },
   { symbol: "AMBRx", name: "Amber", mint: "XsaQTCgebC2KPbf27KUhdv5JFvHhQ4GDAPURwrEhAzb", decimals: 8, category: "stock" },
   { symbol: "AMZNx", name: "Amazon", mint: "Xs3eBt7uRfJX8QUs4suhyU8p2M6DoUDrJyWBa8LLZsg", decimals: 8, category: "stock" },
+  { symbol: "AVGOx", name: "Broadcom", mint: "XsgSaSvNSqLTtFuyWPBhK9196Xb9Bbdyjj4fH3cPJGo", decimals: 8, category: "stock" },
   { symbol: "AZNx", name: "AstraZeneca", mint: "Xs3ZFkPYT2BN7qBMqf1j1bfTeTm1rFzEFSsQ1z3wAKU", decimals: 8, category: "stock" },
   { symbol: "BRK.Bx", name: "Berkshire Hathaway", mint: "Xs6B6zawENwAbWVi7w92rjazLuAr5Az59qgWKcNb45x", decimals: 8, category: "stock" },
   { symbol: "CMCSAx", name: "Comcast", mint: "XsvKCaNsxg2GN8jjUmq71qukMJr7Q1c5R2Mk9P8kcS8", decimals: 8, category: "stock" },
@@ -167,35 +169,45 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "CSCOx", name: "Cisco", mint: "Xsr3pdLQyXvDJBFgpR5nexCEZwXvigb8wbPYp4YoNFf", decimals: 8, category: "stock" },
   { symbol: "CVXx", name: "Chevron", mint: "XsNNMt7WTNA2sV3jrb1NNfNgapxRF5i4i6GcnTRRHts", decimals: 8, category: "stock" },
   { symbol: "DFDVx", name: "DFDV", mint: "Xs2yquAgsHByNzx68WJC55WHjHBvG9JsMB7CWjTLyPy", decimals: 8, category: "stock" },
-  { symbol: "DHRx", name: "Danaher", mint: "Xseo8tgCZfkHxWS9xbFYeKFyMSbWEvZGFV1Gh53GtCV", decimals: 8, category: "stock" },
+  { symbol: "GMEx", name: "GameStop", mint: "Xsf9mBktVB9BSU5kf4nHxPq5hCBJ2j2ui3ecFGxPRGc", decimals: 8, category: "stock" },
   { symbol: "GOOGLx", name: "Google", mint: "XsCPL9dNWBMvFtTmwcCA5v3xWPSMEBCszbQdiLLq6aN", decimals: 8, category: "stock" },
-  { symbol: "HONx", name: "Honeywell", mint: "XsRbLZthfABAPAfumWNEJhPyiKDW6TvDVeAeW7oKqA2", decimals: 8, category: "stock" },
   { symbol: "HOODx", name: "Robinhood", mint: "XsvNBAYkrDRNhA7wPHQfX3ZUXZyZLdnCQDfHZ56bzpg", decimals: 8, category: "stock" },
-  { symbol: "LINx", name: "Linde", mint: "XsSr8anD1hkvNMu8XQiVcmiaTP7XGvYu7Q58LdmtE8Z", decimals: 8, category: "stock" },
+  { symbol: "JNJx", name: "Johnson & Johnson", mint: "XsGVi5eo1Dh2zUpic4qACcjuWGjNv8GCt3dm5XcX6Dn", decimals: 8, category: "stock" },
+  { symbol: "JPMx", name: "JPMorgan", mint: "XsMAqkcKsUewDrzVkait4e5u4y8REgtyS7jWgCpLV2C", decimals: 8, category: "stock" },
   { symbol: "LLYx", name: "Eli Lilly", mint: "Xsnuv4omNoHozR6EEW5mXkw8Nrny5rB3jVfLqi6gKMH", decimals: 8, category: "stock" },
+  { symbol: "MAx", name: "Mastercard", mint: "XsApJFV9MAktqnAc6jqzsHVujxkGm9xcSUffaBoYLKC", decimals: 8, category: "stock" },
   { symbol: "MCDx", name: "McDonald's", mint: "XsqE9cRRpzxcGKDXj1BJ7Xmg4GRhZoyY1KpmGSxAWT2", decimals: 8, category: "stock" },
-  { symbol: "MDTx", name: "Medtronic", mint: "XsDgw22qRLTv5Uwuzn6T63cW69exG41T6gwQhEK22u2", decimals: 8, category: "stock" },
   { symbol: "METAx", name: "Meta Platforms", mint: "Xsa62P5mvPszXL1krVUnU5ar38bBSVcWAB6fmPCo5Zu", decimals: 8, category: "stock" },
   { symbol: "MRKx", name: "Merck", mint: "XsnQnU7AdbRZYe2akqqpibDdXjkieGFfSkbkjX1Sd1X", decimals: 8, category: "stock" },
+  { symbol: "MSFTx", name: "Microsoft", mint: "XspzcW1PRtgf6Wj92HCiZdjzKCyFekVD8P5Ueh3dRMX", decimals: 8, category: "stock" },
   { symbol: "MSTRx", name: "MicroStrategy", mint: "XsP7xzNPvEHS1m6qfanPUGjNmdnmsLKEoNAnHjdxxyZ", decimals: 8, category: "stock" },
+  { symbol: "NFLXx", name: "Netflix", mint: "XsEH7wWfJJu2ZT3UCFeVfALnVA6CP5ur7Ee11KmzVpL", decimals: 8, category: "stock" },
   { symbol: "NVDAx", name: "NVIDIA", mint: "Xsc9qvGR1efVDFGLrVsmkzv3qi45LTBjeUKSPmx9qEh", decimals: 8, category: "stock" },
-  { symbol: "OPENx", name: "Opendoor", mint: "XsGtpmjhmC8kyjVSWL4VicGu36ceq9u55PTgF8bhGv6", decimals: 8, category: "stock" },
   { symbol: "ORCLx", name: "Oracle", mint: "XsjFwUPiLofddX5cWFHW35GCbXcSu1BCUGfxoQAQjeL", decimals: 8, category: "stock" },
   { symbol: "PEPx", name: "PepsiCo", mint: "Xsv99frTRUeornyvCfvhnDesQDWuvns1M852Pez91vF", decimals: 8, category: "stock" },
   { symbol: "PGx", name: "Procter & Gamble", mint: "XsYdjDjNUygZ7yGKfQaB6TxLh2gC6RRjzLtLAGJrhzV", decimals: 8, category: "stock" },
-  { symbol: "PMx", name: "Philip Morris", mint: "Xsba6tUnSjDae2VcopDB6FGGDaxRrewFCDa5hKn5vT3", decimals: 8, category: "stock" },
-  { symbol: "TMOx", name: "Thermo Fisher", mint: "Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57", decimals: 8, category: "stock" },
   { symbol: "TSLAx", name: "Tesla", mint: "XsDoVfqeBukxuZHWhdvWHBhgEHjGNst4MLodqsJHzoB", decimals: 8, category: "stock" },
   { symbol: "UNHx", name: "UnitedHealth", mint: "XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe", decimals: 8, category: "stock" },
+  { symbol: "Vx", name: "Visa", mint: "XsqgsbXwWogGJsNcVZ3TyVouy2MbTkfCFhCGGGcQZ2p", decimals: 8, category: "stock" },
   { symbol: "WMTx", name: "Walmart", mint: "Xs151QeqTCiuKtinzfRATnUESM2xTU6V9Wy8Vy538ci", decimals: 8, category: "stock" },
+  { symbol: "XOMx", name: "Exxon Mobil", mint: "XsaHND8sHyfMfsWPj6kSdd5VwvCayZvjYgKmmcNL5qh", decimals: 8, category: "stock" },
+
+  // xStocks — COMMENTED OUT (illiquid, TOKEN_NOT_TRADABLE or NO_ROUTES_FOUND on swap/v1)
+  // { symbol: "DHRx", name: "Danaher", mint: "Xseo8tgCZfkHxWS9xbFYeKFyMSbWEvZGFV1Gh53GtCV", decimals: 8, category: "stock" },
+  // { symbol: "HONx", name: "Honeywell", mint: "XsRbLZthfABAPAfumWNEJhPyiKDW6TvDVeAeW7oKqA2", decimals: 8, category: "stock" },
+  // { symbol: "LINx", name: "Linde", mint: "XsSr8anD1hkvNMu8XQiVcmiaTP7XGvYu7Q58LdmtE8Z", decimals: 8, category: "stock" },
+  // { symbol: "MDTx", name: "Medtronic", mint: "XsDgw22qRLTv5Uwuzn6T63cW69exG41T6gwQhEK22u2", decimals: 8, category: "stock" },
+  // { symbol: "OPENx", name: "Opendoor", mint: "XsGtpmjhmC8kyjVSWL4VicGu36ceq9u55PTgF8bhGv6", decimals: 8, category: "stock" },
+  // { symbol: "PMx", name: "Philip Morris", mint: "Xsba6tUnSjDae2VcopDB6FGGDaxRrewFCDa5hKn5vT3", decimals: 8, category: "stock" },
+  // { symbol: "TMOx", name: "Thermo Fisher", mint: "Xs8drBWy3Sd5QY3aifG9kt9KFs2K3PGZmx7jWrsrk57", decimals: 8, category: "stock" },
+  // { symbol: "TBLLx", name: "US Treasury Bill ETF", mint: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp", decimals: 8, category: "fixed_income" },
 
   // Ondo tokens — COMMENTED OUT (Mar 2026)
-  // Reason: Ondo tokens are NOT tradeable via Jupiter swap API (returns TOKEN_NOT_TRADABLE).
-  // They have no AMM pools on Solana — liquidity comes from Ondo's mint/redeem on ETH/BNB only.
-  // The rebalancer cannot swap in/out of these tokens, so they must not be in the curated list.
-  // Prices still work via Jupiter Price API, so backtest/thesis could theoretically use them,
-  // but including non-executable assets in the thesis creates false expectations.
-  // Re-enable when: Ondo adds Solana minting OR Jupiter adds swap routes for Ondo tokens.
+  // Reason: Ondo tokens route ONLY via JupiterZ RFQ (Ultra API, program 61DFfeTKM7trxYcPQCM78bJ794ddZprZpAwAnLiwTpYH).
+  // GLAM's on-chain jupiter_swap CPI hardcodes Jupiter v6 (JUP6LkbF...) as the target program,
+  // so JupiterZ swaps are blocked until GLAM adds JupiterZ support. Message sent to GLAM team.
+  // Jupiter swap/v1 (v6 aggregator) returns TOKEN_NOT_TRADABLE for all Ondo tokens.
+  // Re-enable when: GLAM adds JupiterZ CPI support.
   //
   // { symbol: "ABBVon", name: "AbbVie", mint: "MFerpBVGKZh2jXN7cbJdXRXQTp6j6pbSnSZrfRondo", decimals: 9, category: "stock" },
   // { symbol: "ACNon", name: "Accenture", mint: "12LxMMJYVSf4LoeqjFE47BQQNRciaH9E3nbDfjH4ondo", decimals: 9, category: "stock" },
@@ -238,6 +250,7 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   // ═══════════════════════════════════════════════
   { symbol: "QQQx", name: "Nasdaq 100 ETF", mint: "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ", decimals: 8, category: "index" },
   { symbol: "SPYx", name: "S&P 500 ETF", mint: "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W", decimals: 8, category: "index" },
+  { symbol: "TQQQx", name: "ProShares UltraPro QQQ", mint: "XsjQP3iMAaQ3kQScQKthQpx9ALRbjKAjQtHg6TFomoc", decimals: 8, category: "index" },
   // { symbol: "IWMon", name: "Russell 2000 ETF", mint: "dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo", decimals: 9, category: "index" },
   // { symbol: "VTIon", name: "Total Stock Market ETF", mint: "jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo", decimals: 9, category: "index" },
   // { symbol: "TQQQon", name: "ProShares UltraPro QQQ", mint: "14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo", decimals: 9, category: "index" },
@@ -251,7 +264,7 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   // ═══════════════════════════════════════════════
   // FIXED INCOME
   // ═══════════════════════════════════════════════
-  { symbol: "TBLLx", name: "US Treasury Bill ETF", mint: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp", decimals: 8, category: "fixed_income" },
+  // { symbol: "TBLLx", name: "US Treasury Bill ETF", mint: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp", decimals: 8, category: "fixed_income" }, // TOKEN_NOT_TRADABLE
   // { symbol: "TLTon", name: "Treasury Bond ETF", mint: "KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo", decimals: 9, category: "fixed_income" },
 ];
 
