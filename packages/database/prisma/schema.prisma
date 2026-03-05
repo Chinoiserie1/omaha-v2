@@ -8,23 +8,33 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum UserType {
+  REAL
+  PLACEHOLDER
+}
+
 model User {
-  id                  String              @id @default(cuid())
-  privyId             String              @unique
-  email               String?             @unique
-  username            String?             @unique
-  name                String?
-  walletAddress       String?             @unique
-  twitterId           String?             @unique
-  twitterUsername     String?
-  profileImageUrl     String?
-  onboardingCompleted Boolean             @default(false)
-  createdAt           DateTime            @default(now())
-  updatedAt           DateTime            @updatedAt
-  followers           Follow[]            @relation("Following")
-  following           Follow[]            @relation("Followers")
-  withdrawalRequests  WithdrawalRequest[]
-  vaultFavorites      VaultFavorite[]
+  id                    String              @id @default(cuid())
+  privyId               String?             @unique
+  email                 String?             @unique
+  username              String?             @unique
+  name                  String?
+  walletAddress         String?             @unique
+  twitterId             String?             @unique
+  twitterUsername        String?
+  twitterFollowerCount  Int?
+  profileImageUrl       String?
+  bio                   String?
+  hasTwitter            Boolean             @default(false)
+  userType              UserType            @default(REAL)
+  onboardingCompleted   Boolean             @default(false)
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  followers             Follow[]            @relation("Following")
+  following             Follow[]            @relation("Followers")
+  withdrawalRequests    WithdrawalRequest[]
+  vaultFavorites        VaultFavorite[]
+  quant                 Quant?
 }
 
 model Follow {
@@ -40,24 +50,19 @@ model Follow {
   @@index([followingId])
 }
 
-// ── KOL Pipeline Models ─────────────────────────────────────────
+// ── Quant Pipeline Models ─────────────────────────────────────────
 
-model Kol {
+model Quant {
   id             String              @id @default(cuid())
-  username       String              @unique
-  displayName    String?
-  restId         String?             @unique
-  followersCount Int?
-  avatarUrl      String?
-  bio            String?
-  hasTwitter     Boolean             @default(true)
+  userId         String              @unique
+  user           User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   isActive       Boolean             @default(true)
   algoEnabled    Boolean             @default(true)
   knowledge      Json?
   lastFetchedAt  DateTime?
   tweets         Tweet[]
   portfolios     PortfolioSnapshot[]
-  vault          KolVault?
+  vault          Vault?
   tweetImpacts   TweetImpact[]
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
@@ -66,8 +71,8 @@ model Kol {
 model Tweet {
   id             String           @id @default(cuid())
   tweetId        String           @unique
-  kolId          String
-  kol            Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
+  quantId        String
+  quant          Quant            @relation(fields: [quantId], references: [id], onDelete: Cascade)
   fullText       String
   postedAt       DateTime
   favoriteCount  Int              @default(0)
@@ -87,8 +92,8 @@ model Tweet {
   createdAt      DateTime         @default(now())
   fetchedAt      DateTime         @default(now())
 
-  @@index([kolId, postedAt])
-  @@index([kolId, tweetId])
+  @@index([quantId, postedAt])
+  @@index([quantId, tweetId])
   @@index([conversationId])
 }
 
@@ -108,8 +113,8 @@ model ClassifiedTweet {
 
 model PortfolioSnapshot {
   id              String           @id @default(cuid())
-  kolId           String
-  kol             Kol              @relation(fields: [kolId], references: [id], onDelete: Cascade)
+  quantId         String
+  quant           Quant            @relation(fields: [quantId], references: [id], onDelete: Cascade)
   thesisSummary   String
   allocations     Json
   changes         String[]
@@ -123,15 +128,15 @@ model PortfolioSnapshot {
   // Backtest: this snapshot is the "to" side of a performance period
   perfTo   SnapshotPerformance[] @relation("PerfTo")
 
-  @@index([kolId, createdAt])
+  @@index([quantId, createdAt])
 }
 
 model TweetImpact {
   id                String            @id @default(cuid())
   tweetId           String
   tweet             Tweet             @relation(fields: [tweetId], references: [id], onDelete: Cascade)
-  kolId             String
-  kol               Kol               @relation(fields: [kolId], references: [id], onDelete: Cascade)
+  quantId           String
+  quant             Quant             @relation(fields: [quantId], references: [id], onDelete: Cascade)
   snapshotId        String
   snapshot          PortfolioSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
   assets            String[]
@@ -145,19 +150,15 @@ model TweetImpact {
   createdAt         DateTime          @default(now())
 
   @@unique([tweetId, snapshotId])
-  @@index([kolId, significanceScore])
-  @@index([kolId, createdAt])
+  @@index([quantId, significanceScore])
+  @@index([quantId, createdAt])
   @@index([snapshotId])
 }
 
-model KolVault {
+model Vault {
   id                 String              @id @default(cuid())
-  kolId              String              @unique
-  kol                Kol                 @relation(fields: [kolId], references: [id], onDelete: Cascade)
-  kolUsername        String              @default("")
-  avatarUrl          String              @default("")
-  name               String              @default("")
-  description        String              @default("")
+  quantId            String              @unique
+  quant              Quant               @relation(fields: [quantId], references: [id], onDelete: Cascade)
   glamVaultPda       String?             @unique
   statePda           String              @unique
   mintAddress        String?             @unique
@@ -178,13 +179,13 @@ model KolVault {
   withdrawalRequests WithdrawalRequest[]
   favorites          VaultFavorite[]
 
-  @@index([kolId])
+  @@index([quantId])
 }
 
 model RebalanceEvent {
   id             String            @id @default(cuid())
-  kolVaultId     String
-  kolVault       KolVault          @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  vaultId        String
+  vault          Vault             @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   snapshotId     String
   snapshot       PortfolioSnapshot @relation(fields: [snapshotId], references: [id])
   status         String
@@ -197,22 +198,22 @@ model RebalanceEvent {
   startedAt      DateTime          @default(now())
   completedAt    DateTime?
 
-  @@index([kolVaultId, startedAt])
+  @@index([vaultId, startedAt])
   @@index([snapshotId])
 }
 
 model HoldingsSnapshot {
   id             String    @id @default(cuid())
-  kolVaultId     String
-  kolVault       KolVault  @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  vaultId        String
+  vault          Vault     @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   holdings       Json
   totalEquityUsd Float
   startDate      DateTime  @default(now())
   endDate        DateTime?
   createdAt      DateTime  @default(now())
 
-  @@index([kolVaultId, startDate])
-  @@index([kolVaultId, endDate])
+  @@index([vaultId, startDate])
+  @@index([vaultId, endDate])
 }
 
 model TradeableAsset {
@@ -240,7 +241,7 @@ model TokenPriceDaily {
 
 model SnapshotPerformance {
   id              String            @id @default(cuid())
-  kolId           String
+  quantId         String
   fromSnapshotId  String
   fromSnapshot    PortfolioSnapshot @relation("PerfFrom", fields: [fromSnapshotId], references: [id], onDelete: Cascade)
   toSnapshotId    String
@@ -252,7 +253,7 @@ model SnapshotPerformance {
   computedAt      DateTime          @default(now())
 
   @@unique([fromSnapshotId, toSnapshotId])
-  @@index([kolId, computedAt])
+  @@index([quantId, computedAt])
 }
 
 // ── Token Price Models ────────────────────────────────────────
@@ -299,8 +300,8 @@ model WithdrawalRequest {
   id                String    @id @default(cuid())
   userId            String
   user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kolVaultId        String
-  kolVault          KolVault  @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
+  vaultId           String
+  vault             Vault     @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   amount            Float
   status            String    @default("REQUESTED")
   idempotencyKey    String    @unique
@@ -319,7 +320,7 @@ model WithdrawalRequest {
   updatedAt         DateTime  @updatedAt
 
   @@index([userId, status])
-  @@index([kolVaultId, status])
+  @@index([vaultId, status])
   @@index([batchId])
   @@index([status, requestedAt])
   @@index([status, processingAt])
@@ -328,14 +329,14 @@ model WithdrawalRequest {
 // ── Vault Favorites ─────────────────────────────────────────
 
 model VaultFavorite {
-  id         String   @id @default(cuid())
-  userId     String
-  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  kolVaultId String
-  kolVault   KolVault @relation(fields: [kolVaultId], references: [id], onDelete: Cascade)
-  createdAt  DateTime @default(now())
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vaultId   String
+  vault     Vault    @relation(fields: [vaultId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
-  @@unique([userId, kolVaultId])
+  @@unique([userId, vaultId])
   @@index([userId])
-  @@index([kolVaultId])
+  @@index([vaultId])
 }

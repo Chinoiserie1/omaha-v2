@@ -12,11 +12,11 @@
 
 ## What We're Building
 
-A crypto KOL investment tracking app.
+A crypto Quant strategy investment platform.
 
 **Investor User Journey (that's it):**
 
-1. Browse & discover KOL portfolios — no login required.
+1. Browse & discover Quant portfolios — no login required.
 2. Log in with X — only when ready to invest.
 3. Invest in a portfolio.
 4. Share it.
@@ -33,7 +33,7 @@ No feature gets added unless it directly serves one of the 3 steps above. Edge c
 
 ### 2. The app is public before the login wall.
 
-Anyone can browse KOL portfolios without an account. Login with X is only triggered when a user wants to invest. No forced auth on landing, no teaser walls, no "sign up to see more." Discovery is free.
+Anyone can browse Quant portfolios without an account. Login with X is only triggered when a user wants to invest. No forced auth on landing, no teaser walls, no "sign up to see more." Discovery is free.
 
 ### 3. Twitter/X only — no multi-platform handling.
 
@@ -80,9 +80,9 @@ If the answer is no or "kind of" — don't build it.
 
 ## Definition of Done for This MVP
 
-- [ ]  Anyone can browse KOL portfolios without logging in
+- [ ]  Anyone can browse Quant portfolios without logging in
 - [ ]  User can log in with X (Twitter OAuth) — only when investing
-- [ ]  User can invest in a KOL portfolio
+- [ ]  User can invest in a Quant portfolio
 - [ ]  User can share their portfolio
 
 When all 3 work end-to-end on a real device with a real account — **the MVP is done**. Everything else is a distraction until then.

@@ -21,9 +21,9 @@ Read `docs/DATA-PIPELINE.md` for the full system flow diagram.
 Quick summary: Tweets → Classify → Thesis → Rebalance → Swap
 
 ```
-CRON_FETCH_TWEETS  →  Twitter API  →  Tweet table
-CRON_RUN_ALGO      →  Classify (LLM) + Thesis (LLM)  →  PortfolioSnapshot
-CRON_REBALANCE     →  Delta computation  →  Jupiter swaps via GLAM vault
+CRON_FETCH_TWEETS  →  Twitter API  →  Tweet table (per Quant)
+CRON_RUN_ALGO      →  Classify (LLM) + Thesis (LLM)  →  PortfolioSnapshot (per Quant)
+CRON_REBALANCE     →  Delta computation  →  Jupiter swaps via GLAM vault (per Vault)
 CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 ```
 
@@ -76,15 +76,15 @@ src/
 
 ## Common Tasks
 
-### Adding a new KOL
+### Adding a new Quant
 
-Run `seed-kols.ts` script. The algo picks them up automatically on next cron run.
+Create a placeholder User + Quant record. The algo picks them up automatically on next cron run.
 
 ### Adding a new asset
 
 See `docs/ASSET-PIPELINE.md` § "How to Add an Asset". You need to update BOTH the aliases file AND curated-assets.ts.
 
-### Running the algo for one KOL
+### Running the algo for one Quant
 
 ```bash
 set -a && source .env && set +a && pnpm --filter @repo/back exec tsx src/scripts/run-algo-one-kol.ts <username>
@@ -139,7 +139,7 @@ Uses `@repo/config-eslint/node` which includes:
 
 ## Key Repositories
 
-- **KolRepository** - KOL data access (with `algoEnabled` flag support)
+- **QuantRepository** - Quant data access (with `algoEnabled` flag support)
 - **TweetRepository** - Tweet storage & queries
 - **VaultRepository** - Vault data & performance
 - **PortfolioRepository** - Portfolio snapshots & history
@@ -153,12 +153,12 @@ Scheduled tasks run from `src/cron/index.ts`:
 
 | Job                   | Schedule         | Purpose                                        |
 | --------------------- | ---------------- | ---------------------------------------------- |
-| `fetch-tweets`        | Every 15 min     | Fetch new tweets for active KOLs               |
+| `fetch-tweets`        | Every 15 min     | Fetch new tweets for active Quants              |
 | `run-algo`            | Every 30 min     | Classify tweets + generate theses              |
 | `fetch-prices`        | Every 1 min      | Update token prices from Birdeye               |
 | `rebalance-vaults`    | Every 6 hours    | Execute on-chain swaps                         |
 | `snapshot-portfolios` | Every 6 hours    | Capture portfolio values for charts (Mar 2026) |
-| `sync-profiles`       | Weekly (Sun 3am) | Refresh KOL Twitter profiles                   |
+| `sync-profiles`       | Weekly (Sun 3am) | Refresh Quant Twitter profiles                  |
 | `health-check`        | Every 6 hours    | Monitor API health                             |
 
 ## API Routes (Main Endpoints)
@@ -170,21 +170,21 @@ GET /health
 Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 ```
 
-### KOL Management
+### Quant Management
 
-| Method | Endpoint                                | Description                                   |
-| ------ | --------------------------------------- | --------------------------------------------- |
-| GET    | `/api/kols`                             | List active KOLs (supports `?all=true`)       |
-| GET    | `/api/kols/:id`                         | Get KOL details with recent tweets            |
-| POST   | `/api/kols/sync-profiles`               | Refresh all KOL Twitter profiles              |
-| POST   | `/api/kols/:kolId/instant-run-algo`     | Trigger classify + thesis for one KOL         |
-| GET    | `/api/kols/:id/tweets`                  | List tweets by KOL (paginated, date filter)   |
-| GET    | `/api/kols/:id/tweets/significant`      | Significant tweets with impact scores         |
-| GET    | `/api/kols/:id/threads/:conversationId` | Get tweet thread (context for classification) |
-| GET    | `/api/kols/:id/portfolio`               | Latest portfolio snapshot                     |
-| GET    | `/api/kols/:id/portfolio/history`       | Portfolio history (paginated)                 |
-| POST   | `/api/kols/:id/portfolio`               | Create manual portfolio snapshot              |
-| GET    | `/api/kols/:id/backtest`                | Run backtest for KOL strategy                 |
+| Method | Endpoint                                  | Description                                     |
+| ------ | ----------------------------------------- | ----------------------------------------------- |
+| GET    | `/api/quants`                             | List active Quants (supports `?all=true`)       |
+| GET    | `/api/quants/:id`                         | Get Quant details with recent tweets            |
+| POST   | `/api/quants/sync-profiles`               | Refresh all Quant Twitter profiles              |
+| POST   | `/api/quants/:quantId/instant-run-algo`   | Trigger classify + thesis for one Quant         |
+| GET    | `/api/quants/:id/tweets`                  | List tweets by Quant (paginated, date filter)   |
+| GET    | `/api/quants/:id/tweets/significant`      | Significant tweets with impact scores           |
+| GET    | `/api/quants/:id/threads/:conversationId` | Get tweet thread (context for classification)   |
+| GET    | `/api/quants/:id/portfolio`               | Latest portfolio snapshot                       |
+| GET    | `/api/quants/:id/portfolio/history`       | Portfolio history (paginated)                   |
+| POST   | `/api/quants/:id/portfolio`               | Create manual portfolio snapshot                |
+| GET    | `/api/quants/:id/backtest`                | Run backtest for Quant strategy                 |
 
 ### Wallet & User Data (March 2026)
 
@@ -271,7 +271,7 @@ All payloads include `withdrawalId`, `status`, and `timestamp`.
 
 | Method | Endpoint       | Description                                      |
 | ------ | -------------- | ------------------------------------------------ |
-| POST   | `/api/tweets`  | Ingest tweet from URL (auto-creates KOL)         |
+| POST   | `/api/tweets`  | Ingest tweet from URL (auto-creates Quant)       |
 | POST   | `/api/content` | Ingest external content (Telegram, Reddit, etc.) |
 
 ## Using Shared Packages

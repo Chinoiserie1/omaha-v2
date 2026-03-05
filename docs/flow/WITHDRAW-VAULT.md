@@ -2,7 +2,7 @@
 
 > Redeem vault shares → fulfill batch → claim USDC back to wallet.
 
-Users invest USDC into KOL vaults (GLAM Protocol tokenized vaults on Solana). When they want to exit a position, this multi-step withdrawal flow redeems their vault shares and returns USDC to their Privy embedded wallet. The process uses GLAM's queued redemption model with asynchronous batch fulfillment.
+Users invest USDC into Quant vaults (GLAM Protocol tokenized vaults on Solana). When they want to exit a position, this multi-step withdrawal flow redeems their vault shares and returns USDC to their Privy embedded wallet. The process uses GLAM's queued redemption model with asynchronous batch fulfillment.
 
 ## Status Lifecycle
 
@@ -259,7 +259,7 @@ Result: **one delayed job** waiting in Redis, scheduled to fire at 10:00.
 
 The fulfill job payload contains only `{ vaultId }` — it does NOT carry individual withdrawal IDs. When the delayed job fires, the worker calls `processFulfillBatch(vaultId)`, which:
 
-1. **Queries the DB** for ALL records with `status = "PROCESSING"` and `kolVaultId = vaultId`
+1. **Queries the DB** for ALL records with `status = "PROCESSING"` and `vaultId = vaultId`
 2. Calls GLAM's `fulfillIx()` — a single on-chain instruction that processes the vault's entire redemption queue
 3. Updates ALL matched records to `CLAIMABLE` in one batch DB update
 4. Sends a WebSocket notification to each user individually
@@ -294,7 +294,7 @@ Worker picks up job
 The recovery cron (`recovery-withdrawals.ts`) handles stuck `PROCESSING` records older than 15 minutes. These are already past the batch window, so it passes `{ delayMs: 0 }` to execute the fulfill immediately:
 
 ```ts
-await enqueueFulfillJob(req.kolVaultId, { delayMs: 0 });
+await enqueueFulfillJob(req.vaultId, { delayMs: 0 });
 ```
 
 ### Source files

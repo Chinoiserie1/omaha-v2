@@ -27,6 +27,7 @@ The `DATABASE_URL` environment variable determines which database is used. Each 
 packages/database/
 ├── prisma/
 │   ├── schema.prisma       # Database schema
+│   ├── migrations/          # Prisma migrations
 │   └── seed.ts             # Database seeding script
 ├── src/
 │   ├── index.ts            # Main export file
@@ -37,6 +38,100 @@ packages/database/
 ├── eslint.config.js        # ESLint config
 └── package.json
 ```
+
+## Core Models
+
+### User
+
+The identity anchor for all users (real and placeholder).
+
+```prisma
+enum UserType {
+  REAL        # Authenticated via Privy/Twitter
+  PLACEHOLDER # Created for Quants who haven't signed up yet
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  privyId               String?   @unique  # Optional for placeholder users
+  email                 String?   @unique
+  username              String?   @unique
+  name                  String?
+  walletAddress         String?   @unique
+  twitterId             String?   @unique
+  twitterUsername        String?
+  twitterFollowerCount  Int?
+  profileImageUrl       String?
+  bio                   String?
+  hasTwitter            Boolean   @default(false)
+  userType              UserType  @default(REAL)
+  onboardingCompleted   Boolean   @default(false)
+  quant                 Quant?    # Optional Quant profile
+  ...
+}
+```
+
+### Quant
+
+A strategy profile linked to a User. Owns tweets, portfolios, and optionally a vault.
+
+```prisma
+model Quant {
+  id             String              @id @default(cuid())
+  userId         String              @unique
+  user           User                @relation(...)
+  isActive       Boolean             @default(true)
+  algoEnabled    Boolean             @default(true)
+  lastFetchedAt  DateTime?
+  tweets         Tweet[]
+  portfolios     PortfolioSnapshot[]
+  vault          Vault?
+  tweetImpacts   TweetImpact[]
+  ...
+}
+```
+
+### Vault (formerly KolVault)
+
+A tokenized vault on Solana (GLAM Protocol) owned by a Quant.
+
+```prisma
+model Vault {
+  id                 String    @id @default(cuid())
+  quantId            String    @unique
+  quant              Quant     @relation(...)
+  glamVaultPda       String?   @unique
+  statePda           String    @unique
+  mintAddress        String?   @unique
+  vaultName          String
+  vaultSymbol        String
+  dryRun             Boolean   @default(true)
+  isActive           Boolean   @default(true)
+  jupiterEnabled     Boolean   @default(false)
+  ...
+}
+```
+
+### Model Relationships
+
+```
+User (1) ──── (0..1) Quant (1) ──── (0..1) Vault
+                       │                      │
+                       ├── Tweet[]            ├── RebalanceEvent[]
+                       ├── PortfolioSnapshot[]├── HoldingsSnapshot[]
+                       └── TweetImpact[]      ├── WithdrawalRequest[]
+                                              └── VaultFavorite[]
+```
+
+### User Linking Flow
+
+When a Quant hasn't signed up yet, a placeholder User is created:
+1. Admin creates a placeholder User (`userType = PLACEHOLDER`, `privyId = null`)
+2. Quant profile linked to that placeholder User
+3. When the real user signs up with matching Twitter, update the placeholder:
+   - Set `privyId`, `email`, `walletAddress`
+   - Set `userType = REAL`
+   - Quant + Vault + all data automatically linked
 
 ## Development
 
@@ -72,37 +167,18 @@ pnpm --filter @repo/database lint
 ## Usage in Apps
 
 ```typescript
-// Import Prisma client and types
-import { prisma, type User, type Prisma } from "@repo/database";
+import { prisma, type User, type Quant, type Vault, type Prisma } from "@repo/database";
 
 // Query examples
-const users = await prisma.user.findMany();
-const user = await prisma.user.findUnique({ where: { id } });
-const newUser = await prisma.user.create({ data: { email, name } });
-```
+const quant = await prisma.quant.findUnique({
+  where: { id },
+  include: { user: true, vault: true },
+});
 
-## Schema (prisma/schema.prisma)
-
-```prisma
-generator client {
-  provider = "prisma-client-js"
-  output   = "../generated/client"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String?
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
-
-  @@map("users")
-}
+const vault = await prisma.vault.findUnique({
+  where: { quantId },
+  include: { quant: { include: { user: true } } },
+});
 ```
 
 ## Client Singleton Pattern
@@ -126,44 +202,6 @@ export const prisma =
 if (process.env.NODE_ENV !== "production") {
   globalForPrisma.prisma = prisma;
 }
-```
-
-## Adding New Models
-
-### 1. Update Schema
-
-```prisma
-// prisma/schema.prisma
-model Product {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  createdAt   DateTime @default(now()) @map("created_at")
-  updatedAt   DateTime @updatedAt @map("updated_at")
-
-  @@map("products")
-}
-```
-
-### 2. Generate Client
-
-```bash
-pnpm db:generate
-```
-
-### 3. Create Migration
-
-```bash
-pnpm db:migrate
-```
-
-### 4. Use in Apps
-
-```typescript
-import { prisma, type Product } from "@repo/database";
-
-const products = await prisma.product.findMany();
 ```
 
 ## Environment Variables
@@ -193,24 +231,7 @@ npx prisma migrate deploy
 npx prisma migrate reset
 ```
 
-### Schema Push (Development Only)
-
-```bash
-# Push schema changes without migration
-pnpm db:push
-```
-
-Use for rapid prototyping. Use migrations for production changes.
-
-### Seeding
-
-```bash
-pnpm --filter @repo/database db:seed
-```
-
-The seed script (`prisma/seed.ts`) creates initial data.
-
-## Prisma Studio
+### Prisma Studio
 
 ```bash
 pnpm db:studio
@@ -228,13 +249,15 @@ The package exports:
 import {
   prisma,
   type User,
+  type Quant,
+  type Vault,
   type Prisma,
   type PrismaClient
 } from "@repo/database";
 
 // Use Prisma namespace for input types
 type UserCreateInput = Prisma.UserCreateInput;
-type UserWhereInput = Prisma.UserWhereInput;
+type QuantWhereInput = Prisma.QuantWhereInput;
 ```
 
 ## Important Notes

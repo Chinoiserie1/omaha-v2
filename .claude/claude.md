@@ -1,6 +1,12 @@
 ## What This Project Does
 
-Omaha is a KOL (Key Opinion Leader) tracking platform for crypto, stocks and commodities that use Solana rails. It is a mobile App on Solana Seeker, Android and IOS. It monitors Twitter influencers, analyzes their trading signals, backtests portfolio strategies, and manages tokenized vaults on Solana via GLAM Protocol. Users can view KOL dashboards showing portfolios, significant tweets, and backtest results.
+Omaha is a Quant strategy platform for crypto, stocks and commodities that uses Solana rails. It is a mobile App on Solana Seeker, Android and IOS. It monitors Twitter influencers (Quants), analyzes their trading signals, backtests portfolio strategies, and manages tokenized vaults on Solana via GLAM Protocol. Users can browse Quant dashboards showing portfolios, significant tweets, and backtest results. Users can also become Quant creators and manage their own vaults.
+
+### Key Concepts
+
+- **User** — An app user (real or placeholder). Real users authenticate via Privy/Twitter. Placeholder users are created for Quants who haven't signed up yet.
+- **Quant** — A strategy profile linked to a User. Holds pipeline config (isActive, algoEnabled) and owns tweets, portfolio snapshots, and optionally a vault.
+- **Vault** — A tokenized vault on Solana (GLAM Protocol) owned by a Quant. Manages on-chain allocations based on the Quant's strategy.
 
 ---
 

@@ -90,7 +90,7 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 
 - **Route**: `app/(tabs)/(home)/index.tsx`
 - **Components**: `components/home/VaultList.tsx`, `VaultRow.tsx`, `VaultCard.tsx`
-- **Features**: Search by vault name/KOL username, infinite scroll pagination, real performance metrics
+- **Features**: Search by vault name/Quant username, infinite scroll pagination, real performance metrics
 
 ### Profile Tab - Portfolio Dashboard (March 2026)
 
