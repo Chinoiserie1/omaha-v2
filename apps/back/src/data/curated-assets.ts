@@ -189,63 +189,70 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "UNHx", name: "UnitedHealth", mint: "XszvaiXGPwvk2nwb3o9C1CX4K6zH8sez11E6uyup6fe", decimals: 8, category: "stock" },
   { symbol: "WMTx", name: "Walmart", mint: "Xs151QeqTCiuKtinzfRATnUESM2xTU6V9Wy8Vy538ci", decimals: 8, category: "stock" },
 
-  // Ondo wins (decimals 9)
-  { symbol: "ABBVon", name: "AbbVie", mint: "MFerpBVGKZh2jXN7cbJdXRXQTp6j6pbSnSZrfRondo", decimals: 9, category: "stock" },
-  { symbol: "ACNon", name: "Accenture", mint: "12LxMMJYVSf4LoeqjFE47BQQNRciaH9E3nbDfjH4ondo", decimals: 9, category: "stock" },
-  { symbol: "AMDon", name: "AMD", mint: "14diAn5z8kjrKwSC8WLqvBqqe5YmihJhjxRxd8Z6ondo", decimals: 9, category: "stock" },
-  { symbol: "APPon", name: "AppLovin", mint: "14Z8rQQe2Aza33YgEUmj3g3QGNz8DXLiFPuCnsD1ondo", decimals: 9, category: "stock" },
-  { symbol: "AVGOon", name: "Broadcom", mint: "1FWZtdWN7y38BSXGzbs8D6Shk88oL9atDNgbVz9ondo", decimals: 9, category: "stock" },
-  { symbol: "BACon", name: "Bank of America", mint: "Wk8gC6iTNp8dqd4ghkJ3h1giiUnyhykwHh7tYWjondo", decimals: 9, category: "stock" },
-  { symbol: "BAon", name: "Boeing", mint: "1YVZ4LGpq8CAhpdpm3mgy7GgPb83gJczCpxLUQ3ondo", decimals: 9, category: "stock" },
-  { symbol: "COSTon", name: "Costco", mint: "6btaz134wjHkR8sqhAYrtSM6tavftfxnRvnyMd8ondo", decimals: 9, category: "stock" },
-  { symbol: "CRMon", name: "Salesforce", mint: "7D7ukbcnUNYt7Et5vtsDZhAy28MKu9pkHka1Hp9ondo", decimals: 9, category: "stock" },
-  { symbol: "CRWDon", name: "CrowdStrike", mint: "cdKfoNjbXgnSuxvoajhtH3uixfZhq1YXhQsS1Rwondo", decimals: 9, category: "stock" },
-  { symbol: "DISon", name: "Disney", mint: "mJf1xT3suXtkXBCfZcE9oUUuyxkvSgqYBWiX7v1ondo", decimals: 9, category: "stock" },
-  { symbol: "GMEon", name: "GameStop", mint: "aznKt8v32CwYMEcTcB4bGTv8DXWStCpHrcCtyy7ondo", decimals: 9, category: "stock" },
-  { symbol: "GSon", name: "Goldman Sachs", mint: "BchJRy2snmhJZf3rQ9LJ3ePs2BGfYgfvQNo31d2ondo", decimals: 9, category: "stock" },
-  { symbol: "HDon", name: "Home Depot", mint: "MtEXKVN3Pcggy8MPA3eJr15H6SK3RXheScqj9qtondo", decimals: 9, category: "stock" },
-  { symbol: "IBMon", name: "IBM", mint: "C8bZkgSxXkyT1RgxByp2teJ24hgimPLoyEYoNa9ondo", decimals: 9, category: "stock" },
-  { symbol: "INTCon", name: "Intel", mint: "cJpUMp5R7rZ6fGeLHbHhrRuJzK9mkyKDjZqNpT3ondo", decimals: 9, category: "stock" },
-  { symbol: "JNJon", name: "Johnson & Johnson", mint: "KUXt7LzHWSQXp5eyqMZRxWjAP6yM8BUh4LRHwiwondo", decimals: 9, category: "stock" },
-  { symbol: "JPMon", name: "JPMorgan", mint: "E5Gczsavxcomqf6Cw1sGCKLabL1xYD2FzKxVoB4ondo", decimals: 9, category: "stock" },
-  { symbol: "KOon", name: "Coca-Cola", mint: "e6G4pfFcrdKxJuZ4YXixRFfMbpMvgXG2Mjcus71ondo", decimals: 9, category: "stock" },
-  { symbol: "MAon", name: "Mastercard", mint: "EsVHcyRxXFJCLMiuYLWhoDygrNe1BJGpYeZ17X7ondo", decimals: 9, category: "stock" },
-  { symbol: "MRNAon", name: "Moderna", mint: "14VP7DvCAdBCc5XGNZkPt6zhtPzJrWWS64Koxtxyondo", decimals: 9, category: "stock" },
-  { symbol: "MRVLon", name: "Marvell", mint: "FovBwhoV5KQjZCdhoM6jgXYwXLX3F8vgAfvmLH7ondo", decimals: 9, category: "stock" },
-  { symbol: "MSFTon", name: "Microsoft", mint: "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo", decimals: 9, category: "stock" },
-  { symbol: "NFLXon", name: "Netflix", mint: "g4KnPrxPLeeKkwvDmZFMtYQPM64eHeShbD55vK6ondo", decimals: 9, category: "stock" },
-  { symbol: "NKEon", name: "Nike", mint: "g646pcdG2Rt5DH9WZzL7VVnVDWCCMTTrnktwE74ondo", decimals: 9, category: "stock" },
-  { symbol: "NVOon", name: "Novo Nordisk", mint: "GeV7S8vjP8qdYZpdGv2Xi6e7MUMCk8NAAp2z7g5ondo", decimals: 9, category: "stock" },
-  { symbol: "PFEon", name: "Pfizer", mint: "Gwh9fPsX1qWATXy63vNaJnAFfwebWQtZaVmPko6ondo", decimals: 9, category: "stock" },
-  { symbol: "PLTRon", name: "Palantir", mint: "HfsnTS5qtdStwec9DfBrunRqnAMYMMz1kjv9Hu9ondo", decimals: 9, category: "stock" },
-  { symbol: "PYPLon", name: "PayPal", mint: "hM7B3UQTTR81mS27SxDDPzBbjejmo8fnpFjzgv9ondo", decimals: 9, category: "stock" },
-  { symbol: "SHOPon", name: "Shopify", mint: "ivdDracs2s7jCP698dJXKSEQdVrNj9hasJL1Uq1ondo", decimals: 9, category: "stock" },
-  { symbol: "SNOWon", name: "Snowflake", mint: "JmFLCBwoNvcXy6B2VqABg6m784ubkXpaEx3p7S5ondo", decimals: 9, category: "stock" },
-  { symbol: "SPOTon", name: "Spotify", mint: "jzCvs2Pk8tDcfsFRqnEMjurgaQW4iQfEkandUR8ondo", decimals: 9, category: "stock" },
-  { symbol: "UBERon", name: "Uber", mint: "KJNeFW3kk3ycPjXpC6cbuyckjeYHacc2ekhtAi5ondo", decimals: 9, category: "stock" },
-  { symbol: "Von", name: "Visa", mint: "kxEW4oJL75K37VeXaZF1ynbHQATQwhECQKN1374ondo", decimals: 9, category: "stock" },
-  { symbol: "XOMon", name: "Exxon Mobil", mint: "qCYD74QnXzd9pzv6pGHQKJVwoibL6sNcPQDnpDiondo", decimals: 9, category: "stock" },
+  // Ondo tokens — COMMENTED OUT (Mar 2026)
+  // Reason: Ondo tokens are NOT tradeable via Jupiter swap API (returns TOKEN_NOT_TRADABLE).
+  // They have no AMM pools on Solana — liquidity comes from Ondo's mint/redeem on ETH/BNB only.
+  // The rebalancer cannot swap in/out of these tokens, so they must not be in the curated list.
+  // Prices still work via Jupiter Price API, so backtest/thesis could theoretically use them,
+  // but including non-executable assets in the thesis creates false expectations.
+  // Re-enable when: Ondo adds Solana minting OR Jupiter adds swap routes for Ondo tokens.
+  //
+  // { symbol: "ABBVon", name: "AbbVie", mint: "MFerpBVGKZh2jXN7cbJdXRXQTp6j6pbSnSZrfRondo", decimals: 9, category: "stock" },
+  // { symbol: "ACNon", name: "Accenture", mint: "12LxMMJYVSf4LoeqjFE47BQQNRciaH9E3nbDfjH4ondo", decimals: 9, category: "stock" },
+  // { symbol: "AMDon", name: "AMD", mint: "14diAn5z8kjrKwSC8WLqvBqqe5YmihJhjxRxd8Z6ondo", decimals: 9, category: "stock" },
+  // { symbol: "APPon", name: "AppLovin", mint: "14Z8rQQe2Aza33YgEUmj3g3QGNz8DXLiFPuCnsD1ondo", decimals: 9, category: "stock" },
+  // { symbol: "AVGOon", name: "Broadcom", mint: "1FWZtdWN7y38BSXGzbs8D6Shk88oL9atDNgbVz9ondo", decimals: 9, category: "stock" },
+  // { symbol: "BACon", name: "Bank of America", mint: "Wk8gC6iTNp8dqd4ghkJ3h1giiUnyhykwHh7tYWjondo", decimals: 9, category: "stock" },
+  // { symbol: "BAon", name: "Boeing", mint: "1YVZ4LGpq8CAhpdpm3mgy7GgPb83gJczCpxLUQ3ondo", decimals: 9, category: "stock" },
+  // { symbol: "COSTon", name: "Costco", mint: "6btaz134wjHkR8sqhAYrtSM6tavftfxnRvnyMd8ondo", decimals: 9, category: "stock" },
+  // { symbol: "CRMon", name: "Salesforce", mint: "7D7ukbcnUNYt7Et5vtsDZhAy28MKu9pkHka1Hp9ondo", decimals: 9, category: "stock" },
+  // { symbol: "CRWDon", name: "CrowdStrike", mint: "cdKfoNjbXgnSuxvoajhtH3uixfZhq1YXhQsS1Rwondo", decimals: 9, category: "stock" },
+  // { symbol: "DISon", name: "Disney", mint: "mJf1xT3suXtkXBCfZcE9oUUuyxkvSgqYBWiX7v1ondo", decimals: 9, category: "stock" },
+  // { symbol: "GMEon", name: "GameStop", mint: "aznKt8v32CwYMEcTcB4bGTv8DXWStCpHrcCtyy7ondo", decimals: 9, category: "stock" },
+  // { symbol: "GSon", name: "Goldman Sachs", mint: "BchJRy2snmhJZf3rQ9LJ3ePs2BGfYgfvQNo31d2ondo", decimals: 9, category: "stock" },
+  // { symbol: "HDon", name: "Home Depot", mint: "MtEXKVN3Pcggy8MPA3eJr15H6SK3RXheScqj9qtondo", decimals: 9, category: "stock" },
+  // { symbol: "IBMon", name: "IBM", mint: "C8bZkgSxXkyT1RgxByp2teJ24hgimPLoyEYoNa9ondo", decimals: 9, category: "stock" },
+  // { symbol: "INTCon", name: "Intel", mint: "cJpUMp5R7rZ6fGeLHbHhrRuJzK9mkyKDjZqNpT3ondo", decimals: 9, category: "stock" },
+  // { symbol: "JNJon", name: "Johnson & Johnson", mint: "KUXt7LzHWSQXp5eyqMZRxWjAP6yM8BUh4LRHwiwondo", decimals: 9, category: "stock" },
+  // { symbol: "JPMon", name: "JPMorgan", mint: "E5Gczsavxcomqf6Cw1sGCKLabL1xYD2FzKxVoB4ondo", decimals: 9, category: "stock" },
+  // { symbol: "KOon", name: "Coca-Cola", mint: "e6G4pfFcrdKxJuZ4YXixRFfMbpMvgXG2Mjcus71ondo", decimals: 9, category: "stock" },
+  // { symbol: "MAon", name: "Mastercard", mint: "EsVHcyRxXFJCLMiuYLWhoDygrNe1BJGpYeZ17X7ondo", decimals: 9, category: "stock" },
+  // { symbol: "MRNAon", name: "Moderna", mint: "14VP7DvCAdBCc5XGNZkPt6zhtPzJrWWS64Koxtxyondo", decimals: 9, category: "stock" },
+  // { symbol: "MRVLon", name: "Marvell", mint: "FovBwhoV5KQjZCdhoM6jgXYwXLX3F8vgAfvmLH7ondo", decimals: 9, category: "stock" },
+  // { symbol: "MSFTon", name: "Microsoft", mint: "FRmH6iRkMr33DLG6zVLR7EM4LojBFAuq6NtFzG6ondo", decimals: 9, category: "stock" },
+  // { symbol: "NFLXon", name: "Netflix", mint: "g4KnPrxPLeeKkwvDmZFMtYQPM64eHeShbD55vK6ondo", decimals: 9, category: "stock" },
+  // { symbol: "NKEon", name: "Nike", mint: "g646pcdG2Rt5DH9WZzL7VVnVDWCCMTTrnktwE74ondo", decimals: 9, category: "stock" },
+  // { symbol: "NVOon", name: "Novo Nordisk", mint: "GeV7S8vjP8qdYZpdGv2Xi6e7MUMCk8NAAp2z7g5ondo", decimals: 9, category: "stock" },
+  // { symbol: "PFEon", name: "Pfizer", mint: "Gwh9fPsX1qWATXy63vNaJnAFfwebWQtZaVmPko6ondo", decimals: 9, category: "stock" },
+  // { symbol: "PLTRon", name: "Palantir", mint: "HfsnTS5qtdStwec9DfBrunRqnAMYMMz1kjv9Hu9ondo", decimals: 9, category: "stock" },
+  // { symbol: "PYPLon", name: "PayPal", mint: "hM7B3UQTTR81mS27SxDDPzBbjejmo8fnpFjzgv9ondo", decimals: 9, category: "stock" },
+  // { symbol: "SHOPon", name: "Shopify", mint: "ivdDracs2s7jCP698dJXKSEQdVrNj9hasJL1Uq1ondo", decimals: 9, category: "stock" },
+  // { symbol: "SNOWon", name: "Snowflake", mint: "JmFLCBwoNvcXy6B2VqABg6m784ubkXpaEx3p7S5ondo", decimals: 9, category: "stock" },
+  // { symbol: "SPOTon", name: "Spotify", mint: "jzCvs2Pk8tDcfsFRqnEMjurgaQW4iQfEkandUR8ondo", decimals: 9, category: "stock" },
+  // { symbol: "UBERon", name: "Uber", mint: "KJNeFW3kk3ycPjXpC6cbuyckjeYHacc2ekhtAi5ondo", decimals: 9, category: "stock" },
+  // { symbol: "Von", name: "Visa", mint: "kxEW4oJL75K37VeXaZF1ynbHQATQwhECQKN1374ondo", decimals: 9, category: "stock" },
+  // { symbol: "XOMon", name: "Exxon Mobil", mint: "qCYD74QnXzd9pzv6pGHQKJVwoibL6sNcPQDnpDiondo", decimals: 9, category: "stock" },
 
   // ═══════════════════════════════════════════════
   // INDEX ETFs
   // ═══════════════════════════════════════════════
   { symbol: "QQQx", name: "Nasdaq 100 ETF", mint: "Xs8S1uUs1zvS2p7iwtsG3b6fkhpvmwz4GYU3gWAmWHZ", decimals: 8, category: "index" },
   { symbol: "SPYx", name: "S&P 500 ETF", mint: "XsoCS1TfEyfFhfvj8EtZ528L3CaKBDBRqRapnBbDF2W", decimals: 8, category: "index" },
-  { symbol: "IWMon", name: "Russell 2000 ETF", mint: "dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo", decimals: 9, category: "index" },
-  { symbol: "VTIon", name: "Total Stock Market ETF", mint: "jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo", decimals: 9, category: "index" },
-  { symbol: "TQQQon", name: "ProShares UltraPro QQQ", mint: "14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo", decimals: 9, category: "index" },
+  // { symbol: "IWMon", name: "Russell 2000 ETF", mint: "dvj2kKFSyjpnyYSYppgFdAEVfgjMEoQGi9VaV23ondo", decimals: 9, category: "index" },
+  // { symbol: "VTIon", name: "Total Stock Market ETF", mint: "jCCU4GwukjNxAXJowG2S4KCrr5g6YyUB61WHYvGondo", decimals: 9, category: "index" },
+  // { symbol: "TQQQon", name: "ProShares UltraPro QQQ", mint: "14W1itEkV7k1W819mLSknFTaMmkCtPokbF2tRkPUondo", decimals: 9, category: "index" },
 
   // ═══════════════════════════════════════════════
   // COMMODITIES
   // ═══════════════════════════════════════════════
   { symbol: "GLDx", name: "Gold ETF", mint: "Xsv9hRk1z5ystj9MhnA7Lq4vjSsLwzL2nxrwmwtD3re", decimals: 8, category: "commodity" },
-  { symbol: "SLVon", name: "Silver ETF", mint: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo", decimals: 9, category: "commodity" },
+  // { symbol: "SLVon", name: "Silver ETF", mint: "iy11ytbSGcUnrjE6Lfv78TFqxKyUESfku1FugS9ondo", decimals: 9, category: "commodity" },
 
   // ═══════════════════════════════════════════════
   // FIXED INCOME
   // ═══════════════════════════════════════════════
   { symbol: "TBLLx", name: "US Treasury Bill ETF", mint: "XsqBC5tcVQLYt8wqGCHRnAUUecbRYXoJCReD6w7QEKp", decimals: 8, category: "fixed_income" },
-  { symbol: "TLTon", name: "Treasury Bond ETF", mint: "KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo", decimals: 9, category: "fixed_income" },
+  // { symbol: "TLTon", name: "Treasury Bond ETF", mint: "KaSLSWByKy6b9FrCYXPEJoHmLpuFZtTCJk1F1Z9ondo", decimals: 9, category: "fixed_income" },
 ];
 
 export function getCuratedAssetSymbols(): string[] {
