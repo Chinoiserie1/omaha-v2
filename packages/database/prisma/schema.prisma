@@ -262,6 +262,7 @@ model Token {
   symbol    String
   decimals  Int
   mint      String       @unique
+  logoUri   String?
   isVault   Boolean      @default(false)
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt

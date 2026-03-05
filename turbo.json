@@ -74,6 +74,10 @@
     "backfill-algo-all": {
       "cache": false,
       "dependsOn": ["^db:generate"]
+    },
+    "sync-icons": {
+      "cache": false,
+      "dependsOn": ["^db:generate"]
     }
   },
   "globalEnv": [
