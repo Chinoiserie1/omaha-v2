@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { SOLANA_RPC_URL } from "../../lib/solana";
+import Toast from "react-native-toast-message";
 
 interface SubscribeParams {
   vaultId: string;
@@ -66,13 +67,27 @@ export function useSubscribeVault() {
       );
 
       // Step 5: Confirm the deposit with backend → triggers rebalancing
-      await apiClient.post(`/api/vaults/${vaultId}/confirm-subscribe`, {
-        txSignature: signature,
-      });
+      // On-chain deposit already succeeded, so catch backend errors separately
+      try {
+        await apiClient.post(`/api/vaults/${vaultId}/confirm-subscribe`, {
+          txSignature: signature,
+        });
+      } catch {
+        Toast.show({
+          type: "error",
+          text1: "Deposit Failed",
+          text2: "Please try again",
+        });
+      }
 
       return { signature, vaultId, signerPublicKey };
     },
-    onSuccess: ({ vaultId, signerPublicKey }) => {
+    onSuccess: ({ vaultId, signerPublicKey, signature }) => {
+      Toast.show({
+        type: "success",
+        text1: "Investment Successful",
+        text2: `Tx: ${signature.slice(0, 8)}...${signature.slice(-8)}`,
+      });
       queryClient.invalidateQueries({
         queryKey: queryKeys.vaults.investorStatus(vaultId, signerPublicKey),
       });
