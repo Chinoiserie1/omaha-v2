@@ -279,6 +279,22 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 
 **Files**: `apps/back/src/routes/backtest/handlers/get-backtest-chart.ts` (new handler), `apps/back/src/routes/backtest/index.ts` (route registration).
 
+### Token Icon Sync from Jupiter (Mar 2026)
+
+**Problem**: No token icon/image URLs anywhere in the system. The native app showed colored letter badges and the web app showed plain text symbols for portfolio allocations and vault holdings.
+
+**Solution**: Added `logoUri String?` to the `Token` Prisma model. Created `sync-token-icons.ts` script that bulk-fetches all verified tokens from Jupiter V2 (`/tokens/v2/tag?query=verified`) and upserts the `icon` URL into the Token table for every curated asset.
+
+**Coverage**: 183/186 curated assets have icon URLs:
+- Crypto tokens: GitHub raw, static.jup.ag, arweave, project CDNs (28-68KB PNGs, 512x512)
+- xStock tokens: `xstocks-metadata.backed.fi` CDN
+- Ondo tokens: `cdn.ondo.finance` CDN (160x160 PNGs)
+- 3 missing (not on Jupiter at all): `OPENx`, `ABBVon`, `TBLLx`
+
+**Run**: `pnpm sync-icons`
+
+**Files**: `packages/database/prisma/schema.prisma` (migration), `apps/back/src/scripts/sync-token-icons.ts` (new script), `turbo.json` + `package.json` (script registration)
+
 ### Twitter API: profile-conversation Author Investigation (Mar 2026)
 
 **Investigation**: Analyzed `profile-conversation` entries from `user-tweets` API to understand tweet authorship. Found that `legacy.screen_name` is **null** in this API — screen name lives at `core.user_results.result.core.screen_name`, which `TweetResultSchema` does not parse. Only `legacy.user_id_str` is available for author identification.
