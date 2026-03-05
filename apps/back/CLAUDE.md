@@ -35,6 +35,7 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 | `docs/DATA-PIPELINE.md`                                | Full data flow from tweet ingestion to vault rebalancing, every cron job, every service         | Any cron job, any service file                                                                                   |
 | `docs/backtest.md`                                     | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
 | [`docs/flow/FUND-SOL.md`](../../docs/flow/FUND-SOL.md) | USDC → SOL swap flow for transaction fees: API, services, tx builder, mobile UI                 | `fund-sol.service.ts`, `fund-sol-tx.builder.ts`, `solana/config.ts`, native fund-sol components                  |
+| `docs/JUPITER-API.md`                                  | Jupiter API endpoints, auth, token providers (xStocks vs Ondo), tradability rules, liquidity    | `jupiter-swap.service.ts`, `jupiter.service.ts`, `compare-liquidity.ts`, `rebalancer.service.ts`                 |
 
 ## Tech Stack
 
