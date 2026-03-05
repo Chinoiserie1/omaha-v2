@@ -136,6 +136,9 @@ export async function startTelegramBot(): Promise<void> {
 
   bot.start({
     onStart: () => logger.info("Telegram bot started — listening for commands"),
+    drop_pending_updates: true,
+  }).catch((err) => {
+    logger.error({ err }, "Telegram bot polling failed — bot commands unavailable, alerts still work");
   });
 }
 

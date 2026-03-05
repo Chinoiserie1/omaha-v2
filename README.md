@@ -70,15 +70,22 @@ cp .env.example .env
 # Edit .env with your API keys
 
 # 3. Start database
+Run the docker deaemon
 pnpm db:up
 
 # 4. Run migrations and generate Prisma client
+Make sure you have a .env in packages/database
 pnpm db:generate
-pnpm db:migrate dev
+#pnpm db:migrate dev
 pnpm db:migrate deploy
+pnpm build
 
 # 5. Start all apps in development
 pnpm dev
+
+# or to launch android only
+pnpm dev:back
+pnpm dev:android
 ```
 
 After startup:
