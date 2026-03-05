@@ -88,19 +88,16 @@ export function InvestScreen({
   };
 
   const isDisabled =
-    !isValidAmount ||
-    exceedsBalance ||
-    subscribeMutation.isPending ||
-    !wallet;
+    !isValidAmount || exceedsBalance || subscribeMutation.isPending || !wallet;
 
   return (
-    <View className="flex-1 px-6 pb-10 pt-6">
+    <View className="flex-1 px-6 pt-6 pb-10">
       <Text className="mb-1 text-xl font-bold">Invest in {vaultName}</Text>
       <Text className="mb-6 text-sm text-muted-foreground">
         Deposit USDC into this vault
       </Text>
 
-      <View className="mb-2 flex-row items-center justify-between">
+      <View className="flex-row justify-between items-center mb-2">
         <Label nativeID="amount-label">Amount (USDC)</Label>
         <View className="flex-row items-center">
           {loadingBalance ? (
@@ -112,7 +109,12 @@ export function InvestScreen({
             </Text>
           )}
           {usdcBalance !== null && usdcBalance > 0 && (
-            <Button variant="ghost" size="sm" onPress={handleMax} className="ml-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onPress={handleMax}
+              className="ml-1"
+            >
               <Text className="text-xs font-semibold text-emerald-500">
                 MAX
               </Text>
