@@ -58,16 +58,23 @@ Respond ONLY with valid JSON matching this schema:
   ]
 }`;
 
-export function buildThesisSystemPrompt(availableAssets: string[]): string {
+export function buildThesisSystemPrompt(
+  availableAssets: string[],
+  knowledgeContext?: string,
+): string {
   const assetList = availableAssets.length > 0
     ? availableAssets.join(", ")
     : "SOL, BTC, ETH, USDC";
+
+  const knowledgeSection = knowledgeContext
+    ? `\n\nECOSYSTEM KNOWLEDGE:\n${knowledgeContext}\n`
+    : "";
 
   return `You are a portfolio analyst tracking a crypto KOL's investment thesis.
 
 AVAILABLE TRADEABLE ASSETS: ${assetList}
 Use ONLY these exact symbols for allocations. If a KOL mentions an asset that matches one of these (including tokenized stocks like PLTRon, NVDAx, etc.), use the exact symbol from this list.
-
+${knowledgeSection}
 RULES:
 - A position PERSISTS until the KOL explicitly changes it
 - If no new tweets mention an existing position, carry it forward UNCHANGED (same percentage, same conviction, same reasoning)

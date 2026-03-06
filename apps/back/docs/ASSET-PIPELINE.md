@@ -260,6 +260,22 @@ These must always hold true:
 
 ---
 
+## Asset Equivalence Groups
+
+Some assets represent the same underlying exposure (e.g. SOL and JitoSOL are both SOL exposure). The thesis LLM needs to know this to avoid double-counting.
+
+Equivalence groups are defined in `apps/back/src/data/knowledge/asset-groups.ts` and injected into the thesis prompt. Current groups:
+
+- **SOL Exposure**: SOL, JitoSOL, mSOL, bSOL, JupSOL, hSOL, INF, LST — see `docs/LST-HANDLING.md`
+- **USD Stablecoins**: USDC, USDT, PYUSD — default to USDC
+- **BTC Exposure**: cbBTC — single wrapper on Solana
+
+Protocol context (e.g. "BAM = Jito ecosystem, not a token") is in `apps/back/src/data/knowledge/protocol-map.ts`.
+
+Per-KOL knowledge (investment style, contextual notes) lives in the `Kol.knowledge` DB field, validated by `KolKnowledgeSchema` from `@repo/shared`.
+
+---
+
 ## Future Improvements
 
 ### `sync-curated-assets.ts` script

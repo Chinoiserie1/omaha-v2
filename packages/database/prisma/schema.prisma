@@ -53,6 +53,7 @@ model Kol {
   hasTwitter     Boolean             @default(true)
   isActive       Boolean             @default(true)
   algoEnabled    Boolean             @default(true)
+  knowledge      Json?
   lastFetchedAt  DateTime?
   tweets         Tweet[]
   portfolios     PortfolioSnapshot[]
