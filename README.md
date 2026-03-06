@@ -1,6 +1,6 @@
 # Autopilot
 
-AI-powered KOL (Key Opinion Leader) trading pipeline on Solana. Fetches tweets, classifies them with Claude AI, generates portfolio allocations, and rebalances on-chain vaults via GLAM SDK.
+AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them with Claude AI, generates portfolio allocations, and rebalances on-chain vaults via GLAM SDK.
 
 ## Tech Stack
 
