@@ -5,7 +5,7 @@ interface VaultInfoProps {
   glamStatePda: string;
   glamVaultPda: string | null;
   vaultSymbol: string;
-  kolBio: string | null;
+  quantBio: string | null;
 }
 
 function InfoRow({ label, value }: { label: string; value: string }) {
@@ -26,7 +26,7 @@ export const VaultInfo = memo(function VaultInfo({
   glamStatePda,
   glamVaultPda,
   vaultSymbol,
-  kolBio,
+  quantBio,
 }: VaultInfoProps) {
   return (
     <View className="p-4 mx-5 mt-4 rounded-xl border bg-card border-border">
@@ -36,7 +36,7 @@ export const VaultInfo = memo(function VaultInfo({
       <InfoRow label="Symbol" value={vaultSymbol} />
       <InfoRow label="State PDA" value={glamStatePda} />
       <InfoRow label="Vault PDA" value={glamVaultPda ?? "Not yet created"} />
-      {kolBio ? <InfoRow label="KOL Bio" value={kolBio} /> : null}
+      {quantBio ? <InfoRow label="Quant Bio" value={quantBio} /> : null}
     </View>
   );
 });

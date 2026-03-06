@@ -26,8 +26,8 @@ export function HeroCard() {
         <View style={styles.infoRow}>
           <View style={styles.avatar} />
           <View style={styles.infoText}>
-            <Text style={styles.kolName}>Top KOL</Text>
-            <Text style={styles.kolHandle}>@autopilot_kol</Text>
+            <Text style={styles.quantName}>Top Quant</Text>
+            <Text style={styles.quantHandle}>@autopilot</Text>
           </View>
         </View>
         <View style={styles.statsRow}>
@@ -91,12 +91,12 @@ const styles = StyleSheet.create({
   infoText: {
     flex: 1,
   },
-  kolName: {
+  quantName: {
     color: "#F8FAFC",
     fontSize: 14,
     fontFamily: "SpaceGrotesk_600SemiBold",
   },
-  kolHandle: {
+  quantHandle: {
     color: "#94A3B8",
     fontSize: 12,
     fontFamily: "SpaceGrotesk_400Regular",
