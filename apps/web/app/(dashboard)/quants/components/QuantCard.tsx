@@ -18,12 +18,12 @@ function Initials({ name }: { name: string | null }) {
   );
 }
 
-export function KolCard({ kol }: { kol: KolItem }) {
+export function QuantCard({ kol }: { kol: KolItem }) {
   const name = kol.displayName ?? kol.username;
 
   return (
     <div className="rounded-lg border border-zinc-200 p-4 transition-shadow hover:shadow-md">
-      <Link href={`/kols/${kol.id}`} className="block">
+      <Link href={`/quants/${kol.id}`} className="block">
         <div className="flex items-center gap-3">
           {kol.avatarUrl ? (
             <img

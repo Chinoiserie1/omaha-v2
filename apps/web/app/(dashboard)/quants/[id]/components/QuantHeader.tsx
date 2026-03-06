@@ -3,16 +3,16 @@ import type { KolItem } from "@/lib/api";
 import { formatNumber } from "@/lib/format";
 import { ApiTryPanel } from "../../components/ApiTryPanel";
 
-export function KolHeader({ kol }: { kol: KolItem }) {
+export function QuantHeader({ kol }: { kol: KolItem }) {
   const name = kol.displayName ?? kol.username;
 
   return (
     <div>
       <Link
-        href="/kols"
+        href="/quants"
         className="mb-4 inline-flex items-center text-sm text-zinc-500 hover:text-zinc-700"
       >
-        &larr; All KOLs
+        &larr; All Quants
       </Link>
       <div className="flex items-start gap-4">
       {kol.avatarUrl ? (

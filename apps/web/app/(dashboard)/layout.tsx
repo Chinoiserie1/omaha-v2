@@ -13,7 +13,7 @@ export default function DashboardLayout({
             Omaha
           </Link>
           <Link
-            href="/kols"
+            href="/quants"
             className="text-sm font-medium text-zinc-600 hover:text-zinc-900"
           >
             Dashboard

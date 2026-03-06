@@ -1,5 +1,5 @@
 import { fetchKols } from "@/lib/api";
-import { KolCard } from "./components/KolCard";
+import { QuantCard } from "./components/QuantCard";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ export default async function KolsPage() {
       <h1 className="mb-6 text-2xl font-bold">KOL Dashboard</h1>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {kols.map((kol) => (
-          <KolCard key={kol.id} kol={kol} />
+          <QuantCard key={kol.id} kol={kol} />
         ))}
       </div>
     </main>

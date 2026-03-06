@@ -1,5 +1,5 @@
 import { prisma } from "@repo/database";
-import type { Kol } from "@repo/database";
+import type { Kol, Prisma } from "@repo/database";
 
 export async function findAllKols(activeOnly: boolean): Promise<
   (Kol & { _count: { tweets: number } })[]
@@ -66,4 +66,11 @@ export async function upsertKol(username: string): Promise<Kol> {
     update: {},
     create: { username },
   });
+}
+
+export async function updateKolKnowledge(
+  id: string,
+  knowledge: Prisma.InputJsonValue,
+): Promise<Kol> {
+  return prisma.kol.update({ where: { id }, data: { knowledge } });
 }
