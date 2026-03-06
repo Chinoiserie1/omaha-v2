@@ -7,8 +7,8 @@ type GetRequest = FastifyRequest<{
 
 export async function getKol(
   request: GetRequest,
-  reply: FastifyReply
-) {
+  reply: FastifyReply,
+): Promise<unknown> {
   const kol = await kolRepo.findKolWithTweets(request.params.id, 50);
 
   if (!kol) {

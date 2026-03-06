@@ -1,6 +1,9 @@
 import { prisma } from "@repo/database";
+import type { Kol, KolVault } from "@repo/database";
 
-export async function findAllActiveVaults() {
+type VaultWithKol = KolVault & { kol: Kol };
+
+export async function findAllActiveVaults(): Promise<VaultWithKol[]> {
   return prisma.kolVault.findMany({
     where: { isActive: true },
     include: { kol: true },
@@ -15,7 +18,7 @@ export async function findActiveVaultsPaginated({
   skip: number;
   take: number;
   search?: string;
-}) {
+}): Promise<{ vaults: VaultWithKol[]; total: number }> {
   const where = {
     isActive: true,
     ...(search
@@ -45,14 +48,14 @@ export async function findActiveVaultsPaginated({
   return { vaults, total };
 }
 
-export async function findVaultById(id: string) {
+export async function findVaultById(id: string): Promise<VaultWithKol | null> {
   return prisma.kolVault.findUnique({
     where: { id },
     include: { kol: true },
   });
 }
 
-export async function findVaultByKolId(kolId: string) {
+export async function findVaultByKolId(kolId: string): Promise<VaultWithKol | null> {
   return prisma.kolVault.findUnique({
     where: { kolId },
     include: { kol: true },
