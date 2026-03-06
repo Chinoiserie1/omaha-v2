@@ -79,6 +79,10 @@ export const CURATED_ASSETS: CuratedAsset[] = [
   { symbol: "INF", name: "Infinity", mint: "5oVNBeEEQvYi1cX3ir8Dx5n1P7pdxydbGF2X4TxVusJm", decimals: 9, category: "crypto" },
   { symbol: "LST", name: "Liquid Staking Token", mint: "LSTxxxnJzKDFSLr4dUkPcmCf5VyryEqzPLz5j4bpxFp", decimals: 9, category: "crypto" },
 
+  // PiggyBank (yield-bearing)
+  { symbol: "pbUSDC", name: "PiggyBank USDC", mint: "F35yYmTR6PqkbTx449P1eGhB57mRhWAdYs93eCo2dMZR", decimals: 6, category: "crypto" },
+  { symbol: "pbSPYx", name: "PiggyBank SPYx", mint: "E65CoK961Rs5LzKhGZxbKsB7xpFhYhXogH8nhr8zamTK", decimals: 8, category: "index" },
+
   // Memecoins (from aliases)
   { symbol: "Bonk", name: "Bonk", mint: "DezXAZ8z7PnrnRJjz3wXBoRgixCa6xjnB7YaB1pPB263", decimals: 5, category: "crypto" },
   { symbol: "WIF", name: "dogwifhat", mint: "EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm", decimals: 6, category: "crypto" },

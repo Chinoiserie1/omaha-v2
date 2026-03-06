@@ -36,6 +36,7 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 | `docs/backtest.md`                                     | Backtest pipeline, snapshot lifecycle (cold start → retroactive weekly snapshots → incremental) | `thesis.service.ts`, `backtest.service.ts`                                                                       |
 | [`docs/flow/FUND-SOL.md`](../../docs/flow/FUND-SOL.md) | USDC → SOL swap flow for transaction fees: API, services, tx builder, mobile UI                 | `fund-sol.service.ts`, `fund-sol-tx.builder.ts`, `solana/config.ts`, native fund-sol components                  |
 | `docs/STATE-OF-RWA-ON-SOL.md`                          | Tokenized stocks on Solana: xStocks vs Ondo, tradability, liquidity, why Ondo is disabled       | `curated-assets.ts`, `seed-stock-tokens.ts`, `rebalancer.service.ts`                                             |
+| `docs/JUPITER-API.md`                                  | Jupiter API endpoints, auth, token providers (xStocks vs Ondo), tradability rules, liquidity    | `jupiter-swap.service.ts`, `jupiter.service.ts`, `compare-liquidity.ts`, `rebalancer.service.ts`                 |
 
 ## Tech Stack
 
