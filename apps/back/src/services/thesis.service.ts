@@ -5,11 +5,14 @@ import { extractJson } from "../utils/extract-json.js";
 import {
   PortfolioOutputSchema,
   buildThesisSystemPrompt,
+  KolKnowledgeSchema,
   type Allocation,
+  type KolKnowledge,
 } from "@repo/shared";
 import * as portfolioRepo from "../store/portfolio.repository.js";
 import * as classificationRepo from "../store/classification.repository.js";
-import { findActiveKols } from "../store/kol.repository.js";
+import { findActiveKols, findKolById } from "../store/kol.repository.js";
+import { buildGlobalKnowledgeContext } from "../data/knowledge/index.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
 import { getCuratedAssetSymbols } from "../data/curated-assets.js";
 import { readFileSync } from "node:fs";
@@ -114,6 +117,21 @@ function formatClassificationsWithThreads(
 }
 
 // ---------------------------------------------------------------------------
+// KOL knowledge formatting
+// ---------------------------------------------------------------------------
+
+function formatKolKnowledge(knowledge: KolKnowledge): string {
+  const parts: string[] = [];
+  if (knowledge.investmentStyle) {
+    parts.push(`KOL INVESTMENT STYLE: ${knowledge.investmentStyle}`);
+  }
+  if (knowledge.notes && knowledge.notes.length > 0) {
+    parts.push(`KOL-SPECIFIC NOTES:\n${knowledge.notes.map((n) => `- ${n}`).join("\n")}`);
+  }
+  return parts.join("\n\n");
+}
+
+// ---------------------------------------------------------------------------
 // Single snapshot synthesis (extracted for reuse by both incremental & retroactive paths)
 // ---------------------------------------------------------------------------
 
@@ -124,16 +142,17 @@ interface SingleSnapshotInput {
   previousSnapshot: PortfolioSnapshot | null;
   createdAt?: Date;
   decayReferenceDate?: Date;
+  knowledgeContext?: string;
 }
 
 async function synthesizeSingleSnapshot(
   input: SingleSnapshotInput,
   tradeableAssets: Map<string, { mint: string; decimals: number }>
 ): Promise<{ snapshot: PortfolioSnapshot; allocations: Allocation[] } | null> {
-  const { kolId, userContent, sourceTweetIds, previousSnapshot, createdAt, decayReferenceDate } = input;
+  const { kolId, userContent, sourceTweetIds, previousSnapshot, createdAt, decayReferenceDate, knowledgeContext } = input;
 
   const availableSymbols = getCuratedAssetSymbols();
-  const thesisPrompt = buildThesisSystemPrompt(availableSymbols);
+  const thesisPrompt = buildThesisSystemPrompt(availableSymbols, knowledgeContext);
 
   logger.info({ kolId, availableAssetsCount: availableSymbols.length }, "Sending thesis prompt to LLM");
 
@@ -297,7 +316,8 @@ type ClassificationWithTweet = Awaited<
 
 async function generateRetroactiveSnapshots(
   kolId: string,
-  allRelevant: ClassificationWithTweet[]
+  allRelevant: ClassificationWithTweet[],
+  knowledgeContext?: string,
 ): Promise<boolean> {
   const tradeableAssets = await getTradeableAssetsMap();
 
@@ -359,6 +379,7 @@ async function generateRetroactiveSnapshots(
         previousSnapshot,
         createdAt: window.endDate,
         decayReferenceDate: window.endDate,
+        ...(knowledgeContext ? { knowledgeContext } : {}),
       },
       tradeableAssets
     );
@@ -394,6 +415,20 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     "Starting thesis synthesis"
   );
 
+  // --- Build knowledge context ---
+  const globalKnowledge = buildGlobalKnowledgeContext();
+  const kol = await findKolById(kolId);
+  let kolKnowledge = "";
+  if (kol?.knowledge) {
+    const parsed = KolKnowledgeSchema.safeParse(kol.knowledge);
+    if (parsed.success) {
+      kolKnowledge = formatKolKnowledge(parsed.data);
+    } else {
+      logger.warn({ kolId, errors: parsed.error.issues }, "Invalid KOL knowledge JSON, ignoring");
+    }
+  }
+  const knowledgeContext = [globalKnowledge, kolKnowledge].filter(Boolean).join("\n\n");
+
   // --- Retroactive backfill: check for tweets older than earliest snapshot ---
   const earliestSnapshot = await portfolioRepo.findEarliestSnapshot(kolId);
   const allRelevant = await classificationRepo.findRelevantClassificationsSince(kolId, new Date(0));
@@ -407,7 +442,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
     if (!earliestSnapshot) {
       // Cold start: no snapshots at all → full retroactive generation
       logger.info({ kolId }, "Cold start — generating retroactive weekly snapshots");
-      return generateRetroactiveSnapshots(kolId, allRelevant);
+      return generateRetroactiveSnapshots(kolId, allRelevant, knowledgeContext);
     }
 
     if (oldestTweetDate < earliestSnapshot.createdAt) {
@@ -423,7 +458,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
         },
         "Gap detected — backfilling retroactive snapshots before earliest existing snapshot"
       );
-      await generateRetroactiveSnapshots(kolId, tweetsBeforeEarliest);
+      await generateRetroactiveSnapshots(kolId, tweetsBeforeEarliest, knowledgeContext);
       // Fall through to incremental path for new tweets
     }
   }
@@ -454,7 +489,7 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
   const userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
 
   const result = await synthesizeSingleSnapshot(
-    { kolId, userContent, sourceTweetIds, previousSnapshot: currentLatest },
+    { kolId, userContent, sourceTweetIds, previousSnapshot: currentLatest, knowledgeContext },
     tradeableAssets
   );
 
