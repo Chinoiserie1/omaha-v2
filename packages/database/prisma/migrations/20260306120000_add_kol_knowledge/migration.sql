@@ -1,2 +1,2 @@
 -- AlterTable
-ALTER TABLE "Kol" ADD COLUMN "knowledge" JSONB;
+ALTER TABLE "Quant" ADD COLUMN "knowledge" JSONB;
