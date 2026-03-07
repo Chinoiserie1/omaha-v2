@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as kolRepo from "../../../store/kol.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
+import * as classificationRepo from "../../../store/classification.repository.js";
 import { classifyUnclassifiedTweets } from "../../../services/classifier.service.js";
 import { synthesizeThesis } from "../../../services/thesis.service.js";
 
@@ -18,13 +19,15 @@ export async function instantRunAlgo(
 
   const force = request.query.force === "true";
   let deletedSnapshots = 0;
+  let deletedClassifications = 0;
 
   if (force) {
+    deletedClassifications = await classificationRepo.deleteAllClassifications(kol.id);
     deletedSnapshots = await portfolioRepo.deleteAllSnapshots(kol.id);
   }
 
   const classified = await classifyUnclassifiedTweets(kol.id);
   const didUpdate = await synthesizeThesis(kol.id);
 
-  return { kolId: kol.id, username: kol.username, classified, didUpdate, force, deletedSnapshots };
+  return { kolId: kol.id, username: kol.username, classified, didUpdate, force, deletedSnapshots, deletedClassifications };
 }
