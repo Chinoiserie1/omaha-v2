@@ -10,6 +10,7 @@ interface ProfileData {
   profileImageUrl: string | null;
   followersCount: number;
   followingCount: number;
+  quantId: string | null;
 }
 
 interface SyncTwitterData {

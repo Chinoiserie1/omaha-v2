@@ -14,8 +14,10 @@ import { contentRoutes } from "./routes/content/index.js";
 import { withdrawalRoutes } from "./routes/withdrawals/index.js";
 import { swapRoutes } from "./routes/swap/index.js";
 import { exploreRoutes } from "./routes/explore/index.js";
+import { chatRoutes } from "./routes/chat/index.js";
 import { cronPlugin } from "./cron/index.js";
 import { registerWebSocket } from "./infra/websocket.js";
+import { registerChatWebSocket } from "./infra/chat-websocket.js";
 import { connectRedis, closeRedis } from "./infra/redis.js";
 import {
   startWithdrawalWorker,
@@ -67,11 +69,15 @@ export async function buildApp() {
   // Explore routes
   await app.register(exploreRoutes, { prefix: "/api/explore" });
 
+  // Chat routes
+  await app.register(chatRoutes, { prefix: "/api/chat" });
+
   // Withdrawal routes (queued)
   await app.register(withdrawalRoutes, { prefix: "/api/withdrawals" });
 
   // WebSocket for real-time withdrawal updates
   await registerWebSocket(app);
+  await registerChatWebSocket(app);
 
   // Redis + BullMQ withdrawal worker
   const redisConnected = await connectRedis();

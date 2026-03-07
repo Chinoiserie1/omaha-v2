@@ -7,13 +7,14 @@ type ProfileResponse = User & FollowCounts;
 export async function getMyProfile(
   request: FastifyRequest,
   reply: FastifyReply
-): Promise<ApiResponse<ProfileResponse> | ApiResponse<never>> {
+): Promise<ApiResponse<ProfileResponse & { quantId: string | null }> | ApiResponse<never>> {
   const user = await prisma.user.findUnique({
     where: { privyId: request.privyUserId },
     include: {
       _count: {
         select: { followers: true, following: true },
       },
+      quant: { select: { id: true } },
     },
   });
 
@@ -24,7 +25,7 @@ export async function getMyProfile(
     } satisfies ApiResponse<never>);
   }
 
-  const { _count, ...userData } = user;
+  const { _count, quant, ...userData } = user;
 
   return {
     success: true,
@@ -32,6 +33,7 @@ export async function getMyProfile(
       ...userData,
       followersCount: _count.followers,
       followingCount: _count.following,
+      quantId: quant?.id ?? null,
     },
-  } satisfies ApiResponse<ProfileResponse>;
+  } satisfies ApiResponse<ProfileResponse & { quantId: string | null }>;
 }
