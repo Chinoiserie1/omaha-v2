@@ -195,3 +195,12 @@ export async function findStuckProcessing(
     where: { status: "PROCESSING", processingAt: { lt: cutoff } },
   });
 }
+
+export async function findStuckClaimable(
+  olderThanMs: number,
+): Promise<WithdrawalRequest[]> {
+  const cutoff = new Date(Date.now() - olderThanMs);
+  return prisma.withdrawalRequest.findMany({
+    where: { status: "CLAIMABLE", claimableAt: { lt: cutoff } },
+  });
+}

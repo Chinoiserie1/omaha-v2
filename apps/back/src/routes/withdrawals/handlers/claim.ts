@@ -3,6 +3,7 @@ import { prisma } from "@repo/database";
 import { claimWithdrawalSchema, type ApiResponse } from "@repo/shared";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import { buildClaimTransaction } from "../../../services/withdrawal-claim.service.js";
+import { notifyUser } from "../../../infra/websocket.js";
 import { logger } from "../../../utils/logger.js";
 
 type ClaimRequest = FastifyRequest<{
@@ -54,8 +55,27 @@ export async function claimWithdrawal(
       bodyResult.data.signerPublicKey,
     );
 
+    if (result.kind === "already_claimed") {
+      logger.info({ withdrawalId }, "Claim already consumed on-chain, auto-recovered");
+      notifyUser(user.id, "withdrawal:status", {
+        withdrawalId,
+        status: "CLAIMED",
+        timestamp: new Date().toISOString(),
+      });
+      return {
+        success: true,
+        data: { withdrawalId, status: "CLAIMED", alreadyClaimed: true },
+      };
+    }
+
     logger.info({ withdrawalId }, "Claim transaction built successfully");
-    return { success: true, data: result };
+    return {
+      success: true,
+      data: {
+        transaction: result.transaction,
+        withdrawalId: result.withdrawalId,
+      },
+    };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(

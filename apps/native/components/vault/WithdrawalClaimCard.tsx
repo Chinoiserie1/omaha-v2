@@ -30,6 +30,15 @@ export function WithdrawalClaimCard({ withdrawal }: WithdrawalClaimCardProps) {
           }),
       });
 
+      if (signature === "already_claimed") {
+        Toast.show({
+          type: "success",
+          text1: "Withdrawal Already Completed",
+          text2: "Your funds have been claimed successfully",
+        });
+        return;
+      }
+
       Toast.show({
         type: "success",
         text1: "Claim Successful",

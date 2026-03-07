@@ -15,10 +15,9 @@ interface ClaimWithdrawalParams {
   ) => Promise<{ signature: string }>;
 }
 
-interface ClaimResponse {
-  transaction: string;
-  withdrawalId: string;
-}
+type ClaimResponse =
+  | { transaction: string; withdrawalId: string; alreadyClaimed?: never }
+  | { withdrawalId: string; status: string; alreadyClaimed: true; transaction?: never };
 
 export function useClaimWithdrawal() {
   const queryClient = useQueryClient();
@@ -30,11 +29,17 @@ export function useClaimWithdrawal() {
       signAndSend,
     }: ClaimWithdrawalParams): Promise<string> => {
       // Step 1: Get unsigned claim tx from backend
-      const { transaction: txBase64 } =
-        await apiClient.post<ClaimResponse>(
-          `/api/withdrawals/${withdrawalId}/claim`,
-          { signerPublicKey },
-        );
+      const response = await apiClient.post<ClaimResponse>(
+        `/api/withdrawals/${withdrawalId}/claim`,
+        { signerPublicKey },
+      );
+
+      // Backend auto-recovered: claim was already consumed on-chain
+      if (response.alreadyClaimed) {
+        return "already_claimed";
+      }
+
+      const txBase64 = response.transaction;
 
       // Step 2: Deserialize
       const transaction = Transaction.from(Buffer.from(txBase64, "base64"));
