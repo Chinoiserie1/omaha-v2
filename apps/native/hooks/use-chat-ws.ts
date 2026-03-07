@@ -1,16 +1,6 @@
 import { useEffect, useRef, useCallback, useState } from "react";
 import { usePrivy } from "@privy-io/expo";
-
-const WS_BASE = __DEV__
-  ? (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001").replace(
-      "http",
-      "ws",
-    )
-  : (
-      process.env.EXPO_PUBLIC_API_URL_PROD ??
-      process.env.EXPO_PUBLIC_API_URL ??
-      "http://localhost:4001"
-    ).replace("http", "ws");
+import { WS_BASE } from "../lib/api-url";
 
 const RECONNECT_DELAY = 5_000;
 

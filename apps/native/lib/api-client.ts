@@ -1,6 +1,4 @@
-const BASE_URL = __DEV__
-  ? (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001")
-  : (process.env.EXPO_PUBLIC_API_URL_PROD ?? process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:4001");
+import { BASE_URL } from "./api-url";
 
 export class ApiError extends Error {
   constructor(
