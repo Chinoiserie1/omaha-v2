@@ -13,6 +13,7 @@ import * as portfolioRepo from "../store/portfolio.repository.js";
 import * as classificationRepo from "../store/classification.repository.js";
 import { findActiveKols, findKolById } from "../store/kol.repository.js";
 import { buildGlobalKnowledgeContext } from "../data/knowledge/index.js";
+import { mergeAssetGroupAllocations } from "../data/knowledge/asset-groups.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
 import { getCuratedAssetSymbols } from "../data/curated-assets.js";
 import { readFileSync } from "node:fs";
@@ -206,6 +207,16 @@ async function synthesizeSingleSnapshot(
   // Normalize LLM output symbols via aliases (e.g. BTC → cbBTC)
   for (const alloc of portfolio.allocations) {
     alloc.asset = normalizeAsset(alloc.asset);
+  }
+
+  // Merge same-group allocations (e.g. SOL + JitoSOL → JitoSOL)
+  const beforeCount = portfolio.allocations.length;
+  portfolio.allocations = mergeAssetGroupAllocations(portfolio.allocations as unknown as Allocation[]);
+  if (portfolio.allocations.length < beforeCount) {
+    logger.info(
+      { kolId, before: beforeCount, after: portfolio.allocations.length },
+      "Merged same-group allocations"
+    );
   }
 
   // Resolve mints from tradeable assets map

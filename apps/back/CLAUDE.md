@@ -37,6 +37,8 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 | [`docs/flow/FUND-SOL.md`](../../docs/flow/FUND-SOL.md) | USDC → SOL swap flow for transaction fees: API, services, tx builder, mobile UI                 | `fund-sol.service.ts`, `fund-sol-tx.builder.ts`, `solana/config.ts`, native fund-sol components                  |
 | `docs/STATE-OF-RWA-ON-SOL.md`                          | Tokenized stocks on Solana: xStocks vs Ondo, tradability, liquidity, why Ondo is disabled       | `curated-assets.ts`, `seed-stock-tokens.ts`, `rebalancer.service.ts`                                             |
 | `docs/JUPITER-API.md`                                  | Jupiter API endpoints, auth, token providers (xStocks vs Ondo), tradability rules, liquidity    | `jupiter-swap.service.ts`, `jupiter.service.ts`, `compare-liquidity.ts`, `rebalancer.service.ts`                 |
+| `docs/LST-HANDLING.md`                                 | LST equivalence groups, double-counting prevention, synthesis pipeline steps                    | `asset-groups.ts`, `thesis.service.ts`                                                                           |
+| `docs/Quant_thesis_algo.md`                            | Algorithm design intent: why LLM, rolling thesis model, classification schema, conviction decay | `classifier.service.ts`, `thesis.service.ts`, `backtest.service.ts`                                              |
 
 ## Tech Stack
 

@@ -39,6 +39,41 @@ JitoSOL: 15%
 
 This is injected into the thesis prompt via `buildGlobalKnowledgeContext()`.
 
+## Code-Level Enforcement
+
+The prompt-only approach is not 100% reliable — the LLM sometimes still returns multiple allocations from the same group. `mergeAssetGroupAllocations()` in `asset-groups.ts` enforces the rule in code.
+
+### `synthesizeSingleSnapshot` pipeline steps
+
+1. Build prompt (curated assets + knowledge context)
+2. LLM call
+3. JSON extraction
+4. Schema validation (`PortfolioOutputSchema`)
+5. Sum check (95-105%)
+6. Alias normalization (`normalizeAsset`)
+7. **Asset group merge** (`mergeAssetGroupAllocations`) — NEW
+8. Mint resolution (tradeable assets map)
+9. Conviction decay
+10. Save snapshot
+
+### How `mergeAssetGroupAllocations()` works
+
+For each asset group with >1 allocation in the LLM output:
+
+- **Winner asset**: prefer non-default member (e.g. JitoSOL over SOL). If multiple non-default, pick highest percentage.
+- **percentage**: sum of all members in the group
+- **conviction**: highest across members (`high > medium > low > stale`)
+- **since**: earliest date
+- **lastSignal**: latest date
+- **reasoning**: winner's reasoning + `(merged with SOL 35%)`
+
+### Example
+
+```
+LLM returns: SOL 35%, JitoSOL 15%
+After merge:  JitoSOL 50% (reasoning includes "merged with SOL 35%")
+```
+
 ## Adding a New LST
 
 1. Add to `curated-assets.ts` (symbol, mint, decimals, category: "crypto")
