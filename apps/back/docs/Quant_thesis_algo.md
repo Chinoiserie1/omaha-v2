@@ -340,10 +340,78 @@ Multiple snapshots on the same day are deduplicated — the last snapshot of the
 
 ---
 
+## 11. Direct Allocation Override
+
+### The problem: some quants share exact portfolios
+
+When a quant explicitly shares their portfolio breakdown (e.g. "jitoSOL 68%, pbUSDC 12%, USDC 10%, BTC 8%, JUP 2%"), the LLM synthesis pipeline is unnecessary — we already know the exact allocation. Running it through the LLM would only risk distortion.
+
+### How it works
+
+The `KolKnowledge` schema has three fields for this:
+
+```typescript
+useDirectAllocations: boolean    // toggle — must be true to activate
+directAllocations: [             // the actual portfolio
+  { asset: "jitoSOL", percentage: 68 },
+  { asset: "USDC", percentage: 10 },
+  ...
+]
+directAllocationsSetAt: string   // auto-set on PATCH, informational
+```
+
+When `useDirectAllocations === true` and allocations are present, `synthesizeThesis()` calls `buildDirectAllocationSnapshot()` instead of the LLM pipeline. This function:
+
+1. Normalizes symbols via `normalizeAsset()` (same alias resolution as LLM path)
+2. Merges same-group assets via `mergeAssetGroupAllocations()` (e.g. SOL + JitoSOL → JitoSOL)
+3. Resolves mints from the tradeable assets map
+4. Saves a snapshot with conviction `"high"` for all positions
+5. No conviction decay is applied (the quant actively chose these weights)
+
+### Behavior matrix
+
+| `useDirectAllocations` | `directAllocations` present | Result |
+|---|---|---|
+| `true` | Yes | Direct snapshot, no LLM |
+| `false` or absent | Yes | Normal LLM path (data is ignored) |
+| `true` | No/empty | Normal LLM path (nothing to use) |
+| `false` or absent | No | Normal LLM path |
+
+### Usage
+
+```bash
+# Set direct allocations via PATCH
+curl -X PATCH /api/kols/<kolId>/knowledge -d '{
+  "useDirectAllocations": true,
+  "directAllocations": [
+    { "asset": "jitoSOL", "percentage": 68 },
+    { "asset": "pbUSDC", "percentage": 12 },
+    { "asset": "USDC", "percentage": 10 },
+    { "asset": "BTC", "percentage": 8 },
+    { "asset": "JUP", "percentage": 2 }
+  ]
+}'
+
+# Disable (reverts to LLM path on next cron run)
+curl -X PATCH /api/kols/<kolId>/knowledge -d '{
+  "useDirectAllocations": false
+}'
+```
+
+### Important notes
+
+- **Don't use `force=true`** with direct allocations — it deletes all historical snapshots and you lose performance history. Just PATCH the allocations and let the next cron run pick them up.
+- **Allocations must sum to ~100%** (95–105% tolerance, enforced by Zod schema).
+- **`directAllocationsSetAt`** is auto-set when you PATCH `directAllocations` (unless you provide it explicitly). Informational only — used by the mobile UI to show when allocations were last set.
+- Every cron run creates a new snapshot even if allocations haven't changed. This is correct — it generates chart data points.
+
+---
+
 ## Appendix: Key Files
 
 | File | Responsibility |
 |------|---------------|
+| `packages/shared/src/schemas/kol-knowledge.schema.ts` | KOL knowledge schema (incl. direct allocations) |
 | `packages/shared/src/schemas/classification.schema.ts` | Classification + synthesis prompts, Zod schemas |
 | `packages/shared/src/schemas/portfolio.schema.ts` | Portfolio output schema (with `stale` conviction) |
 | `apps/back/src/services/classifier.service.ts` | Tweet classification pipeline (Call 1) |

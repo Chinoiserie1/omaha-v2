@@ -133,6 +133,53 @@ function formatKolKnowledge(knowledge: KolKnowledge): string {
 }
 
 // ---------------------------------------------------------------------------
+// Direct allocation snapshot (bypasses LLM entirely)
+// ---------------------------------------------------------------------------
+
+async function buildDirectAllocationSnapshot(
+  kolId: string,
+  directAllocations: { asset: string; percentage: number }[],
+  tradeableAssets: Map<string, { mint: string; decimals: number }>,
+): Promise<boolean> {
+  const now = new Date().toISOString();
+
+  // Normalize symbols and build Allocation objects
+  let allocations: Allocation[] = directAllocations.map((da) => ({
+    asset: normalizeAsset(da.asset),
+    percentage: da.percentage,
+    conviction: "high" as const,
+    reasoning: "Direct allocation from quant",
+    since: now,
+    lastSignal: now,
+  }));
+
+  // Merge same-group allocations (e.g. SOL + JitoSOL → JitoSOL)
+  allocations = mergeAssetGroupAllocations(allocations);
+
+  // Resolve mints
+  for (const alloc of allocations) {
+    if (alloc.asset === "USDC") continue;
+    const info = tradeableAssets.get(alloc.asset);
+    if (!info) {
+      logger.warn({ kolId, asset: alloc.asset }, "Direct allocation asset not tradeable, skipping mint");
+      continue;
+    }
+    alloc.mint = info.mint;
+  }
+
+  await portfolioRepo.createSnapshot({
+    kolId,
+    thesisSummary: "Portfolio directly specified by quant.",
+    allocations: allocations as unknown as Prisma.InputJsonValue,
+    changes: ["Direct allocation override"],
+    sourceTweetIds: [],
+  });
+
+  logger.info({ kolId, allocations: allocations.length }, "Direct allocation snapshot saved");
+  return true;
+}
+
+// ---------------------------------------------------------------------------
 // Single snapshot synthesis (extracted for reuse by both incremental & retroactive paths)
 // ---------------------------------------------------------------------------
 
@@ -433,6 +480,11 @@ export async function synthesizeThesis(kolId: string): Promise<boolean> {
   if (kol?.knowledge) {
     const parsed = KolKnowledgeSchema.safeParse(kol.knowledge);
     if (parsed.success) {
+      // --- Direct allocation override: skip all LLM logic ---
+      if (parsed.data.useDirectAllocations && parsed.data.directAllocations?.length) {
+        logger.info({ kolId, allocations: parsed.data.directAllocations.length }, "Using direct allocations (bypassing LLM)");
+        return buildDirectAllocationSnapshot(kolId, parsed.data.directAllocations, tradeableAssets);
+      }
       kolKnowledge = formatKolKnowledge(parsed.data);
     } else {
       logger.warn({ kolId, errors: parsed.error.issues }, "Invalid KOL knowledge JSON, ignoring");

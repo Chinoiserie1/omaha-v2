@@ -21,6 +21,11 @@ export async function updateKolKnowledge(
   const kol = await kolRepo.findKolById(request.params.kolId);
   if (!kol) return reply.status(404).send({ success: false, error: "KOL not found" });
 
-  const updated = await kolRepo.updateKolKnowledge(kol.id, parsed.data);
+  const knowledge = parsed.data;
+  if (knowledge.directAllocations && !knowledge.directAllocationsSetAt) {
+    knowledge.directAllocationsSetAt = new Date().toISOString();
+  }
+
+  const updated = await kolRepo.updateKolKnowledge(kol.id, knowledge);
   return { success: true, data: { id: updated.id, username: updated.username, knowledge: updated.knowledge } };
 }

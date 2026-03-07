@@ -103,6 +103,8 @@ For each active KOL:
   12. Compute backtest performance (non-fatal)
 ```
 
+**Direct allocation override**: If `useDirectAllocations: true` is set in the KOL's knowledge (via `PATCH /api/kols/:kolId/knowledge`), step 3 is replaced entirely — allocations are taken directly from the knowledge JSON, no LLM call is made. See `Quant_thesis_algo.md` § 11.
+
 **Key detail**: The thesis is ROLLING — it persists until contradicted. No sliding time window. The LLM carries forward the previous thesis and only modifies based on new evidence.
 
 **Cost**: ~$1.50/month (Haiku) for 10-17 KOLs at current tweet volume.

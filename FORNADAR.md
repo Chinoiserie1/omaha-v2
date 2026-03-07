@@ -295,6 +295,20 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 
 **Files**: `packages/database/prisma/schema.prisma` (migration), `apps/back/src/scripts/sync-token-icons.ts` (new script), `turbo.json` + `package.json` (script registration)
 
+### Direct Allocation Override (Mar 2026)
+
+**Problem**: Some quants share their exact portfolio breakdown (e.g. "jitoSOL 68%, pbUSDC 12%, USDC 10%, BTC 8%, JUP 2%"). Running this through the LLM thesis pipeline would only risk distortion — we already know the exact allocation.
+
+**Fix**: Added a direct allocation path that bypasses all LLM logic:
+
+1. **Schema** (`packages/shared/src/schemas/kol-knowledge.schema.ts`): Added `useDirectAllocations` (boolean toggle), `directAllocations` (array of `{ asset, percentage }`, validated to sum ~100%), and `directAllocationsSetAt` (auto-timestamped on PATCH).
+
+2. **Thesis service** (`apps/back/src/services/thesis.service.ts`): New `buildDirectAllocationSnapshot()` function normalizes symbols, merges asset groups, resolves mints, and saves a snapshot with all-high conviction. Early return in `synthesizeThesis()` when toggle is active — skips classification, LLM calls, retroactive backfill, and conviction decay entirely.
+
+3. **PATCH handler** (`apps/back/src/routes/kols/handlers/update-knowledge.ts`): Auto-sets `directAllocationsSetAt` when `directAllocations` is provided.
+
+**Behavior**: Toggle-driven — `useDirectAllocations: false` (or absent) reverts to normal LLM path even if allocation data exists. Every cron run creates a new snapshot for chart continuity.
+
 ### Twitter API: profile-conversation Author Investigation (Mar 2026)
 
 **Investigation**: Analyzed `profile-conversation` entries from `user-tweets` API to understand tweet authorship. Found that `legacy.screen_name` is **null** in this API — screen name lives at `core.user_results.result.core.screen_name`, which `TweetResultSchema` does not parse. Only `legacy.user_id_str` is available for author identification.
