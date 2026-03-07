@@ -79,17 +79,26 @@ function buildProbes(): Array<{ name: string; fn: () => Promise<{ status?: numbe
     },
   });
 
-  // Anthropic
+  // Anthropic (real LLM call — /v1/models succeeds even with zero credits)
   probes.push({
     name: "Anthropic",
     fn: async () => {
-      const resp = await axios.get("https://api.anthropic.com/v1/models", {
-        headers: {
-          "x-api-key": env.ANTHROPIC_API_KEY,
-          "anthropic-version": "2023-06-01",
+      const resp = await axios.post(
+        "https://api.anthropic.com/v1/messages",
+        {
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 1,
+          messages: [{ role: "user", content: "hi" }],
         },
-        timeout: PROBE_TIMEOUT_MS,
-      });
+        {
+          headers: {
+            "x-api-key": env.ANTHROPIC_API_KEY,
+            "anthropic-version": "2023-06-01",
+            "content-type": "application/json",
+          },
+          timeout: PROBE_TIMEOUT_MS,
+        },
+      );
       return { status: resp.status };
     },
   });

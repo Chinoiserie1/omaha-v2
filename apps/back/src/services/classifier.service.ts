@@ -2,6 +2,7 @@ import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { logger } from "../utils/logger.js";
+import { alertOnError } from "../utils/alert.js";
 import { llmComplete } from "../utils/llm.js";
 import { extractJson } from "../utils/extract-json.js";
 import {
@@ -183,5 +184,13 @@ export async function classifyUnclassifiedTweets(
     { kolId, totalClassified, relevant: relevantCount, noise: noiseCount },
     "Classification complete"
   );
+
+  if (totalClassified === 0 && units.length > 0) {
+    await alertOnError(
+      "classifier:llm-failure",
+      new Error(`0/${units.length} units classified for ${kolId} — LLM may be down or credits exhausted`),
+    );
+  }
+
   return totalClassified;
 }
