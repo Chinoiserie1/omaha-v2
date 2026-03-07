@@ -15,6 +15,7 @@ function formatVaultSummary(
     glamVaultPda: string | null;
     mintAddress: string | null;
     isActive: boolean;
+    about: string;
     quant?: { user?: { twitterUsername: string | null; profileImageUrl: string | null } | null } | null;
   },
   portfolio: PortfolioSnapshot | null,
@@ -23,6 +24,7 @@ function formatVaultSummary(
   return {
     id: vault.id,
     name: vault.vaultName,
+    description: vault.about,
     quantUsername: vault.quant?.user?.twitterUsername,
     quantId: vault.quantId,
     glamStatePda: vault.statePda,

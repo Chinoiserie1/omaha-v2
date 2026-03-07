@@ -17,6 +17,7 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
   return {
     id: vault.id,
     name: vault.vaultName,
+    description: vault.about,
     quantUsername: vault.quant?.user?.twitterUsername,
     quantId: vault.quantId,
     glamStatePda: vault.statePda,
