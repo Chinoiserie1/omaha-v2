@@ -30,8 +30,8 @@ export async function findEarliestSnapshot(
   });
 }
 
-export async function deleteAllSnapshots(kolId: string): Promise<number> {
-  const result = await prisma.portfolioSnapshot.deleteMany({ where: { kolId } });
+export async function deleteAllSnapshots(quantId: string): Promise<number> {
+  const result = await prisma.portfolioSnapshot.deleteMany({ where: { quantId } });
   return result.count;
 }
 

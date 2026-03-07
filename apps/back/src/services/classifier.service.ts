@@ -188,7 +188,7 @@ export async function classifyUnclassifiedTweets(
   if (totalClassified === 0 && units.length > 0) {
     await alertOnError(
       "classifier:llm-failure",
-      new Error(`0/${units.length} units classified for ${kolId} — LLM may be down or credits exhausted`),
+      new Error(`0/${units.length} units classified for ${quantId} — LLM may be down or credits exhausted`),
     );
   }
 

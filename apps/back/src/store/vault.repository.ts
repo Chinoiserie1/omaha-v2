@@ -1,5 +1,7 @@
 import { prisma } from "@repo/database";
-import type { Vault } from "@repo/database";
+import type { Vault, Quant, User } from "@repo/database";
+
+type VaultWithQuant = Vault & { quant: Quant & { user: User } };
 
 // ── Vault CRUD ──────────────────────────────────────────────────
 
@@ -55,7 +57,7 @@ export async function deactivate(id: string): Promise<Vault> {
 
 // ── Query helpers (with Quant + User relations) ─────────────────
 
-export async function findAllActiveVaults() {
+export async function findAllActiveVaults(): Promise<VaultWithQuant[]> {
   return prisma.vault.findMany({
     where: { isActive: true },
     include: { quant: { include: { user: true } } },
@@ -70,7 +72,7 @@ export async function findActiveVaultsPaginated({
   skip: number;
   take: number;
   search?: string;
-}) {
+}): Promise<{ vaults: VaultWithQuant[]; total: number }> {
   const where = {
     isActive: true,
     ...(search
@@ -104,14 +106,14 @@ export async function findActiveVaultsPaginated({
   return { vaults, total };
 }
 
-export async function findVaultById(id: string) {
+export async function findVaultById(id: string): Promise<VaultWithQuant | null> {
   return prisma.vault.findUnique({
     where: { id },
     include: { quant: { include: { user: true } } },
   });
 }
 
-export async function findVaultByQuantId(quantId: string) {
+export async function findVaultByQuantId(quantId: string): Promise<VaultWithQuant | null> {
   return prisma.vault.findUnique({
     where: { quantId },
     include: { quant: { include: { user: true } } },

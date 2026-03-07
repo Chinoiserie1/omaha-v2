@@ -50,9 +50,9 @@ export async function findClassificationsByTweetIds(tweetIds: string[]) {
   });
 }
 
-export async function deleteAllClassifications(kolId: string): Promise<number> {
+export async function deleteAllClassifications(quantId: string): Promise<number> {
   const tweetIds = await prisma.tweet.findMany({
-    where: { kolId },
+    where: { quantId },
     select: { id: true },
   });
   const result = await prisma.classifiedTweet.deleteMany({
