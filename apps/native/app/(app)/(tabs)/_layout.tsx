@@ -41,11 +41,6 @@ function IOSTabs() {
         <Label>Quant</Label>
       </NativeTabs.Trigger>
 
-      <NativeTabs.Trigger name="(explore)">
-        <Icon sf="magnifyingglass" />
-        <Label>Explore</Label>
-      </NativeTabs.Trigger>
-
       <NativeTabs.Trigger
         name="(chat)"
         role="search"
@@ -98,15 +93,6 @@ function AndroidTabs() {
           title: "Quant",
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="analytics-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="(explore)"
-        options={{
-          title: "Explore",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="search-outline" size={size} color={color} />
           ),
         }}
       />

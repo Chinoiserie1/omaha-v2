@@ -14,8 +14,106 @@ interface DemoFlowProps {
   onClose: () => void;
 }
 
-// ─── Screen 1 — Become a Quant ──────────────────────────────
-// Mirrors: apps/native/components/quant/NotQuantState.tsx
+// ─── Screen 1 — Profile (User only) ─────────────────────────
+// Mirrors: apps/native/app/(app)/(tabs)/(profile)/index.tsx
+
+function ScreenUserProfile() {
+  return (
+    <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+      {/* PortfolioHeader */}
+      <View className="items-center mt-6 mb-4">
+        <View
+          className="items-center justify-center rounded-full"
+          style={{
+            width: 84,
+            height: 84,
+            backgroundColor: "#1E293B",
+            borderWidth: 2,
+            borderColor: "rgba(59,130,246,0.5)",
+          }}
+        >
+          <Text style={{ color: "#94A3B8", fontSize: 28, fontWeight: "700" }}>
+            NA
+          </Text>
+        </View>
+        <Text className="text-xl font-bold text-white mt-3">Nadar</Text>
+        <Text className="text-sm text-slate-400">@nadar_eth</Text>
+      </View>
+
+      {/* NetWorthDisplay */}
+      <View className="items-center mb-4">
+        <Text className="text-4xl font-bold text-white">$2,340.00</Text>
+        <Text className="text-sm font-semibold text-green-400 mt-1">
+          +$42.50 (1.8%)
+        </Text>
+      </View>
+
+      {/* UsdcBalanceLabel */}
+      <Text className="text-xs text-slate-400 text-center mb-3">
+        540.00 USDC available
+      </Text>
+
+      {/* GasGaugeBar */}
+      <View
+        className="p-4 rounded-2xl mb-4"
+        style={{ backgroundColor: "#1E293B" }}
+      >
+        <View className="flex-row justify-between mb-2">
+          <Text className="text-xs font-semibold tracking-wider text-slate-500">
+            SOL BALANCE
+          </Text>
+          <Text className="text-xs text-slate-400">Gas fees</Text>
+        </View>
+        <View className="flex-row items-end justify-between">
+          <Text className="text-lg font-bold text-white">0.52 SOL</Text>
+          <View
+            className="h-2 w-24 rounded-full"
+            style={{ backgroundColor: "#0F172A" }}
+          >
+            <View
+              className="h-2 rounded-full"
+              style={{ width: "60%", backgroundColor: "#14B8A6" }}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* QuickActions */}
+      <View className="flex-row gap-3 mb-6">
+        <View
+          className="flex-1 items-center py-3 rounded-xl"
+          style={{ backgroundColor: "#1E293B" }}
+        >
+          <Ionicons name="arrow-down" size={18} color="#F8FAFC" />
+          <Text className="text-xs font-medium text-white mt-1">Deposit</Text>
+        </View>
+        <View
+          className="flex-1 items-center py-3 rounded-xl"
+          style={{ backgroundColor: "#1E293B" }}
+        >
+          <Ionicons name="arrow-up" size={18} color="#F8FAFC" />
+          <Text className="text-xs font-medium text-white mt-1">Withdraw</Text>
+        </View>
+      </View>
+
+      {/* ActiveThesisList (empty) */}
+      <Text className="text-xs font-semibold tracking-widest text-slate-500 mb-3">
+        ACTIVE THESES
+      </Text>
+      <View
+        className="items-center py-8 rounded-2xl"
+        style={{ backgroundColor: "#1E293B" }}
+      >
+        <Text className="text-sm text-slate-500">No investments yet</Text>
+      </View>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  );
+}
+
+// ─── Screen 2 — Become a Quant ──────────────────────────────
+// Mirrors: apps/native/components/chat/BecomeQuantScreen.tsx
 
 function ScreenBecomeQuant() {
   const [pressed, setPressed] = useState(false);
@@ -71,7 +169,133 @@ function ScreenBecomeQuant() {
   );
 }
 
-// ─── Screen 2 — No Strategy (Quant with no strategy yet) ────
+// ─── Screen 3 — Profile (User + Quant) ──────────────────────
+// Same profile screen but now with Quant badge visible
+
+function ScreenQuantProfile() {
+  return (
+    <ScrollView className="flex-1 px-5" showsVerticalScrollIndicator={false}>
+      {/* PortfolioHeader — now with Quant badge */}
+      <View className="items-center mt-6 mb-4">
+        <View>
+          <View
+            className="items-center justify-center rounded-full"
+            style={{
+              width: 84,
+              height: 84,
+              backgroundColor: "#1E293B",
+              borderWidth: 2,
+              borderColor: "rgba(20,184,166,0.5)",
+            }}
+          >
+            <Text
+              style={{ color: "#14B8A6", fontSize: 28, fontWeight: "700" }}
+            >
+              NA
+            </Text>
+          </View>
+          <View
+            className="absolute -bottom-1 -right-1 items-center justify-center rounded-full"
+            style={{
+              width: 28,
+              height: 28,
+              backgroundColor: "#A855F7",
+              borderWidth: 2,
+              borderColor: "#0F172A",
+            }}
+          >
+            <Ionicons name="sparkles" size={14} color="#FFF" />
+          </View>
+        </View>
+        <Text className="text-xl font-bold text-white mt-3">Nadar</Text>
+        <Text className="text-sm text-slate-400">@nadar_eth</Text>
+        <View
+          className="flex-row items-center mt-2 rounded-full px-3 py-1"
+          style={{ backgroundColor: "rgba(20,184,166,0.15)" }}
+        >
+          <Ionicons name="sparkles" size={12} color="#14B8A6" />
+          <Text
+            className="text-xs font-semibold ml-1"
+            style={{ color: "#14B8A6" }}
+          >
+            Quant
+          </Text>
+        </View>
+      </View>
+
+      {/* NetWorthDisplay */}
+      <View className="items-center mb-4">
+        <Text className="text-4xl font-bold text-white">$2,340.00</Text>
+        <Text className="text-sm font-semibold text-green-400 mt-1">
+          +$42.50 (1.8%)
+        </Text>
+      </View>
+
+      {/* UsdcBalanceLabel */}
+      <Text className="text-xs text-slate-400 text-center mb-3">
+        540.00 USDC available
+      </Text>
+
+      {/* GasGaugeBar */}
+      <View
+        className="p-4 rounded-2xl mb-4"
+        style={{ backgroundColor: "#1E293B" }}
+      >
+        <View className="flex-row justify-between mb-2">
+          <Text className="text-xs font-semibold tracking-wider text-slate-500">
+            SOL BALANCE
+          </Text>
+          <Text className="text-xs text-slate-400">Gas fees</Text>
+        </View>
+        <View className="flex-row items-end justify-between">
+          <Text className="text-lg font-bold text-white">0.52 SOL</Text>
+          <View
+            className="h-2 w-24 rounded-full"
+            style={{ backgroundColor: "#0F172A" }}
+          >
+            <View
+              className="h-2 rounded-full"
+              style={{ width: "60%", backgroundColor: "#14B8A6" }}
+            />
+          </View>
+        </View>
+      </View>
+
+      {/* QuickActions */}
+      <View className="flex-row gap-3 mb-6">
+        <View
+          className="flex-1 items-center py-3 rounded-xl"
+          style={{ backgroundColor: "#1E293B" }}
+        >
+          <Ionicons name="arrow-down" size={18} color="#F8FAFC" />
+          <Text className="text-xs font-medium text-white mt-1">Deposit</Text>
+        </View>
+        <View
+          className="flex-1 items-center py-3 rounded-xl"
+          style={{ backgroundColor: "#1E293B" }}
+        >
+          <Ionicons name="arrow-up" size={18} color="#F8FAFC" />
+          <Text className="text-xs font-medium text-white mt-1">Withdraw</Text>
+        </View>
+      </View>
+
+      {/* ActiveThesisList (empty) */}
+      <Text className="text-xs font-semibold tracking-widest text-slate-500 mb-3">
+        ACTIVE THESES
+      </Text>
+      <View
+        className="items-center py-8 rounded-2xl"
+        style={{ backgroundColor: "#1E293B" }}
+      >
+        <Text className="text-sm text-slate-500">No investments yet</Text>
+      </View>
+
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  );
+}
+
+// ─── Screen 4 — No Strategy (Quant with no strategy yet) ────
 // Mirrors: apps/native/components/quant/NoStrategyState.tsx
 
 function ScreenNoStrategy() {
@@ -127,7 +351,7 @@ function ScreenNoStrategy() {
   );
 }
 
-// ─── Screen 3 — AI Chat (animated conversation) ─────────────
+// ─── Screen 5 — AI Chat (animated conversation) ─────────────
 // Mirrors: apps/native/components/chat/ChatScreen.tsx (ChatConversation)
 
 const CHAT_MESSAGES = [
@@ -319,7 +543,7 @@ function ScreenChat() {
   );
 }
 
-// ─── Screen 5 — Quant page (VaultDetail) ────────────────────
+// ─── Screen 6 — Quant page (VaultDetail) ────────────────────
 // Mirrors: apps/native/components/vault/VaultDetail.tsx sections
 
 function ScreenQuantPage() {
@@ -609,7 +833,7 @@ function AllocationRow({
   );
 }
 
-// ─── Screen 6 — Create Vault on-chain ───────────────────────
+// ─── Screen 7 — Create Vault on-chain ───────────────────────
 
 function ScreenVaultCreated() {
   return (
@@ -685,7 +909,9 @@ function ScreenVaultCreated() {
 // ─── Screen definitions ──────────────────────────────────────
 
 const SCREENS = [
+  { key: "user-profile", label: "Profile", component: ScreenUserProfile },
   { key: "become-quant", label: "Become a Quant", component: ScreenBecomeQuant },
+  { key: "quant-profile", label: "Quant Profile", component: ScreenQuantProfile },
   { key: "no-strategy", label: "No Strategy", component: ScreenNoStrategy },
   { key: "ai-chat", label: "Chat", component: ScreenChat },
   { key: "quant-page", label: "Quant Strategy", component: ScreenQuantPage },
