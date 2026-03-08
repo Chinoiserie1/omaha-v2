@@ -11,7 +11,6 @@ import { ChatInput } from "./ChatInput";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ChatEmptyState } from "./ChatEmptyState";
 
-
 interface ChatScreenProps {
   searchText: string;
 }
