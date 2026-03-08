@@ -6,7 +6,6 @@ import type {
   AssetSuggestion,
   ExploreTrendingResponse,
 } from "@repo/shared";
-import type { ExploreSearchResponse, AssetSuggestion } from "@repo/shared";
 
 export function useExploreSearch(asset: string) {
   return useQuery({

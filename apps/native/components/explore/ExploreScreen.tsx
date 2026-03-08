@@ -58,11 +58,6 @@ export function ExploreScreen() {
         <SignalList asset={selectedAsset} />
       ) : (
         <TrendingContent onSelectAsset={handleSelect} />
-        <View className="flex-1 items-center justify-center px-6">
-          <Text className="text-center text-base text-muted-foreground">
-            Search for an asset to see quant signals
-          </Text>
-        </View>
       )}
     </SafeAreaView>
   );
