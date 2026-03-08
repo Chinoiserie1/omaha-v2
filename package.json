@@ -67,6 +67,7 @@
       "react-native-css-interop": "0.2.2"
     },
     "patchedDependencies": {
+      "@react-navigation/bottom-tabs@7.9.0": "patches/@react-navigation__bottom-tabs@7.9.0.patch",
       "posthog-react-native-session-replay@1.4.0": "patches/posthog-react-native-session-replay@1.4.0.patch",
       "react-native-css-interop@0.2.2": "patches/react-native-css-interop@0.2.2.patch"
     }
