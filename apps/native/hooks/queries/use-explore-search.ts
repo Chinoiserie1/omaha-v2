@@ -42,6 +42,7 @@ export function useExploreTrending() {
 
 interface QuantDetail {
   id: string;
+  userId: string;
   isActive: boolean;
   user: {
     twitterUsername: string | null;

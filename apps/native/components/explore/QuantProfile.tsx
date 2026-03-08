@@ -3,6 +3,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui/text";
 import { useQuantDetail } from "../../hooks/queries/use-explore-search";
+import { FollowButton } from "./FollowButton";
 
 interface QuantProfileProps {
   quantId: string;
@@ -59,9 +60,12 @@ export function QuantProfile({ quantId, onBack }: QuantProfileProps) {
               </Text>
             </View>
           )}
-          <Text className="text-xl font-bold text-foreground">
-            @{username}
-          </Text>
+          <View className="flex-row items-center">
+            <Text className="text-xl font-bold text-foreground">
+              @{username}
+            </Text>
+            <FollowButton userId={quant.userId} />
+          </View>
           {quant.user.name && (
             <Text className="mt-1 text-base text-muted-foreground">
               {quant.user.name}

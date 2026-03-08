@@ -15,6 +15,7 @@ import { withdrawalRoutes } from "./routes/withdrawals/index.js";
 import { swapRoutes } from "./routes/swap/index.js";
 import { exploreRoutes } from "./routes/explore/index.js";
 import { chatRoutes } from "./routes/chat/index.js";
+import { pushTokenRoutes } from "./routes/push-tokens/index.js";
 import { cronPlugin } from "./cron/index.js";
 import { registerWebSocket } from "./infra/websocket.js";
 import { registerChatWebSocket } from "./infra/chat-websocket.js";
@@ -71,6 +72,9 @@ export async function buildApp() {
 
   // Chat routes
   await app.register(chatRoutes, { prefix: "/api/chat" });
+
+  // Push token routes
+  await app.register(pushTokenRoutes, { prefix: "/api/push-tokens" });
 
   // Withdrawal routes (queued)
   await app.register(withdrawalRoutes, { prefix: "/api/withdrawals" });

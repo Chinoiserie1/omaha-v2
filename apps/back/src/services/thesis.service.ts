@@ -32,6 +32,7 @@ function normalizeAsset(raw: string): string {
 import { classifyUnclassifiedTweets } from "./classifier.service.js";
 import { computeLatestPeriod } from "./backtest.service.js";
 import { computeTweetImpacts } from "./tweet-impact.service.js";
+import { notifyFollowersOfSignificantTweets } from "./push-notification.service.js";
 
 export function applyConvictionDecay(
   allocations: Allocation[],
@@ -545,7 +546,9 @@ async function generateRetroactiveSnapshots(
 // Main entry point
 // ---------------------------------------------------------------------------
 
-export async function synthesizeThesis(quantId: string): Promise<boolean> {
+export async function synthesizeThesis(
+  quantId: string,
+): Promise<{ updated: boolean; snapshotId?: string }> {
   const tradeableAssets = await getTradeableAssetsMap();
 
   logger.info(
@@ -569,11 +572,12 @@ export async function synthesizeThesis(quantId: string): Promise<boolean> {
           { quantId, allocations: parsed.data.directAllocations.length },
           "Using direct allocations (bypassing LLM)",
         );
-        return buildDirectAllocationSnapshot(
+        const didUpdate = await buildDirectAllocationSnapshot(
           quantId,
           parsed.data.directAllocations,
           tradeableAssets,
         );
+        return { updated: didUpdate };
       }
       kolKnowledge = formatKolKnowledge(parsed.data);
     } else {
@@ -607,7 +611,8 @@ export async function synthesizeThesis(quantId: string): Promise<boolean> {
         { quantId },
         "Cold start — generating retroactive weekly snapshots",
       );
-      return generateRetroactiveSnapshots(quantId, allRelevant, knowledgeContext);
+      const didUpdate = await generateRetroactiveSnapshots(quantId, allRelevant, knowledgeContext);
+      return { updated: didUpdate };
     }
 
     if (oldestTweetDate < earliestSnapshot.createdAt) {
@@ -633,7 +638,7 @@ export async function synthesizeThesis(quantId: string): Promise<boolean> {
   const currentLatest = await portfolioRepo.findLatestSnapshot(quantId);
   if (!currentLatest) {
     logger.info({ quantId }, "No snapshots and no relevant tweets, skipping");
-    return false;
+    return { updated: false };
   }
 
   const newRelevant =
@@ -646,7 +651,7 @@ export async function synthesizeThesis(quantId: string): Promise<boolean> {
       { quantId },
       "No new relevant tweets since last snapshot, skipping",
     );
-    return false;
+    return { updated: false };
   }
 
   const sourceTweetIds = newRelevant.map((c) => c.tweetId);
@@ -668,7 +673,7 @@ export async function synthesizeThesis(quantId: string): Promise<boolean> {
     tradeableAssets,
   );
 
-  if (!result) return false;
+  if (!result) return { updated: false };
 
   // Compute backtest performance for this new period (non-fatal)
   try {
@@ -680,7 +685,7 @@ export async function synthesizeThesis(quantId: string): Promise<boolean> {
     );
   }
 
-  return true;
+  return { updated: true, snapshotId: result.snapshot.id };
 }
 
 export async function synthesizeAllQuants(): Promise<void> {
@@ -724,14 +729,23 @@ export async function synthesizeAllQuants(): Promise<void> {
         "Classification done",
       );
 
-      const didUpdate = await synthesizeThesis(quant.id);
-      if (didUpdate) {
+      const result = await synthesizeThesis(quant.id);
+      if (result.updated) {
         updated++;
+        if (result.snapshotId) {
+          notifyFollowersOfSignificantTweets(quant.id, result.snapshotId).catch(
+            (err) =>
+              logger.warn(
+                { err, quantId: quant.id },
+                "Push notification failed (non-fatal)",
+              ),
+          );
+        }
       } else {
         skipped++;
       }
       logger.info(
-        { quantId: quant.id, username: quant.user.twitterUsername, didUpdate },
+        { quantId: quant.id, username: quant.user.twitterUsername, didUpdate: result.updated },
         "Thesis synthesis done",
       );
     } catch (err) {

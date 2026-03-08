@@ -27,7 +27,7 @@ export async function instantRunAlgo(
   }
 
   const classified = await classifyUnclassifiedTweets(quant.id);
-  const didUpdate = await synthesizeThesis(quant.id);
+  const result = await synthesizeThesis(quant.id);
 
-  return { quantId: quant.id, username: quant.user.twitterUsername, classified, didUpdate, force, deletedSnapshots, deletedClassifications };
+  return { quantId: quant.id, username: quant.user.twitterUsername, classified, didUpdate: result.updated, force, deletedSnapshots, deletedClassifications };
 }

@@ -73,9 +73,9 @@ async function run(): Promise<void> {
         result.classified = classified;
         console.info(`${progress} ${username}: ${classified} tweets classified`);
 
-        const didUpdate = await synthesizeThesis(quant.id);
-        result.thesisUpdated = didUpdate;
-        console.info(`${progress} ${username}: thesis updated=${didUpdate}`);
+        const thesisResult = await synthesizeThesis(quant.id);
+        result.thesisUpdated = thesisResult.updated;
+        console.info(`${progress} ${username}: thesis updated=${thesisResult.updated}`);
       }
     } catch (error) {
       if (error instanceof RateLimitError) {

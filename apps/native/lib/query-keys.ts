@@ -33,6 +33,9 @@ export const queryKeys = {
     trending: () => ["explore", "trending"] as const,
     quant: (id: string) => ["explore", "quant", id] as const,
   },
+  follows: {
+    status: (userId: string) => ["follows", "status", userId] as const,
+  },
   chat: {
     history: () => ["chat", "history"] as const,
   },

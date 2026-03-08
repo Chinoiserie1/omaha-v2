@@ -7,6 +7,7 @@ import { useTwitterSync } from "../../hooks/useTwitterSync";
 import { useOnboardingStatus } from "../../hooks/queries/use-onboarding";
 import { useAuth } from "../../contexts/auth-context";
 import { useWithdrawalWebSocket } from "../../hooks/use-withdrawal-ws";
+import { usePushNotifications } from "../../hooks/use-push-notifications";
 import { TabBarVisibilityProvider } from "../../contexts/tab-bar-visibility";
 
 export default function AppLayout() {
@@ -17,6 +18,7 @@ export default function AppLayout() {
 
   useTwitterSync();
   useWithdrawalWebSocket();
+  usePushNotifications();
 
   // PostHog identify/reset based on auth state
   const userId = user?.id;

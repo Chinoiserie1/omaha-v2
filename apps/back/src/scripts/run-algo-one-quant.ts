@@ -38,8 +38,8 @@ async function run(): Promise<void> {
   const classified = await classifyUnclassifiedTweets(quant.id);
   console.info(`Classified: ${classified}`);
 
-  const didUpdate = await synthesizeThesis(quant.id);
-  console.info(`Thesis updated: ${didUpdate}`);
+  const result = await synthesizeThesis(quant.id);
+  console.info(`Thesis updated: ${result.updated}`);
 }
 
 run()

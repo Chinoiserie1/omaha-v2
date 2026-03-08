@@ -36,6 +36,7 @@ model User {
   vaultFavorites        VaultFavorite[]
   quant                 Quant?
   chatMessages          ChatMessage[]
+  pushTokens            PushToken[]
 }
 
 model Follow {
@@ -339,6 +340,20 @@ model ChatMessage {
   createdAt DateTime @default(now())
 
   @@index([userId, createdAt])
+}
+
+// ── Push Tokens ─────────────────────────────────────────────
+
+model PushToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String   @unique
+  platform  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
 }
 
 // ── Vault Favorites ─────────────────────────────────────────
