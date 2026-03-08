@@ -1,20 +1,19 @@
-import {
-  Platform,
-  type NativeSyntheticEvent,
-  type TextInputFocusEventData,
-} from "react-native";
+import { Platform } from "react-native";
 import { Tabs } from "expo-router";
+import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
 import { Ionicons } from "@expo/vector-icons";
 import { FloatingGlassTabBar } from "@/components/navigation/FloatingGlassTabBar";
-import { NativeBottomTabs } from "@/components/navigation/NativeBottomTabs";
-import { ChatSearchProvider, useChatSearch } from "@/contexts/chat-search";
+import { ChatSearchProvider } from "@/contexts/chat-search";
+import { ActiveTabProvider, useActiveTab } from "@/contexts/active-tab";
 
 export default function TabsLayout() {
   if (Platform.OS === "ios") {
     return (
-      <ChatSearchProvider>
-        <IOSTabs />
-      </ChatSearchProvider>
+      <ActiveTabProvider>
+        <ChatSearchProvider>
+          <IOSTabs />
+        </ChatSearchProvider>
+      </ActiveTabProvider>
     );
   }
 
@@ -22,71 +21,37 @@ export default function TabsLayout() {
 }
 
 function IOSTabs() {
-  const { setSearchText } = useChatSearch();
+  const { activeTab } = useActiveTab();
+  const chatVisible = activeTab === "(quant)" || activeTab === "(chat)";
 
   return (
-    <NativeBottomTabs
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      <NativeBottomTabs.Screen
-        name="(home)"
-        options={{
-          title: "Tracker",
-          tabBarIcon: { type: "sfSymbol", name: "waveform.path.ecg" },
-        }}
-      />
-      <NativeBottomTabs.Screen
-        name="(explore)"
-        options={{
-          title: "Explore",
-          tabBarIcon: { type: "sfSymbol", name: "magnifyingglass" },
-        }}
-      />
-      <NativeBottomTabs.Screen
-        name="(quant)"
-        options={{
-          title: "Quant",
-          tabBarIcon: { type: "sfSymbol", name: "chart.line.uptrend.xyaxis" },
-        }}
-      />
-      <NativeBottomTabs.Screen
+    <NativeTabs>
+      <NativeTabs.Trigger name="(home)">
+        <Icon sf="waveform.path.ecg" />
+        <Label>Tracker</Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="(explore)">
+        <Icon sf="magnifyingglass" />
+        <Label>Explore</Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger name="(quant)">
+        <Icon sf="chart.line.uptrend.xyaxis" />
+        <Label>Quant</Label>
+      </NativeTabs.Trigger>
+
+      <NativeTabs.Trigger
         name="(chat)"
-        options={{
-          tabBarSystemItem: "search",
-          headerShown: true,
-          title: "Chat",
-          headerStyle: { backgroundColor: "#0F172A" },
-          headerTintColor: "#FAFAFA",
-          headerLargeTitleEnabled: true,
-          headerLargeTitleStyle: {
-            color: "#FAFAFA",
-            fontWeight: "700",
-          },
-          headerLargeStyle: { backgroundColor: "#0F172A" },
-          headerShadowVisible: false,
-          headerSearchBarOptions: {
-            placeholder: "Search messages...",
-            textColor: "#FAFAFA",
-            tintColor: "#FAFAFA",
-            barTintColor: "rgba(255,255,255,0.08)",
-            hideWhenScrolling: false,
-            onChangeText: (
-              e: NativeSyntheticEvent<TextInputFocusEventData>,
-            ) => setSearchText(e.nativeEvent.text),
-            onCancelButtonPress: () => setSearchText(""),
-          },
-        }}
+        role="search"
+        hidden={!chatVisible}
       />
-      <NativeBottomTabs.Screen
-        name="(profile)"
-        options={{
-          title: "Profile",
-          tabBarIcon: { type: "sfSymbol", name: "person" },
-        }}
-      />
-    </NativeBottomTabs>
+
+      <NativeTabs.Trigger name="(profile)">
+        <Icon sf="person" />
+        <Label>Profile</Label>
+      </NativeTabs.Trigger>
+    </NativeTabs>
   );
 }
 
