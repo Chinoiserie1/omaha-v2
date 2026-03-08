@@ -27,6 +27,10 @@ export const queryKeys = {
     activeTheses: (address: string) =>
       ["wallet", "portfolio", address, "active-theses"] as const,
   },
+  explore: {
+    search: (asset: string) => ["explore", "search", asset] as const,
+    assets: (q: string) => ["explore", "assets", q] as const,
+  },
   withdrawals: {
     all: () => ["withdrawals"] as const,
     byVault: (vaultId: string) => ["withdrawals", "vault", vaultId] as const,

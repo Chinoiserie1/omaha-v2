@@ -13,6 +13,7 @@ import { walletRoutes } from "./routes/wallet/index.js";
 import { contentRoutes } from "./routes/content/index.js";
 import { withdrawalRoutes } from "./routes/withdrawals/index.js";
 import { swapRoutes } from "./routes/swap/index.js";
+import { exploreRoutes } from "./routes/explore/index.js";
 import { cronPlugin } from "./cron/index.js";
 import { registerWebSocket } from "./infra/websocket.js";
 import { connectRedis, closeRedis } from "./infra/redis.js";
@@ -62,6 +63,9 @@ export async function buildApp() {
 
   // Swap routes
   await app.register(swapRoutes, { prefix: "/api/swap" });
+
+  // Explore routes
+  await app.register(exploreRoutes, { prefix: "/api/explore" });
 
   // Withdrawal routes (queued)
   await app.register(withdrawalRoutes, { prefix: "/api/withdrawals" });

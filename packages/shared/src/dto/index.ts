@@ -94,3 +94,12 @@ export type RetryWithdrawalDto = z.infer<typeof retryWithdrawalSchema>;
 import type { fundSolRequestSchema } from "../schemas/index.js";
 
 export type FundSolRequestDto = z.infer<typeof fundSolRequestSchema>;
+
+// Explore DTOs
+import type {
+  exploreSearchQuerySchema,
+  assetAutocompleteQuerySchema,
+} from "../schemas/index.js";
+
+export type ExploreSearchQueryDto = z.infer<typeof exploreSearchQuerySchema>;
+export type AssetAutocompleteQueryDto = z.infer<typeof assetAutocompleteQuerySchema>;

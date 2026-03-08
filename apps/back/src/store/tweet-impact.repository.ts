@@ -63,3 +63,50 @@ export async function findSignificantTweets({
 
   return { impacts, total };
 }
+
+export async function findSignificantTweetsCrossQuant({
+  asset,
+  limit,
+}: {
+  asset: string;
+  limit: number;
+}) {
+  const overFetchLimit = limit * 3;
+
+  const [impacts, total] = await Promise.all([
+    prisma.tweetImpact.findMany({
+      where: { assets: { has: asset } },
+      orderBy: { significanceScore: "desc" },
+      take: overFetchLimit,
+      include: {
+        tweet: {
+          select: {
+            tweetId: true,
+            fullText: true,
+            postedAt: true,
+            favoriteCount: true,
+            retweetCount: true,
+            replyCount: true,
+            bookmarkCount: true,
+            viewsCount: true,
+          },
+        },
+        quant: {
+          select: {
+            id: true,
+            user: {
+              select: {
+                twitterUsername: true,
+                profileImageUrl: true,
+                twitterFollowerCount: true,
+              },
+            },
+          },
+        },
+      },
+    }),
+    prisma.tweetImpact.count({ where: { assets: { has: asset } } }),
+  ]);
+
+  return { impacts, total };
+}

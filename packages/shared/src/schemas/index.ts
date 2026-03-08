@@ -57,3 +57,4 @@ export * from "./content.schema.js";
 export * from "./withdrawal.schema.js";
 export * from "./fund-sol.schema.js";
 export * from "./kol-knowledge.schema.js";
+export * from "./explore.schema.js";

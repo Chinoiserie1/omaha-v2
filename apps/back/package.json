@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "clean": "rm -rf dist",
-    "seed:kols": "tsx src/scripts/seed-kols.ts",
+    "seed:kols": "tsx src/scripts/seed-quants.ts",
     "create-vault": "tsx src/scripts/create-kol-vault.ts",
     "sync-tokens": "tsx src/scripts/sync-jupiter-tokens.ts",
     "seed-vaults": "tsx src/scripts/seed-vaults.ts",

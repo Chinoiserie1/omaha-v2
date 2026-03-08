@@ -13,7 +13,7 @@ export const TAB_BAR_HEIGHT = 60;
 export const TAB_BAR_BOTTOM_MARGIN = 12;
 
 /** Horizontal inset from screen edges — keeps the pill centred (dp). */
-export const TAB_BAR_HORIZONTAL_MARGIN = 40;
+export const TAB_BAR_HORIZONTAL_MARGIN = 30;
 
 /** Corner radius — set to half the height to produce a perfect pill shape. */
 export const TAB_BAR_BORDER_RADIUS = TAB_BAR_HEIGHT / 2;
