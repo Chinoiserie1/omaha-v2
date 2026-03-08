@@ -46,7 +46,7 @@ export function QuantDashboard() {
             <View style={styles.chatButtonContent}>
               <Ionicons name="chatbubble-outline" size={18} color="#FAFAFA" />
               <Text className="text-primary-foreground font-semibold ml-2">
-                Chat with AI
+                Manage Portfolio
               </Text>
             </View>
           </Button>

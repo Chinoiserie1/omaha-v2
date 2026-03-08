@@ -33,7 +33,10 @@ function AndroidChatStack() {
           headerTintColor: "#FAFAFA",
           headerShadowVisible: false,
           headerLeft: () => (
-            <Pressable onPress={() => router.back()} hitSlop={8}>
+            <Pressable
+              onPress={() => router.navigate("/(app)/(tabs)/(quant)")}
+              hitSlop={8}
+            >
               <Ionicons name="arrow-back" size={24} color="#FAFAFA" />
             </Pressable>
           ),
