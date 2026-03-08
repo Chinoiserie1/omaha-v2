@@ -5,6 +5,7 @@ import { Text } from "@/components/ui/text";
 import { AssetSearchBar } from "./AssetSearchBar";
 import { AssetSuggestionList } from "./AssetSuggestionList";
 import { SignalList } from "./SignalList";
+import { TrendingContent } from "./TrendingContent";
 import { useAssetAutocomplete } from "../../hooks/queries/use-explore-search";
 import { useDebouncedValue } from "../../hooks/use-debounced-value";
 
@@ -56,6 +57,7 @@ export function ExploreScreen() {
       {selectedAsset ? (
         <SignalList asset={selectedAsset} />
       ) : (
+        <TrendingContent onSelectAsset={handleSelect} />
         <View className="flex-1 items-center justify-center px-6">
           <Text className="text-center text-base text-muted-foreground">
             Search for an asset to see quant signals

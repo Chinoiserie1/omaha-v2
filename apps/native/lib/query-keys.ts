@@ -30,6 +30,8 @@ export const queryKeys = {
   explore: {
     search: (asset: string) => ["explore", "search", asset] as const,
     assets: (q: string) => ["explore", "assets", q] as const,
+    trending: () => ["explore", "trending"] as const,
+    quant: (id: string) => ["explore", "quant", id] as const,
   },
   chat: {
     history: () => ["chat", "history"] as const,

@@ -1,6 +1,33 @@
 import { prisma } from "@repo/database";
 import type { Prisma } from "@repo/database";
 
+export async function findTrendingAssets(limit: number, dayWindow = 7) {
+  const since = new Date();
+  since.setDate(since.getDate() - dayWindow);
+
+  const rows = await prisma.$queryRaw<
+    { asset: string; signal_count: bigint; quant_count: bigint; latest_signal_at: Date }[]
+  >`
+    SELECT
+      asset,
+      COUNT(*)::bigint AS signal_count,
+      COUNT(DISTINCT "quantId")::bigint AS quant_count,
+      MAX("createdAt") AS latest_signal_at
+    FROM "TweetImpact", unnest(assets) AS asset
+    WHERE "createdAt" >= ${since}
+    GROUP BY asset
+    ORDER BY signal_count DESC
+    LIMIT ${limit}
+  `;
+
+  return rows.map((r) => ({
+    asset: r.asset,
+    signalCount: Number(r.signal_count),
+    quantCount: Number(r.quant_count),
+    latestSignalAt: r.latest_signal_at,
+  }));
+}
+
 export async function createTweetImpacts(
   data: Prisma.TweetImpactCreateManyInput[]
 ) {

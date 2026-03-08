@@ -162,6 +162,29 @@ export async function updateUserProfile(
   await prisma.user.update({ where: { id: userId }, data });
 }
 
+export async function findTopQuants(limit: number) {
+  return prisma.quant.findMany({
+    where: {
+      isActive: true,
+      user: { twitterFollowerCount: { not: null, gt: 0 } },
+    },
+    orderBy: { user: { twitterFollowerCount: "desc" } },
+    take: limit,
+    include: {
+      user: {
+        select: {
+          twitterUsername: true,
+          name: true,
+          profileImageUrl: true,
+          twitterFollowerCount: true,
+        },
+      },
+      vault: { select: { id: true } },
+      _count: { select: { tweetImpacts: true } },
+    },
+  });
+}
+
 export async function updateQuantKnowledge(
   id: string,
   knowledge: Prisma.InputJsonValue,

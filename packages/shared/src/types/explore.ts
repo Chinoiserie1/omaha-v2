@@ -39,3 +39,27 @@ export interface AssetSuggestion {
   name: string;
   category: string;
 }
+
+export interface TrendingAsset {
+  symbol: string;
+  name: string;
+  category: string;
+  signalCount: number;
+  quantCount: number;
+  latestSignalAt: string;
+}
+
+export interface TrendingQuant {
+  id: string;
+  username: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  followerCount: number;
+  signalCount: number;
+  vaultId: string | null;
+}
+
+export interface ExploreTrendingResponse {
+  trendingAssets: TrendingAsset[];
+  topQuants: TrendingQuant[];
+}
