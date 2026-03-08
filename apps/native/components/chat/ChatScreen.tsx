@@ -1,23 +1,22 @@
 import { useEffect, useRef } from "react";
-import {
-  View,
-  FlatList,
-  KeyboardAvoidingView,
-  Platform,
-  StyleSheet,
-} from "react-native";
+import { View, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { Text } from "@/components/ui/text";
 import { useMyProfile } from "@/hooks/queries/use-profile";
 import { useChatHistory } from "@/hooks/queries/use-chat-history";
 import { useChatWs, type ChatMessage } from "@/hooks/use-chat-ws";
+import { useChatSearchFilter } from "@/hooks/use-chat-search-filter";
 import { BecomeQuantScreen } from "./BecomeQuantScreen";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatInput } from "./ChatInput";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ChatEmptyState } from "./ChatEmptyState";
-import { TAB_BAR_TOTAL_HEIGHT } from "@/components/navigation/tab-bar-constants";
 
-export function ChatScreen() {
+
+interface ChatScreenProps {
+  searchText: string;
+}
+
+export function ChatScreen({ searchText }: ChatScreenProps) {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
 
   if (profileLoading) {
@@ -32,10 +31,10 @@ export function ChatScreen() {
     return <BecomeQuantScreen />;
   }
 
-  return <ChatConversation />;
+  return <ChatConversation searchText={searchText} />;
 }
 
-function ChatConversation() {
+function ChatConversation({ searchText }: ChatScreenProps) {
   const { data: history } = useChatHistory();
   const {
     messages,
@@ -70,8 +69,6 @@ function ChatConversation() {
     }
   }, [messages.length, streamingContent]);
 
-  const showEmptyState = messages.length === 0 && !isStreaming;
-
   // Build the streaming bubble if actively streaming
   const streamingBubble: ChatMessage | null = streamingContent
     ? {
@@ -86,25 +83,32 @@ function ChatConversation() {
     ? [...messages, streamingBubble]
     : messages;
 
+  const { filteredMessages, isSearchActive } = useChatSearchFilter(
+    displayMessages,
+    searchText,
+  );
+
+  const showEmptyState =
+    filteredMessages.length === 0 && !isStreaming && !isSearchActive;
+
+  const isIOS = Platform.OS === "ios";
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 0 : 0}
+      behavior={isIOS ? "padding" : undefined}
+      keyboardVerticalOffset={isIOS ? 0 : 0}
     >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Chat</Text>
-      </View>
-
       {showEmptyState ? (
         <ChatEmptyState onSuggestion={sendMessage} />
       ) : (
         <FlatList
           ref={flatListRef}
-          data={displayMessages}
+          data={filteredMessages}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => <ChatMessageBubble message={item} />}
           contentContainerStyle={styles.listContent}
+          contentInsetAdjustmentBehavior={isIOS ? "automatic" : undefined}
           ListFooterComponent={
             isStreaming && !streamingContent ? (
               <ChatTypingIndicator />
@@ -113,9 +117,7 @@ function ChatConversation() {
         />
       )}
 
-      <View style={{ paddingBottom: TAB_BAR_TOTAL_HEIGHT }}>
-        <ChatInput onSend={sendMessage} disabled={isStreaming} />
-      </View>
+      <ChatInput onSend={sendMessage} disabled={isStreaming} />
     </KeyboardAvoidingView>
   );
 }
@@ -132,15 +134,6 @@ const styles = StyleSheet.create({
   loadingText: {
     color: "#71717A",
     fontSize: 15,
-  },
-  header: {
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#FAFAFA",
   },
   listContent: {
     paddingVertical: 8,
