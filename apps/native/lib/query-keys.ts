@@ -36,6 +36,12 @@ export const queryKeys = {
   chat: {
     history: () => ["chat", "history"] as const,
   },
+  quant: {
+    portfolio: (quantId: string) => ["quant", quantId, "portfolio"] as const,
+    vault: (quantId: string) => ["quant", quantId, "vault"] as const,
+    setupStatus: (quantId: string) =>
+      ["quant", quantId, "setup-status"] as const,
+  },
   withdrawals: {
     all: () => ["withdrawals"] as const,
     byVault: (vaultId: string) => ["withdrawals", "vault", vaultId] as const,

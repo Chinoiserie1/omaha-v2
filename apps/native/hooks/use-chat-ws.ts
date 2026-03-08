@@ -11,13 +11,26 @@ export interface ChatMessage {
   createdAt: string;
 }
 
+export interface PortfolioProposal {
+  thesisSummary: string;
+  allocations: Array<{
+    asset: string;
+    percentage: number;
+    conviction: string;
+    reasoning: string;
+  }>;
+  changes: string[];
+}
+
 interface UseChatWsReturn {
   messages: ChatMessage[];
   streamingContent: string;
   isStreaming: boolean;
   isConnected: boolean;
+  pendingProposal: PortfolioProposal | null;
   sendMessage: (content: string) => void;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  clearProposal: () => void;
 }
 
 export function useChatWs(): UseChatWsReturn {
@@ -29,6 +42,8 @@ export function useChatWs(): UseChatWsReturn {
   const [streamingContent, setStreamingContent] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [pendingProposal, setPendingProposal] =
+    useState<PortfolioProposal | null>(null);
 
   const connect = useCallback(async () => {
     try {
@@ -45,7 +60,14 @@ export function useChatWs(): UseChatWsReturn {
         try {
           const msg = JSON.parse(event.data as string) as {
             event: string;
-            data: { content?: string; messageId?: string; error?: string };
+            data: {
+              content?: string;
+              messageId?: string;
+              error?: string;
+              thesisSummary?: string;
+              allocations?: PortfolioProposal["allocations"];
+              changes?: string[];
+            };
           };
 
           switch (msg.event) {
@@ -65,6 +87,20 @@ export function useChatWs(): UseChatWsReturn {
               ]);
               setStreamingContent("");
               setIsStreaming(false);
+              break;
+
+            case "chat:portfolio_proposal":
+              if (
+                msg.data.thesisSummary &&
+                msg.data.allocations &&
+                msg.data.changes
+              ) {
+                setPendingProposal({
+                  thesisSummary: msg.data.thesisSummary,
+                  allocations: msg.data.allocations,
+                  changes: msg.data.changes,
+                });
+              }
               break;
 
             case "chat:error":
@@ -118,6 +154,7 @@ export function useChatWs(): UseChatWsReturn {
       setMessages((prev) => [...prev, userMsg]);
       setIsStreaming(true);
       setStreamingContent("");
+      setPendingProposal(null);
 
       wsRef.current.send(
         JSON.stringify({ event: "chat:message", data: { content } }),
@@ -126,12 +163,18 @@ export function useChatWs(): UseChatWsReturn {
     [isStreaming],
   );
 
+  const clearProposal = useCallback(() => {
+    setPendingProposal(null);
+  }, []);
+
   return {
     messages,
     streamingContent,
     isStreaming,
     isConnected,
+    pendingProposal,
     sendMessage,
     setMessages,
+    clearProposal,
   };
 }

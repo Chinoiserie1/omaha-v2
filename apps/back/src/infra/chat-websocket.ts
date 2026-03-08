@@ -3,6 +3,11 @@ import { prisma } from "@repo/database";
 import { verifyPrivyTokenRaw } from "../middleware/auth-utils.js";
 import { logger } from "../utils/logger.js";
 import { streamChat } from "../services/chat.service.js";
+import {
+  streamPortfolioChat,
+  parsePortfolioProposal,
+  stripPortfolioBlock,
+} from "../services/portfolio-chat.service.js";
 
 const HEARTBEAT_INTERVAL = 30_000;
 
@@ -22,7 +27,7 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
 
       const user = await prisma.user.findUnique({
         where: { privyId: privyUserId },
-        select: { id: true },
+        select: { id: true, quant: { select: { id: true } } },
       });
 
       if (!user) {
@@ -31,8 +36,9 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
       }
 
       const userId = user.id;
+      const quantId = user.quant?.id ?? null;
 
-      logger.info({ userId }, "Chat WebSocket connected");
+      logger.info({ userId, quantId }, "Chat WebSocket connected");
 
       let isStreaming = false;
 
@@ -66,36 +72,67 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
 
           isStreaming = true;
 
-          await streamChat(
-            userId,
-            msg.data.content.trim(),
-            (chunk) => {
-              if (socket.readyState === socket.OPEN) {
-                socket.send(
-                  JSON.stringify({ event: "chat:chunk", data: { content: chunk } }),
-                );
-              }
-            },
-            (fullText, messageId) => {
-              isStreaming = false;
-              if (socket.readyState === socket.OPEN) {
+          const onChunk = (chunk: string) => {
+            if (socket.readyState === socket.OPEN) {
+              socket.send(
+                JSON.stringify({ event: "chat:chunk", data: { content: chunk } }),
+              );
+            }
+          };
+
+          const onDone = (fullText: string, messageId: string) => {
+            isStreaming = false;
+
+            // Check for portfolio proposal in the response
+            const proposal = quantId ? parsePortfolioProposal(fullText) : null;
+            const displayText = proposal ? stripPortfolioBlock(fullText) : fullText;
+
+            if (socket.readyState === socket.OPEN) {
+              socket.send(
+                JSON.stringify({
+                  event: "chat:done",
+                  data: { messageId, content: displayText },
+                }),
+              );
+
+              if (proposal) {
                 socket.send(
                   JSON.stringify({
-                    event: "chat:done",
-                    data: { messageId, content: fullText },
+                    event: "chat:portfolio_proposal",
+                    data: proposal,
                   }),
                 );
               }
-            },
-            (error) => {
-              isStreaming = false;
-              if (socket.readyState === socket.OPEN) {
-                socket.send(
-                  JSON.stringify({ event: "chat:error", data: { error } }),
-                );
-              }
-            },
-          );
+            }
+          };
+
+          const onError = (error: string) => {
+            isStreaming = false;
+            if (socket.readyState === socket.OPEN) {
+              socket.send(
+                JSON.stringify({ event: "chat:error", data: { error } }),
+              );
+            }
+          };
+
+          if (quantId) {
+            await streamPortfolioChat(
+              userId,
+              quantId,
+              msg.data.content.trim(),
+              onChunk,
+              onDone,
+              onError,
+            );
+          } else {
+            await streamChat(
+              userId,
+              msg.data.content.trim(),
+              onChunk,
+              onDone,
+              onError,
+            );
+          }
         } catch {
           // Ignore malformed messages
         }

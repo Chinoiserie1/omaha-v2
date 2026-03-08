@@ -1,29 +1,47 @@
 import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
 import { Text } from "@/components/ui/text";
 import { Button } from "@/components/ui/button";
+import { useBecomeQuantFull } from "@/hooks/mutations/use-become-quant-full";
 
-export function NoStrategyState() {
+interface NoStrategyStateProps {
+  onSetupStarted?: () => void;
+}
+
+export function NoStrategyState({ onSetupStarted }: NoStrategyStateProps) {
+  const { mutate, isPending } = useBecomeQuantFull();
+
+  const handleGenerate = () => {
+    mutate(undefined, {
+      onSuccess: () => {
+        onSetupStarted?.();
+      },
+    });
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.iconWrapper}>
         <Ionicons
-          name="chatbubble-ellipses-outline"
+          name="analytics-outline"
           size={48}
           color="#71717A"
         />
       </View>
-      <Text style={styles.title}>Create Your Strategy</Text>
+      <Text style={styles.title}>Generate Your Strategy</Text>
       <Text style={styles.description}>
-        Use the AI chat to define your trading thesis and portfolio allocations.
+        Analyze your Twitter activity to build a portfolio strategy, or start
+        with a default USDC position and refine it via AI chat.
       </Text>
       <Button
         variant="classic"
         className="mt-6 w-full px-8"
-        onPress={() => router.push("/(app)/(tabs)/(chat)")}
+        onPress={handleGenerate}
+        disabled={isPending}
       >
-        <Text className="text-primary-foreground font-semibold">Open Chat</Text>
+        <Text className="text-primary-foreground font-semibold">
+          {isPending ? "Generating..." : "Generate Strategy"}
+        </Text>
       </Button>
     </View>
   );

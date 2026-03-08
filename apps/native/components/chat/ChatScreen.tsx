@@ -10,6 +10,7 @@ import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatInput } from "./ChatInput";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ChatEmptyState } from "./ChatEmptyState";
+import { PortfolioProposalCard } from "./PortfolioProposalCard";
 
 interface ChatScreenProps {
   searchText: string;
@@ -41,6 +42,8 @@ function ChatConversation({ searchText }: ChatScreenProps) {
     isStreaming,
     sendMessage,
     setMessages,
+    pendingProposal,
+    clearProposal,
   } = useChatWs();
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const hasLoadedHistory = useRef(false);
@@ -92,6 +95,11 @@ function ChatConversation({ searchText }: ChatScreenProps) {
 
   const isIOS = Platform.OS === "ios";
 
+  const handleRejectProposal = () => {
+    clearProposal();
+    sendMessage("Let's try a different approach.");
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -109,9 +117,18 @@ function ChatConversation({ searchText }: ChatScreenProps) {
           contentContainerStyle={styles.listContent}
           contentInsetAdjustmentBehavior={isIOS ? "automatic" : undefined}
           ListFooterComponent={
-            isStreaming && !streamingContent ? (
-              <ChatTypingIndicator />
-            ) : null
+            <>
+              {isStreaming && !streamingContent ? (
+                <ChatTypingIndicator />
+              ) : null}
+              {pendingProposal && !isStreaming ? (
+                <PortfolioProposalCard
+                  proposal={pendingProposal}
+                  onAccepted={clearProposal}
+                  onRejected={handleRejectProposal}
+                />
+              ) : null}
+            </>
           }
         />
       )}

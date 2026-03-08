@@ -1,64 +1,39 @@
-import { useState } from "react";
-import { View, ScrollView, Pressable } from "react-native";
+import { useState, useEffect } from "react";
+import { View, ScrollView, ActivityIndicator, StyleSheet } from "react-native";
 import { Text } from "@/components/ui/text";
+import { useMyProfile } from "@/hooks/queries/use-profile";
+import { useQuantPortfolio } from "@/hooks/queries/use-quant-portfolio";
+import { useQuantVault } from "@/hooks/queries/use-quant-vault";
+import { useQuantSetupStatus } from "@/hooks/queries/use-quant-setup-status";
 import { NotQuantState } from "./NotQuantState";
 import { NoStrategyState } from "./NoStrategyState";
+import { SetupLoadingState } from "./SetupLoadingState";
 import { ThesisCard } from "./ThesisCard";
-import { PerformanceSection } from "./PerformanceSection";
 import { AssetsSection } from "./AssetsSection";
 import { CreateVaultCta } from "./CreateVaultCta";
 import { VaultOverview } from "./VaultOverview";
 import { ChatButton } from "./ChatButton";
 import { DemoButton, DemoFlow } from "@/components/demo";
-import type { MockQuantState } from "./quant-mock-data";
-import {
-  MOCK_THESIS,
-  MOCK_ALLOCATIONS,
-  MOCK_PERFORMANCE,
-  MOCK_VAULT,
-  MOCK_STRATEGY_UPDATED_AT,
-} from "./quant-mock-data";
+import type { Allocation } from "@repo/shared";
 
-const STATE_LABELS: { key: MockQuantState; label: string }[] = [
-  { key: "not-quant", label: "User" },
-  { key: "quant-no-strategy", label: "No Strat" },
-  { key: "quant-with-strategy", label: "Strategy" },
-  { key: "quant-with-vault", label: "Vault" },
-];
-
-function DevStateSwitcher({
-  current,
-  onSwitch,
+function StrategyContent({
+  portfolio,
+  vault,
 }: {
-  current: MockQuantState;
-  onSwitch: (state: MockQuantState) => void;
+  portfolio: {
+    thesisSummary: string;
+    allocations: Allocation[];
+    createdAt: string;
+  };
+  vault: {
+    id: string;
+    vaultName: string;
+    vaultSymbol: string;
+    statePda: string;
+    isActive: boolean;
+    lastRebalancedAt: string | null;
+  } | null;
 }) {
-  return (
-    <View className="flex-row justify-center gap-2 px-5 py-3">
-      {STATE_LABELS.map(({ key, label }) => (
-        <Pressable
-          key={key}
-          onPress={() => onSwitch(key)}
-          className={`px-3 py-1.5 rounded-full border ${
-            current === key
-              ? "bg-blue-600 border-blue-500"
-              : "bg-card border-border"
-          }`}
-        >
-          <Text
-            className={`text-xs font-medium ${
-              current === key ? "text-white" : "text-muted-foreground"
-            }`}
-          >
-            {label}
-          </Text>
-        </Pressable>
-      ))}
-    </View>
-  );
-}
-
-function StrategyContent({ hasVault }: { hasVault: boolean }) {
   return (
     <ScrollView
       className="flex-1"
@@ -66,30 +41,22 @@ function StrategyContent({ hasVault }: { hasVault: boolean }) {
       showsVerticalScrollIndicator={false}
     >
       <ThesisCard
-        thesisSummary={MOCK_THESIS}
-        updatedAt={MOCK_STRATEGY_UPDATED_AT}
+        thesisSummary={portfolio.thesisSummary}
+        updatedAt={portfolio.createdAt}
       />
 
-      <PerformanceSection
-        currentValue={MOCK_PERFORMANCE.currentValue}
-        change24h={MOCK_PERFORMANCE.change24h}
-        change7d={MOCK_PERFORMANCE.change7d}
-        change30d={MOCK_PERFORMANCE.change30d}
-        changeAll={MOCK_PERFORMANCE.changeAll}
-      />
+      <AssetsSection allocations={portfolio.allocations ?? []} />
 
-      <AssetsSection allocations={MOCK_ALLOCATIONS} />
-
-      {hasVault ? (
+      {vault ? (
         <VaultOverview
-          id={MOCK_VAULT.id}
-          name={MOCK_VAULT.name}
-          symbol={MOCK_VAULT.symbol}
-          totalEquityUsd={MOCK_VAULT.totalEquityUsd}
-          holdingsCount={MOCK_VAULT.holdingsCount}
-          statePda={MOCK_VAULT.statePda}
-          isActive={MOCK_VAULT.isActive}
-          lastRebalancedAt={MOCK_VAULT.lastRebalancedAt}
+          id={vault.id}
+          name={vault.vaultName}
+          symbol={vault.vaultSymbol}
+          totalEquityUsd={0}
+          holdingsCount={(portfolio.allocations ?? []).length}
+          statePda={vault.statePda}
+          isActive={vault.isActive}
+          lastRebalancedAt={vault.lastRebalancedAt}
         />
       ) : (
         <CreateVaultCta />
@@ -101,26 +68,103 @@ function StrategyContent({ hasVault }: { hasVault: boolean }) {
 }
 
 export function QuantScreen() {
-  const [mockState, setMockState] =
-    useState<MockQuantState>("quant-with-vault");
+  const { data: profile, isLoading: profileLoading } = useMyProfile();
+  const quantId = profile?.quantId ?? null;
+
+  const { data: portfolio, isLoading: portfolioLoading } =
+    useQuantPortfolio(quantId);
+  const { data: vault } = useQuantVault(quantId);
+
+  // Track whether we're in the setup flow
+  const [isSettingUp, setIsSettingUp] = useState(false);
+  const pollingEnabled = !!quantId && isSettingUp;
+
+  const { data: setupStatus } = useQuantSetupStatus(quantId, pollingEnabled);
+
+  // When setup completes, stop polling
+  useEffect(() => {
+    if (setupStatus?.status === "complete" || setupStatus?.status === "failed") {
+      setIsSettingUp(false);
+    }
+  }, [setupStatus?.status]);
+
   const [demoVisible, setDemoVisible] = useState(false);
 
+  if (profileLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+      </View>
+    );
+  }
+
+  // User is not a quant
+  if (!quantId) {
+    return (
+      <View className="flex-1">
+        {__DEV__ && (
+          <View className="flex-row justify-end px-5 py-2">
+            <DemoButton onPress={() => setDemoVisible(true)} />
+          </View>
+        )}
+        <NotQuantState onSetupStarted={() => setIsSettingUp(true)} />
+        <DemoFlow
+          visible={demoVisible}
+          onClose={() => setDemoVisible(false)}
+        />
+      </View>
+    );
+  }
+
+  // Setup in progress
+  if (isSettingUp && setupStatus && setupStatus.status !== "complete") {
+    return (
+      <View className="flex-1">
+        <SetupLoadingState
+          status={setupStatus.status}
+          error={setupStatus.error}
+        />
+      </View>
+    );
+  }
+
+  // Loading portfolio data
+  if (portfolioLoading) {
+    return (
+      <View style={styles.centered}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Loading strategy...</Text>
+      </View>
+    );
+  }
+
+  // Has quant but no portfolio yet
+  if (!portfolio) {
+    return (
+      <View className="flex-1">
+        {__DEV__ && (
+          <View className="flex-row justify-end px-5 py-2">
+            <DemoButton onPress={() => setDemoVisible(true)} />
+          </View>
+        )}
+        <NoStrategyState onSetupStarted={() => setIsSettingUp(true)} />
+        <DemoFlow
+          visible={demoVisible}
+          onClose={() => setDemoVisible(false)}
+        />
+      </View>
+    );
+  }
+
+  // Has portfolio (with or without vault)
   return (
     <View className="flex-1">
       {__DEV__ && (
-        <View className="flex-row items-center justify-between px-5">
-          <DevStateSwitcher current={mockState} onSwitch={setMockState} />
+        <View className="flex-row justify-end px-5 py-2">
           <DemoButton onPress={() => setDemoVisible(true)} />
         </View>
       )}
-
-      {mockState === "not-quant" && <NotQuantState />}
-      {mockState === "quant-no-strategy" && <NoStrategyState />}
-      {mockState === "quant-with-strategy" && (
-        <StrategyContent hasVault={false} />
-      )}
-      {mockState === "quant-with-vault" && <StrategyContent hasVault />}
-
+      <StrategyContent portfolio={portfolio} vault={vault ?? null} />
       <DemoFlow
         visible={demoVisible}
         onClose={() => setDemoVisible(false)}
@@ -128,3 +172,16 @@ export function QuantScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  centered: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    gap: 12,
+  },
+  loadingText: {
+    color: "#71717A",
+    fontSize: 14,
+  },
+});

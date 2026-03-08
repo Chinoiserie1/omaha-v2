@@ -154,9 +154,9 @@ const CHAT_MESSAGES = [
 ];
 
 // Delay before each message appears (ms)
-const MESSAGE_DELAYS = [400, 2200, 1800, 3200, 1600, 2800];
+const MESSAGE_DELAYS = [200, 1000, 800, 1400, 700, 1200];
 // Extra delay for AI "typing" indicator before the message shows
-const TYPING_DURATION = 1200;
+const TYPING_DURATION = 600;
 
 function TypingIndicator() {
   return (
@@ -171,7 +171,7 @@ function TypingIndicator() {
         {[0, 1, 2].map((i) => (
           <Animated.View
             key={i}
-            entering={FadeIn.delay(i * 150).duration(300)}
+            entering={FadeIn.delay(i * 80).duration(200)}
             style={{
               width: 8,
               height: 8,
@@ -192,7 +192,7 @@ function ChatBubble({
 }) {
   return (
     <Animated.View
-      entering={FadeInDown.delay(50).duration(350).springify()}
+      entering={FadeInDown.delay(30).duration(200).springify()}
       className={`mb-3 max-w-[85%] ${msg.role === "user" ? "self-end mr-4" : "self-start ml-4"}`}
     >
       <View

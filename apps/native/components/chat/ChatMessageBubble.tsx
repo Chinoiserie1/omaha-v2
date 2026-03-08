@@ -6,8 +6,15 @@ interface ChatMessageBubbleProps {
   message: ChatMessage;
 }
 
+function stripPortfolioBlock(text: string): string {
+  return text.replace(/\n*```portfolio\s*\n[\s\S]*?\n```\s*/g, "").trim();
+}
+
 export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
   const isUser = message.role === "user";
+  const displayContent = isUser
+    ? message.content
+    : stripPortfolioBlock(message.content);
 
   return (
     <View style={[styles.row, isUser ? styles.rowUser : styles.rowAssistant]}>
@@ -20,7 +27,7 @@ export function ChatMessageBubble({ message }: ChatMessageBubbleProps) {
         <Text
           style={[styles.text, isUser ? styles.textUser : styles.textAssistant]}
         >
-          {message.content}
+          {displayContent}
         </Text>
       </View>
     </View>
