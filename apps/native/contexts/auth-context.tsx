@@ -10,7 +10,6 @@ import { usePrivy } from "@privy-io/expo";
 import { useQueryClient } from "@tanstack/react-query";
 import { setTokenProvider, resetTokenProvider } from "../lib/api-client";
 import { captureError } from "../lib/capture-error";
-import { unregisterPushToken } from "../hooks/use-push-notifications";
 
 type AuthStatus = "loading" | "authenticated" | "unauthenticated";
 
@@ -77,7 +76,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     console.log("[AuthContext] signOut START");
 
     try {
-      await unregisterPushToken();
+      try {
+        const { unregisterPushToken } = await import(
+          "../hooks/use-push-notifications"
+        );
+        await unregisterPushToken();
+      } catch {
+        // Non-fatal — token will expire anyway
+      }
       queryClient.clear();
       resetTokenProvider();
       await logoutRef.current();
