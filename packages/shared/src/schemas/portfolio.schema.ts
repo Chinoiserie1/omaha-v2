@@ -3,6 +3,7 @@ import { z } from "zod";
 export const AllocationSchema = z.object({
   asset: z.string(),
   mint: z.string().optional(),
+  logoUri: z.string().optional(),
   percentage: z.number(),
   conviction: z.enum(["low", "medium", "high", "stale"]),
   reasoning: z.string(),

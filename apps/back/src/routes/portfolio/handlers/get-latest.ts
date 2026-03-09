@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { PortfolioSnapshot } from "@repo/database";
 import * as quantRepo from "../../../store/quant.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
+import { getLogoUriByMints } from "../../../store/token-price.repository.js";
 
 type GetLatestRequest = FastifyRequest<{
   Params: { quantId: string };
@@ -21,9 +22,23 @@ export async function getLatestPortfolio(
     return reply.status(404).send({ error: "No portfolio snapshot yet" });
   }
 
+  // Enrich allocations with token logo URIs
+  const rawAllocations = snapshot.allocations as { mint?: string }[];
+  const mints = rawAllocations
+    .map((a) => a.mint)
+    .filter((m): m is string => !!m);
+  const logoMap = await getLogoUriByMints(mints);
+  const enrichedAllocations = rawAllocations.map((a) => ({
+    ...a,
+    logoUri: a.mint ? logoMap.get(a.mint) ?? null : null,
+  }));
+
   return {
     quantId: quant.id,
     username: quant.user.twitterUsername,
-    snapshot,
+    snapshot: {
+      ...snapshot,
+      allocations: enrichedAllocations,
+    },
   };
 }

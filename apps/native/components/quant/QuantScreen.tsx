@@ -168,6 +168,7 @@ function StrategyContent({
               percentage={item.data.percentage}
               conviction={item.data.conviction}
               reasoning={item.data.reasoning}
+              logoUri={item.data.logoUri}
             />
           );
           break;

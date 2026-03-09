@@ -1,6 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
+import { getLogoUriByMints } from "../../../store/token-price.repository.js";
 
 type GetVaultRequest = FastifyRequest<{
   Params: { id: string };
@@ -13,6 +14,20 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
   }
 
   const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
+
+  // Enrich allocations with token logo URIs
+  let enrichedAllocations: unknown[] = [];
+  if (portfolio) {
+    const rawAllocations = portfolio.allocations as { mint?: string }[];
+    const mints = rawAllocations
+      .map((a) => a.mint)
+      .filter((m): m is string => !!m);
+    const logoMap = await getLogoUriByMints(mints);
+    enrichedAllocations = rawAllocations.map((a) => ({
+      ...a,
+      logoUri: a.mint ? logoMap.get(a.mint) ?? null : null,
+    }));
+  }
 
   return {
     id: vault.id,
@@ -38,7 +53,7 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     portfolio: portfolio
       ? {
           thesisSummary: portfolio.thesisSummary,
-          allocations: portfolio.allocations as Record<string, unknown>,
+          allocations: enrichedAllocations,
           changes: portfolio.changes,
           updatedAt: portfolio.createdAt,
         }

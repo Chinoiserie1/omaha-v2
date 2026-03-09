@@ -1,6 +1,7 @@
 export interface Allocation {
   asset: string;
   mint?: string;
+  logoUri?: string;
   percentage: number;
   conviction: "low" | "medium" | "high" | "stale";
   reasoning: string;

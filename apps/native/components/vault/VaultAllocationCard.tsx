@@ -1,5 +1,6 @@
 import { View } from "react-native";
-import { memo } from "react";
+import { Image } from "expo-image";
+import { memo, useState } from "react";
 import { Text } from "@/components/ui/text";
 import { Badge } from "@/components/ui/badge";
 
@@ -8,6 +9,7 @@ interface VaultAllocationCardProps {
   percentage: number;
   conviction: "low" | "medium" | "high" | "stale";
   reasoning: string;
+  logoUri?: string | null | undefined;
 }
 
 const convictionConfig = {
@@ -37,10 +39,14 @@ export const VaultAllocationCard = memo(function VaultAllocationCard({
   percentage,
   conviction,
   reasoning,
+  logoUri,
 }: VaultAllocationCardProps) {
   const config = convictionConfig[conviction] ?? convictionConfig.stale;
   const tokenColor = getTokenColor(asset);
   const initial = asset.charAt(0).toUpperCase();
+  const [imgError, setImgError] = useState(false);
+
+  const showLogo = !!logoUri && !imgError;
 
   return (
     <View className="mx-5 bg-card border border-border rounded-xl p-4 flex-row items-center">
@@ -52,13 +58,24 @@ export const VaultAllocationCard = memo(function VaultAllocationCard({
           backgroundColor: `${tokenColor}20`,
           alignItems: "center",
           justifyContent: "center",
+          overflow: "hidden",
         }}
       >
-        <Text
-          style={{ color: tokenColor, fontSize: 16, fontWeight: "700" }}
-        >
-          {initial}
-        </Text>
+        {showLogo ? (
+          <Image
+            source={{ uri: logoUri }}
+            style={{ width: 40, height: 40, borderRadius: 20 }}
+            contentFit="cover"
+            transition={200}
+            onError={() => setImgError(true)}
+          />
+        ) : (
+          <Text
+            style={{ color: tokenColor, fontSize: 16, fontWeight: "700" }}
+          >
+            {initial}
+          </Text>
+        )}
       </View>
 
       <View className="flex-1 ml-3">

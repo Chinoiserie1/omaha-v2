@@ -27,6 +27,7 @@ import type { RebalanceWithSnapshot } from "../../hooks/queries/use-vault-rebala
 interface Allocation {
   asset: string;
   mint?: string;
+  logoUri?: string;
   percentage: number;
   conviction: "low" | "medium" | "high" | "stale";
   reasoning: string;
@@ -262,6 +263,7 @@ export function VaultDetail({
               percentage={item.data.percentage}
               conviction={item.data.conviction}
               reasoning={item.data.reasoning}
+              logoUri={item.data.logoUri}
             />
           );
           break;

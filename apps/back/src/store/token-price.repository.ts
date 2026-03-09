@@ -50,6 +50,25 @@ export async function findTokenByMint(mint: string): Promise<Token | null> {
   return prisma.token.findUnique({ where: { mint } });
 }
 
+export async function getLogoUriByMints(
+  mints: string[],
+): Promise<Map<string, string>> {
+  if (mints.length === 0) return new Map();
+
+  const tokens = await prisma.token.findMany({
+    where: { mint: { in: mints }, logoUri: { not: null } },
+    select: { mint: true, logoUri: true },
+  });
+
+  const map = new Map<string, string>();
+  for (const token of tokens) {
+    if (token.logoUri) {
+      map.set(token.mint, token.logoUri);
+    }
+  }
+  return map;
+}
+
 export async function upsertVaultToken(data: {
   name: string;
   symbol: string;
