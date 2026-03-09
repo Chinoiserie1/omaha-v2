@@ -13,6 +13,7 @@ import { confirmSubscribe } from "./handlers/confirm-subscribe.js";
 import { getFavoriteStatus } from "./handlers/favorite-status.js";
 import { toggleFavorite } from "./handlers/toggle-favorite.js";
 import { getRebalances } from "./handlers/rebalances.js";
+import { createVault } from "./handlers/create.js";
 
 export async function vaultRoutes(app: FastifyInstance) {
   app.get("/", listVaults);
@@ -25,6 +26,7 @@ export async function vaultRoutes(app: FastifyInstance) {
   // Auth-protected routes
   app.register(async (authRoutes) => {
     authRoutes.addHook("preHandler", verifyPrivyToken);
+    authRoutes.post("/", createVault);
     authRoutes.get("/:id/investor-status", getInvestorStatus);
     authRoutes.post("/:id/subscribe", subscribeToVault);
     authRoutes.post("/:id/redeem", redeemFromVault);
