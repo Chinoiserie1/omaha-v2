@@ -1,7 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
-import { getLogoUriByMints } from "../../../store/token-price.repository.js";
+import { getLogoUriByMints } from "../../../store/asset.repository.js";
 
 type GetVaultRequest = FastifyRequest<{
   Params: { id: string };

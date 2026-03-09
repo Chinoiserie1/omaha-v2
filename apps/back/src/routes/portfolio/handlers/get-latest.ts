@@ -2,7 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { PortfolioSnapshot } from "@repo/database";
 import * as quantRepo from "../../../store/quant.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
-import { getLogoUriByMints } from "../../../store/token-price.repository.js";
+import { getLogoUriByMints } from "../../../store/asset.repository.js";
 
 type GetLatestRequest = FastifyRequest<{
   Params: { quantId: string };

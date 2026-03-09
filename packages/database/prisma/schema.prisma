@@ -223,6 +223,7 @@ model TradeableAsset {
   name     String
   mint     String
   decimals Int
+  logoUri  String?
   isActive Boolean @default(true)
 }
 

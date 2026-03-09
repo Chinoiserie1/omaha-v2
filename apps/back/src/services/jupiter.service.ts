@@ -13,6 +13,7 @@ interface JupiterToken {
   symbol: string;
   name: string;
   decimals: number;
+  icon?: string;
 }
 
 export async function syncTradeableAssets(): Promise<number> {
@@ -30,6 +31,7 @@ export async function syncTradeableAssets(): Promise<number> {
       name: token.name,
       mint: token.id,
       decimals: token.decimals,
+      logoUri: token.icon ?? null,
     });
     upserted++;
   }

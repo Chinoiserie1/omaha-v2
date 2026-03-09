@@ -17,6 +17,7 @@ interface JupiterToken {
   symbol: string;
   name: string;
   decimals: number;
+  icon?: string;
 }
 
 async function sync(): Promise<void> {
@@ -38,12 +39,14 @@ async function sync(): Promise<void> {
         mint: token.id,
         decimals: token.decimals,
         isActive: true,
+        ...(token.icon ? { logoUri: token.icon } : {}),
       },
       create: {
         symbol: token.symbol,
         name: token.name,
         mint: token.id,
         decimals: token.decimals,
+        ...(token.icon ? { logoUri: token.icon } : {}),
       },
     });
     upserted++;
