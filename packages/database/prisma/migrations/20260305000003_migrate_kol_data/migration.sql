@@ -32,11 +32,15 @@ SELECT
     k."createdAt",
     k."updatedAt"
 FROM "Kol" k
-WHERE NOT EXISTS (SELECT 1 FROM "User" u WHERE u."twitterId" = k."restId");
+WHERE NOT EXISTS (
+    SELECT 1 FROM "User" u
+    WHERE (k."restId" IS NOT NULL AND u."twitterId" = k."restId")
+       OR (k."restId" IS NULL AND u."twitterUsername" = k."username")
+);
 
 -- Step 2: Create a Quant record for each Kol, using the SAME ID as the Kol
 -- This means all existing kolId foreign keys will point to the correct Quant
--- Joins on twitterId to work for both PLACEHOLDER and existing REAL users
+-- Joins on twitterId when available, falls back to twitterUsername for NULL restId
 INSERT INTO "Quant" (
     "id",
     "userId",
@@ -55,4 +59,5 @@ SELECT
     k."createdAt",
     k."updatedAt"
 FROM "Kol" k
-JOIN "User" u ON u."twitterId" = k."restId";
+JOIN "User" u ON (k."restId" IS NOT NULL AND u."twitterId" = k."restId")
+              OR (k."restId" IS NULL AND u."twitterUsername" = k."username");

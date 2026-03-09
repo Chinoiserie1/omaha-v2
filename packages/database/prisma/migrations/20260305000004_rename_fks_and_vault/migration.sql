@@ -1,4 +1,30 @@
 -- ============================================================
+-- Repair: Create missing Quant records for Kols with NULL restId
+-- (migration 3 may have missed these due to NULL join semantics)
+-- ============================================================
+INSERT INTO "Quant" (
+    "id",
+    "userId",
+    "isActive",
+    "algoEnabled",
+    "lastFetchedAt",
+    "createdAt",
+    "updatedAt"
+)
+SELECT
+    k."id",
+    u."id",
+    k."isActive",
+    k."algoEnabled",
+    k."lastFetchedAt",
+    k."createdAt",
+    k."updatedAt"
+FROM "Kol" k
+JOIN "User" u ON u."twitterUsername" = k."username"
+WHERE k."restId" IS NULL
+  AND NOT EXISTS (SELECT 1 FROM "Quant" q WHERE q."id" = k."id");
+
+-- ============================================================
 -- Part A: Rename kolId -> quantId on Tweet, PortfolioSnapshot,
 --         TweetImpact, SnapshotPerformance
 -- ============================================================
