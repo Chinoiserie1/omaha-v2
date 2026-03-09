@@ -1,8 +1,9 @@
 -- Data Migration: Create placeholder Users from Kol records, then create Quant records
 -- This migration preserves all existing data and foreign key relationships
 
--- Step 1: Create a placeholder User for each Kol
+-- Step 1: Create a placeholder User for each Kol that doesn't already have a matching User
 -- Uses gen_random_uuid() for User IDs to avoid conflicts with existing Users
+-- Skips Kols whose twitterId already exists as a User (e.g. REAL users who signed up)
 INSERT INTO "User" (
     "id",
     "twitterUsername",
@@ -30,10 +31,12 @@ SELECT
     false,
     k."createdAt",
     k."updatedAt"
-FROM "Kol" k;
+FROM "Kol" k
+WHERE NOT EXISTS (SELECT 1 FROM "User" u WHERE u."twitterId" = k."restId");
 
 -- Step 2: Create a Quant record for each Kol, using the SAME ID as the Kol
 -- This means all existing kolId foreign keys will point to the correct Quant
+-- Joins on twitterId to work for both PLACEHOLDER and existing REAL users
 INSERT INTO "Quant" (
     "id",
     "userId",
@@ -52,4 +55,4 @@ SELECT
     k."createdAt",
     k."updatedAt"
 FROM "Kol" k
-JOIN "User" u ON u."twitterUsername" = k."username" AND u."userType" = 'PLACEHOLDER';
+JOIN "User" u ON u."twitterId" = k."restId";
