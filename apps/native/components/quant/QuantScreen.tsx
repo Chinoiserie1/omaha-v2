@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { FlashList } from "@shopify/flash-list";
 import { router } from "expo-router";
@@ -7,6 +7,8 @@ import { useMyProfile } from "@/hooks/queries/use-profile";
 import { useQuantPortfolio } from "@/hooks/queries/use-quant-portfolio";
 import { useQuantVault } from "@/hooks/queries/use-quant-vault";
 import { useQuantSetupStatus } from "@/hooks/queries/use-quant-setup-status";
+import { useQueryClient } from "@tanstack/react-query";
+import { queryKeys } from "@/lib/query-keys";
 import { VaultThesis } from "@/components/vault/VaultThesis";
 import { VaultAllocationCard } from "@/components/vault/VaultAllocationCard";
 import { NotQuantState } from "./NotQuantState";
@@ -218,6 +220,7 @@ function StrategyContent({
 }
 
 export function QuantScreen() {
+  const queryClient = useQueryClient();
   const { data: profile, isLoading: profileLoading } = useMyProfile();
   const quantId = profile?.quantId ?? null;
 
@@ -230,11 +233,19 @@ export function QuantScreen() {
 
   const { data: setupStatus } = useQuantSetupStatus(quantId, pollingEnabled);
 
+  const hasInvalidated = useRef(false);
+
   useEffect(() => {
-    if (setupStatus?.status === "complete" || setupStatus?.status === "failed") {
+    if (setupStatus?.status === "complete" && isSettingUp && quantId && !hasInvalidated.current) {
+      hasInvalidated.current = true;
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.quant.portfolio(quantId),
+      });
+      setIsSettingUp(false);
+    } else if (setupStatus?.status === "failed") {
       setIsSettingUp(false);
     }
-  }, [setupStatus?.status]);
+  }, [setupStatus?.status, isSettingUp, quantId, queryClient]);
 
   const profileInfo: ProfileInfo = useMemo(
     () => ({
@@ -256,7 +267,7 @@ export function QuantScreen() {
   if (!quantId) {
     return (
       <View className="flex-1">
-        <NotQuantState onSetupStarted={() => setIsSettingUp(true)} />
+        <NotQuantState onSetupStarted={() => { hasInvalidated.current = false; setIsSettingUp(true); }} />
       </View>
     );
   }
@@ -284,7 +295,7 @@ export function QuantScreen() {
   if (!portfolio) {
     return (
       <View className="flex-1">
-        <NoStrategyState onSetupStarted={() => setIsSettingUp(true)} />
+        <NoStrategyState onSetupStarted={() => { hasInvalidated.current = false; setIsSettingUp(true); }} />
       </View>
     );
   }
