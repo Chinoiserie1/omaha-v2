@@ -16,7 +16,6 @@ import { NoStrategyState } from "./NoStrategyState";
 import { SetupLoadingState } from "./SetupLoadingState";
 import { VaultOverview } from "./VaultOverview";
 import { QuantHeader } from "./QuantHeader";
-import { QuantInvestCta } from "./QuantInvestCta";
 import { FixedChatButton } from "./FixedChatButton";
 import type { Allocation } from "@repo/shared";
 
@@ -46,7 +45,6 @@ type QuantSection =
   | { type: "thesis"; data: { thesisSummary: string; updatedAt: string } }
   | { type: "allocations-header"; data: { count: number } }
   | { type: "allocation"; data: Allocation }
-  | { type: "invest-cta" }
   | { type: "vault-overview"; data: VaultData & { holdingsCount: number } };
 
 function buildSections(
@@ -87,8 +85,6 @@ function buildSections(
       type: "vault-overview",
       data: { ...vault, holdingsCount: allocations.length },
     });
-  } else {
-    sections.push({ type: "invest-cta" });
   }
 
   return sections;
@@ -103,10 +99,6 @@ function StrategyContent({
   portfolio: PortfolioData;
   vault: VaultData | null;
 }) {
-  const handleInvest = useCallback(() => {
-    // TODO: wire vault creation mutation, then navigate to invest flow
-  }, []);
-
   const handleSparklesPress = useCallback(() => {
     router.push("/(app)/(tabs)/(chat)");
   }, []);
@@ -174,9 +166,6 @@ function StrategyContent({
             />
           );
           break;
-        case "invest-cta":
-          content = <QuantInvestCta onInvest={handleInvest} />;
-          break;
         case "vault-overview":
           content = (
             <VaultOverview
@@ -197,7 +186,7 @@ function StrategyContent({
 
       return <View className="mb-4">{content}</View>;
     },
-    [handleSparklesPress, handleInvest],
+    [handleSparklesPress],
   );
 
   const getItemType = useCallback((item: QuantSection) => item.type, []);
