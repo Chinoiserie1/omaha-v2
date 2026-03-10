@@ -11,6 +11,7 @@ import { ChatInput } from "./ChatInput";
 import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { PortfolioProposalCard } from "./PortfolioProposalCard";
+import { VaultDeployCard } from "./VaultDeployCard";
 
 interface ChatScreenProps {
   searchText: string;
@@ -44,6 +45,8 @@ function ChatConversation({ searchText }: ChatScreenProps) {
     setMessages,
     pendingProposal,
     clearProposal,
+    pendingVaultDeploy,
+    clearVaultDeploy,
   } = useChatWs();
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const hasLoadedHistory = useRef(false);
@@ -100,6 +103,15 @@ function ChatConversation({ searchText }: ChatScreenProps) {
     sendMessage("Let's try a different approach.");
   };
 
+  const handleVaultDeployed = () => {
+    clearVaultDeploy();
+    sendMessage("My vault has been deployed successfully!");
+  };
+
+  const handleVaultDeployCancelled = () => {
+    clearVaultDeploy();
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.flex}
@@ -126,6 +138,12 @@ function ChatConversation({ searchText }: ChatScreenProps) {
                   proposal={pendingProposal}
                   onAccepted={clearProposal}
                   onRejected={handleRejectProposal}
+                />
+              ) : null}
+              {pendingVaultDeploy && !isStreaming ? (
+                <VaultDeployCard
+                  onDeployed={handleVaultDeployed}
+                  onCancelled={handleVaultDeployCancelled}
                 />
               ) : null}
             </>

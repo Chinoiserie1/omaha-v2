@@ -7,6 +7,8 @@ import {
   streamPortfolioChat,
   parsePortfolioProposal,
   stripPortfolioBlock,
+  parseVaultDeployAction,
+  stripVaultDeployBlock,
 } from "../services/portfolio-chat.service.js";
 
 const HEARTBEAT_INTERVAL = 30_000;
@@ -83,9 +85,13 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
           const onDone = (fullText: string, messageId: string) => {
             isStreaming = false;
 
-            // Check for portfolio proposal in the response
+            // Check for structured actions in the response
             const proposal = quantId ? parsePortfolioProposal(fullText) : null;
-            const displayText = proposal ? stripPortfolioBlock(fullText) : fullText;
+            const vaultDeploy = quantId ? parseVaultDeployAction(fullText) : null;
+
+            let displayText = fullText;
+            if (proposal) displayText = stripPortfolioBlock(displayText);
+            if (vaultDeploy) displayText = stripVaultDeployBlock(displayText);
 
             if (socket.readyState === socket.OPEN) {
               socket.send(
@@ -100,6 +106,15 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
                   JSON.stringify({
                     event: "chat:portfolio_proposal",
                     data: proposal,
+                  }),
+                );
+              }
+
+              if (vaultDeploy) {
+                socket.send(
+                  JSON.stringify({
+                    event: "chat:vault_deploy",
+                    data: vaultDeploy,
                   }),
                 );
               }

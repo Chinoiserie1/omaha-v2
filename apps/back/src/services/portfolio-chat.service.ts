@@ -1,4 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
+import { prisma } from "@repo/database";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
 import { createChatMessage, getChatHistory } from "../store/chat.repository.js";
@@ -13,13 +14,32 @@ function buildPortfolioSystemPrompt(
   thesisSummary: string,
   allocationsText: string,
   availableAssets: string[],
+  hasVault: boolean,
 ): string {
+  const vaultContext = hasVault
+    ? "VAULT STATUS: You have an active vault deployed on-chain. Portfolio changes will trigger automatic rebalancing."
+    : `VAULT STATUS: You do NOT have a vault deployed on-chain yet. Without a vault, your portfolio strategy is simulation-only.
+
+VAULT DEPLOYMENT:
+- If the user asks to deploy, create, or launch their vault, include the vault_deploy block below.
+- If the user has set up allocations but has no vault, proactively suggest deploying their vault so their strategy goes live on-chain.
+- Only suggest vault deployment when it's contextually relevant (e.g. after setting up a portfolio, or when discussing going live).
+
+VAULT DEPLOY FORMAT:
+When suggesting or confirming vault deployment, include this block at the end of your message:
+
+\`\`\`vault_deploy
+{ "action": "create_vault" }
+\`\`\``;
+
   return `You are the Omaha AI portfolio strategist. You help users refine their crypto trading strategy and optimize their portfolio allocations.
 
 CURRENT PORTFOLIO:
 Thesis: ${thesisSummary}
 Allocations:
 ${allocationsText}
+
+${vaultContext}
 
 AVAILABLE ASSETS: ${availableAssets.join(", ")}
 
@@ -95,6 +115,27 @@ export function stripPortfolioBlock(text: string): string {
   return text.replace(/\n*```portfolio\s*\n[\s\S]*?\n```\s*/g, "").trim();
 }
 
+export function parseVaultDeployAction(
+  text: string,
+): { action: "create_vault" } | null {
+  const match = text.match(/```vault_deploy\s*\n([\s\S]*?)\n```/);
+  if (!match?.[1]) return null;
+
+  try {
+    const parsed = JSON.parse(match[1]);
+    if (parsed.action === "create_vault") {
+      return { action: "create_vault" };
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+export function stripVaultDeployBlock(text: string): string {
+  return text.replace(/\n*```vault_deploy\s*\n[\s\S]*?\n```\s*/g, "").trim();
+}
+
 export async function streamPortfolioChat(
   userId: string,
   quantId: string,
@@ -106,9 +147,10 @@ export async function streamPortfolioChat(
   try {
     await createChatMessage(userId, "user", userMessage);
 
-    const [history, snapshot] = await Promise.all([
+    const [history, snapshot, vault] = await Promise.all([
       getChatHistory(userId, MAX_CONTEXT_MESSAGES),
       portfolioRepo.findLatestSnapshot(quantId),
+      prisma.vault.findUnique({ where: { quantId }, select: { id: true } }),
     ]);
 
     const messages = history.reverse().map((msg) => ({
@@ -133,6 +175,7 @@ export async function streamPortfolioChat(
       thesisSummary,
       allocationsText,
       availableAssets,
+      vault !== null,
     );
 
     const stream = client.messages.stream({

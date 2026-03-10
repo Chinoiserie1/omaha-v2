@@ -22,15 +22,21 @@ export interface PortfolioProposal {
   changes: string[];
 }
 
+export interface VaultDeployAction {
+  action: "create_vault";
+}
+
 interface UseChatWsReturn {
   messages: ChatMessage[];
   streamingContent: string;
   isStreaming: boolean;
   isConnected: boolean;
   pendingProposal: PortfolioProposal | null;
+  pendingVaultDeploy: VaultDeployAction | null;
   sendMessage: (content: string) => void;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
   clearProposal: () => void;
+  clearVaultDeploy: () => void;
 }
 
 export function useChatWs(): UseChatWsReturn {
@@ -44,6 +50,8 @@ export function useChatWs(): UseChatWsReturn {
   const [isConnected, setIsConnected] = useState(false);
   const [pendingProposal, setPendingProposal] =
     useState<PortfolioProposal | null>(null);
+  const [pendingVaultDeploy, setPendingVaultDeploy] =
+    useState<VaultDeployAction | null>(null);
 
   const connect = useCallback(async () => {
     try {
@@ -67,6 +75,7 @@ export function useChatWs(): UseChatWsReturn {
               thesisSummary?: string;
               allocations?: PortfolioProposal["allocations"];
               changes?: string[];
+              action?: string;
             };
           };
 
@@ -100,6 +109,12 @@ export function useChatWs(): UseChatWsReturn {
                   allocations: msg.data.allocations,
                   changes: msg.data.changes,
                 });
+              }
+              break;
+
+            case "chat:vault_deploy":
+              if (msg.data.action === "create_vault") {
+                setPendingVaultDeploy({ action: "create_vault" });
               }
               break;
 
@@ -155,6 +170,7 @@ export function useChatWs(): UseChatWsReturn {
       setIsStreaming(true);
       setStreamingContent("");
       setPendingProposal(null);
+      setPendingVaultDeploy(null);
 
       wsRef.current.send(
         JSON.stringify({ event: "chat:message", data: { content } }),
@@ -167,14 +183,20 @@ export function useChatWs(): UseChatWsReturn {
     setPendingProposal(null);
   }, []);
 
+  const clearVaultDeploy = useCallback(() => {
+    setPendingVaultDeploy(null);
+  }, []);
+
   return {
     messages,
     streamingContent,
     isStreaming,
     isConnected,
     pendingProposal,
+    pendingVaultDeploy,
     sendMessage,
     setMessages,
     clearProposal,
+    clearVaultDeploy,
   };
 }
