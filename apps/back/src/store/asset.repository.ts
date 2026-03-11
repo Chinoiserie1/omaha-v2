@@ -28,9 +28,12 @@ export async function upsertAsset(data: {
 }
 
 export async function findAllActiveAssets(): Promise<TradeableAsset[]> {
-  return prisma.tradeableAsset.findMany({
+  // Omit logoUri — column may not exist on older prod DBs
+  const rows = await prisma.tradeableAsset.findMany({
     where: { isActive: true },
+    select: { id: true, symbol: true, name: true, mint: true, decimals: true, isActive: true },
   });
+  return rows as unknown as TradeableAsset[];
 }
 
 export async function findAssetBySymbol(

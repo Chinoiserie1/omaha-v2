@@ -41,7 +41,7 @@ export async function buildFundSolPlan(
   // 2. Validate price impact
   if (!validatePriceImpact(jupQuote, env.MAX_PRICE_IMPACT_BPS)) {
     throw new Error(
-      `Price impact too high: ${jupQuote["priceImpactPct"]}%`,
+      `Price impact too high: ${jupQuote.priceImpactPct}%`,
     );
   }
 
@@ -70,7 +70,7 @@ export async function buildFundSolPlan(
 
   // 5. Build quote info
   const outputAmountSol =
-    Number(jupQuote["outAmount"]) / 10 ** 9; // SOL has 9 decimals
+    Number(jupQuote.outAmount) / 10 ** 9; // SOL has 9 decimals
 
   const quote: FundSolQuote = {
     amountUsd,

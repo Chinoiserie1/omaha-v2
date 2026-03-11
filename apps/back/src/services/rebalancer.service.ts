@@ -180,6 +180,29 @@ export async function rebalanceVault(
     mint: a.mint ?? assetsMap.get(a.asset)?.mint ?? "",
   }));
 
+  // Warn about allocations that couldn't resolve a mint
+  const skippedAssets = allocations.filter(a => !a.mint && a.asset !== "USDC");
+  if (skippedAssets.length > 0) {
+    logger.warn(
+      { quantId, assets: skippedAssets.map(a => a.asset) },
+      "Allocations skipped — no mint found in DB"
+    );
+  }
+
+  // Build reverse map: mint → decimals (for sell-to-zero holdings not in assetsMap by symbol)
+  const mintToDecimals = new Map<string, number>();
+  for (const [, v] of assetsMap) mintToDecimals.set(v.mint, v.decimals);
+
+  // Build reverse map: mint → symbol (for enriching on-chain holdings)
+  const mintToSymbol = new Map<string, string>();
+  for (const [symbol, v] of assetsMap) mintToSymbol.set(v.mint, symbol);
+
+  // 6b. Enrich holdings with real symbols from assetsMap
+  for (const h of holdings) {
+    const realSymbol = mintToSymbol.get(h.mint);
+    if (realSymbol) h.symbol = realSymbol;
+  }
+
   // 7. Compute deltas
   const { sells, buys } = computeSwapDeltas(
     allocations,
@@ -256,7 +279,7 @@ export async function rebalanceVault(
         throw new Error(`No price data for ${sell.asset}`);
       }
       const tokenAmount = sell.deltaUsd / holding.price;
-      const decimals = assetsMap.get(sell.asset)?.decimals ?? 9;
+      const decimals = mintToDecimals.get(sell.mint) ?? assetsMap.get(sell.asset)?.decimals ?? 9;
       const amountLamports = Math.floor(
         tokenAmount * Math.pow(10, decimals)
       ).toString();

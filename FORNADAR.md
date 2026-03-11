@@ -350,6 +350,22 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 
 **Behavior**: Toggle-driven — `useDirectAllocations: false` (or absent) reverts to normal LLM path even if allocation data exists. Every cron run creates a new snapshot for chart continuity.
 
+### ix-mapper-ts vs GLAM SDK for Jupiter Swaps (Mar 2026)
+
+**Investigation**: Checked whether `@glamsystems/ix-mapper` (npm v0.2.3) supports Jupiter swaps, and how it relates to the GLAM SDK's `jupiterSwap.swap()`.
+
+**Findings**:
+
+1. **ix-mapper does NOT support Jupiter.** Its `REMAPPING_CONFIGS` covers 8 programs: System Program, SPL Token, Token-2022, Drift (13 ixs), Drift Vaults (5 ixs), Kamino Lending (8 ixs), Kamino Vaults (2 ixs), Kamino Farms (5 ixs). No config for `JUP6LkbZbjS1jKKwapdHNy74zcZ3tLUZoi5QNyVTaV4`.
+
+2. **GLAM SDK's `jupiterSwap.swap()` does NOT use ix-mapper.** It calls `protocolProgram.methods.jupiterSwap(swapIx.data)` — a dedicated Anchor CPI method in the `glam_protocol` IDL that takes raw Jupiter swap instruction data as an argument and Jupiter accounts as `remainingAccounts`. This is architecturally different from ix-mapper's discriminator-remapping approach.
+
+3. **For Jupiter, ix-mapper's pattern doesn't apply.** Jupiter swaps go through a special on-chain CPI path where the entire Jupiter instruction is passed as data+accounts, not remapped at the discriminator level. To swap via GLAM vaults, you must either use `jupiterSwap.swap()` or manually construct the same `jupiter_swap` Anchor CPI.
+
+4. **ix-mapper IS the correct approach for Drift, Kamino, SPL Token, and System Program.** The CEO's guidance to "use native SDKs + ix-mapper" applies to these protocols: build the instruction with the native SDK, then `mapToGlamIx()` transforms it into the GLAM proxy equivalent.
+
+**Current codebase**: `apps/back/src/services/jupiter-swap.service.ts` uses `client.jupiterSwap.swap()` from `@glamsystems/glam-sdk` — this is correct for Jupiter.
+
 ### Twitter API: profile-conversation Author Investigation (Mar 2026)
 
 **Investigation**: Analyzed `profile-conversation` entries from `user-tweets` API to understand tweet authorship. Found that `legacy.screen_name` is **null** in this API — screen name lives at `core.user_results.result.core.screen_name`, which `TweetResultSchema` does not parse. Only `legacy.user_id_str` is available for author identification.

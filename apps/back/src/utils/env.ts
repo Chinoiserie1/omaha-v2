@@ -41,7 +41,7 @@ const envSchema = z.object({
     .default("true")
     .transform((v: string) => v === "true"),
   MAX_PRICE_IMPACT_BPS: z.coerce.number().default(100),
-  MIN_SWAP_USD: z.coerce.number().default(5),
+  MIN_SWAP_USD: z.coerce.number().default(0.1),
   MAX_SWAP_EQUITY_PCT: z.coerce.number().default(25),
   SNAPSHOT_STALENESS_H: z.coerce.number().default(24),
 
