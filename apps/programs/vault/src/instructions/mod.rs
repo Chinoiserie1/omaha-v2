@@ -1,5 +1,4 @@
 pub mod initialize;
-pub mod withdraw;
 pub mod set_share_price;
 pub mod execute;
 pub mod add_owner;
@@ -7,9 +6,11 @@ pub mod remove_owner;
 pub mod deposit_with_price;
 pub mod request_deposit;
 pub mod fulfill_deposit;
+pub mod withdraw_with_price;
+pub mod request_withdraw;
+pub mod fulfill_withdraw;
 
 pub use initialize::Initialize;
-pub use withdraw::Withdraw;
 pub use set_share_price::SetSharePrice;
 pub use execute::Execute;
 pub use add_owner::AddOwner;
@@ -17,3 +18,6 @@ pub use remove_owner::RemoveOwner;
 pub use deposit_with_price::DepositWithPrice;
 pub use request_deposit::RequestDeposit;
 pub use fulfill_deposit::FulfillDeposit;
+pub use withdraw_with_price::WithdrawWithPrice;
+pub use request_withdraw::RequestWithdraw;
+pub use fulfill_withdraw::FulfillWithdraw;

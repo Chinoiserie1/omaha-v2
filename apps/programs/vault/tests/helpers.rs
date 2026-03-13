@@ -106,10 +106,25 @@ pub fn initialize_data(share_decimals: u8, share_price: u64) -> Vec<u8> {
     data
 }
 
-/// Build Withdraw instruction data: [disc=0x02] [shares: u64 LE].
-pub fn withdraw_data(shares: u64) -> Vec<u8> {
-    let mut data = vec![0x02];
+/// Build WithdrawWithPrice instruction data: [disc=0x0A] [price: u64 LE] [shares: u64 LE].
+pub fn withdraw_with_price_data(price: u64, shares: u64) -> Vec<u8> {
+    let mut data = vec![0x0A];
+    data.extend_from_slice(&price.to_le_bytes());
     data.extend_from_slice(&shares.to_le_bytes());
+    data
+}
+
+/// Build RequestWithdraw instruction data: [disc=0x0B] [shares: u64 LE].
+pub fn request_withdraw_data(shares: u64) -> Vec<u8> {
+    let mut data = vec![0x0B];
+    data.extend_from_slice(&shares.to_le_bytes());
+    data
+}
+
+/// Build FulfillWithdraw instruction data: [disc=0x0C] [price: u64 LE].
+pub fn fulfill_withdraw_data(price: u64) -> Vec<u8> {
+    let mut data = vec![0x0C];
+    data.extend_from_slice(&price.to_le_bytes());
     data
 }
 
@@ -194,6 +209,46 @@ pub fn create_pending_deposit_data(
 
 /// Create a pending deposit account owned by the program with the given data.
 pub fn make_pending_deposit_account(data: Vec<u8>) -> Account {
+    Account {
+        lamports: 1_000_000_000,
+        data,
+        owner: program_id(),
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+/// Derive pending withdraw PDA: seeds = ["pending_withdraw", vault_state, withdrawer].
+pub fn pending_withdraw_pda(vault_state: &Pubkey, withdrawer: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[b"pending_withdraw", vault_state.as_ref(), withdrawer.as_ref()],
+        &program_id(),
+    )
+}
+
+/// Create raw PendingWithdraw bytes with the given parameters.
+pub fn create_pending_withdraw_data(
+    vault_state: &Pubkey,
+    withdrawer: &Pubkey,
+    bump: u8,
+    shares: u64,
+) -> Vec<u8> {
+    use omaha_vault::state::PendingWithdraw;
+
+    let mut data = vec![0u8; PendingWithdraw::LEN];
+
+    data[0] = 3; // PENDING_WITHDRAW_DISCRIMINATOR
+    data[1] = bump;
+    // _padding at [2..8] = zeroed
+    data[8..40].copy_from_slice(vault_state.as_ref());
+    data[40..72].copy_from_slice(withdrawer.as_ref());
+    data[72..80].copy_from_slice(&shares.to_le_bytes());
+
+    data
+}
+
+/// Create a pending withdraw account owned by the program with the given data.
+pub fn make_pending_withdraw_account(data: Vec<u8>) -> Account {
     Account {
         lamports: 1_000_000_000,
         data,

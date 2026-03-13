@@ -39,6 +39,15 @@ See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
  |  depositor         |
  |  amount            |
  +--------------------+
+
+          |  PDA seeds: ["pending_withdraw", vault_state, withdrawer]
+          v
+ +--------------------+
+ | PendingWithdraw PDA|  (80 bytes, created by RequestWithdraw,
+ |  vault_state       |   closed by FulfillWithdraw)
+ |  withdrawer        |
+ |  shares            |
+ +--------------------+
           |
           | vault_base_ata (holds USDC)
           v
@@ -75,10 +84,6 @@ See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
      |    target_program,        |  (admin or owner)
      |    forwarded_data         |
      |                          |
-     |                          | -- Withdraw -----> vault
-     |                          |    shares burned
-     |                          |    base tokens out
-     |                          |
      | -- AddOwner/RemoveOwner-> |  Manage operator list (admin only)
      |                          |
      | -- DepositWithPrice ---> |  Admin sets price + deposits atomically
@@ -89,6 +94,15 @@ See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
      |                          |
      | -- FulfillDeposit ------> |  Admin sets price, mints shares for
      |    new_price              |  pending deposit, closes PDA
+     |                          |
+     | -- WithdrawWithPrice --> |  Admin sets price + withdraws atomically
+     |    new_price, shares     |  (2 signers: admin + withdrawer)
+     |                          |
+     |                          | -- RequestWithdraw --> vault
+     |                          |    shares burned, PendingWithdraw PDA created
+     |                          |
+     | -- FulfillWithdraw -----> |  Admin sets price, transfers base tokens
+     |    new_price              |  for pending withdraw, closes PDA
 ```
 
 ---
@@ -100,6 +114,7 @@ See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
 | vault_state  | `"vault"` + admin_pubkey + base_mint      | `VaultState.bump` | Program-owned; signs CPIs as PDA       |
 | share_mint   | `"share_mint"` + vault_state_pubkey       | not stored        | vault_state PDA is SPL mint authority  |
 | pending_deposit | `"pending_deposit"` + vault_state + depositor | `PendingDeposit.bump` | Program-owned; closed after fulfill |
+| pending_withdraw | `"pending_withdraw"` + vault_state + withdrawer | `PendingWithdraw.bump` | Program-owned; closed after fulfill |
 
 The vault_state PDA is the mint authority because it is a program-derived address
 that the program can reconstruct and sign for at CPI time using `invoke_signed`.
@@ -131,17 +146,19 @@ Total: 1+1+1+1+4+32+32+32+8+320 = **432 bytes**
 
 ## Instruction Summary Table
 
-| Disc  | Name          | Access        | Accounts | Data (after disc) | Doc                           |
-|-------|---------------|---------------|----------|--------------------|-------------------------------|
-| 0x00  | Initialize    | Admin signer  | 6        | 1 + 8 bytes        | [00-initialize.md](./00-initialize.md)       |
-| 0x02  | Withdraw      | Anyone        | 7        | 8 bytes            | [02-withdraw.md](./02-withdraw.md)           |
-| 0x03  | SetSharePrice | Admin only    | 2        | 8 bytes            | [03-set-share-price.md](./03-set-share-price.md) |
-| 0x04  | Execute       | Admin or Owner| 3+N      | variable           | [04-execute.md](./04-execute.md)             |
-| 0x05  | AddOwner      | Admin only    | 2        | 32 bytes           | [05-add-owner.md](./05-add-owner.md)         |
-| 0x06  | RemoveOwner   | Admin only    | 2        | 32 bytes           | [06-remove-owner.md](./06-remove-owner.md)   |
-| 0x07  | DepositWithPrice | Admin only | 8        | 8 + 8 bytes        | [07-deposit-with-price.md](./07-deposit-with-price.md) |
-| 0x08  | RequestDeposit | Anyone       | 7        | 8 bytes            | [08-request-deposit.md](./08-request-deposit.md)       |
-| 0x09  | FulfillDeposit | Admin only   | 7        | 8 bytes            | [09-fulfill-deposit.md](./09-fulfill-deposit.md)       |
+| Disc  | Name              | Access             | Accounts | Data (after disc) | Doc                           |
+|-------|-------------------|--------------------|----------|--------------------|-------------------------------|
+| 0x00  | Initialize        | Admin signer       | 6        | 1 + 8 bytes        | [00-initialize.md](./00-initialize.md)       |
+| 0x03  | SetSharePrice     | Admin only         | 2        | 8 bytes            | [03-set-share-price.md](./03-set-share-price.md) |
+| 0x04  | Execute           | Admin or Owner     | 3+N      | variable           | [04-execute.md](./04-execute.md)             |
+| 0x05  | AddOwner          | Admin only         | 2        | 32 bytes           | [05-add-owner.md](./05-add-owner.md)         |
+| 0x06  | RemoveOwner       | Admin only         | 2        | 32 bytes           | [06-remove-owner.md](./06-remove-owner.md)   |
+| 0x07  | DepositWithPrice  | Admin only         | 8        | 8 + 8 bytes        | [07-deposit-with-price.md](./07-deposit-with-price.md) |
+| 0x08  | RequestDeposit    | Anyone             | 7        | 8 bytes            | [08-request-deposit.md](./08-request-deposit.md)       |
+| 0x09  | FulfillDeposit    | Admin only         | 7        | 8 bytes            | [09-fulfill-deposit.md](./09-fulfill-deposit.md)       |
+| 0x0A  | WithdrawWithPrice | Admin only         | 8        | 8 + 8 bytes        | [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) |
+| 0x0B  | RequestWithdraw   | Anyone             | 7        | 8 bytes            | [0B-request-withdraw.md](./0B-request-withdraw.md)     |
+| 0x0C  | FulfillWithdraw   | Admin only         | 7        | 8 bytes            | [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)     |
 
 Data column excludes the leading discriminator byte consumed by `process_instruction`.
 
@@ -149,17 +166,19 @@ Data column excludes the leading discriminator byte consumed by `process_instruc
 
 ## Access Control Matrix
 
-| Instruction   | Admin | Owner | Anyone |
-|---------------|-------|-------|--------|
-| Initialize    | Yes   | No    | No     |
-| Withdraw      | Yes   | Yes   | Yes    |
-| SetSharePrice | Yes   | No    | No     |
-| Execute       | Yes   | Yes   | No     |
-| AddOwner      | Yes   | No    | No     |
-| RemoveOwner      | Yes   | No    | No     |
-| DepositWithPrice | Yes   | No    | No     |
-| RequestDeposit   | Yes   | Yes   | Yes    |
-| FulfillDeposit   | Yes   | No    | No     |
+| Instruction       | Admin | Owner | Anyone |
+|-------------------|-------|-------|--------|
+| Initialize        | Yes   | No    | No     |
+| SetSharePrice     | Yes   | No    | No     |
+| Execute           | Yes   | Yes   | No     |
+| AddOwner          | Yes   | No    | No     |
+| RemoveOwner       | Yes   | No    | No     |
+| DepositWithPrice  | Yes   | No    | No     |
+| RequestDeposit    | Yes   | Yes   | Yes    |
+| FulfillDeposit    | Yes   | No    | No     |
+| WithdrawWithPrice | Yes   | No    | No     |
+| RequestWithdraw   | Yes   | Yes   | Yes    |
+| FulfillWithdraw   | Yes   | No    | No     |
 
 "Owner" means a pubkey present in `VaultState.owners[0..num_owners]`.
 `is_authorized` checks admin first, then iterates the active owner slots.
@@ -207,11 +226,12 @@ shares_to_mint = 10_000_000 * 10^6 / 1_500_000
 | 0x102 | InvalidAmount       | Deposit/withdraw amount or resulting shares = 0     | DepositWithPrice, Withdraw, RequestDeposit |
 | 0x103 | OwnersFull          | owners array at capacity (10)                       | AddOwner                           |
 | 0x104 | OwnerNotFound       | Pubkey not present in owners array                  | RemoveOwner                        |
-| 0x105 | InvalidDiscriminator| Account data[0] != VAULT_DISCRIMINATOR (1)          | Withdraw, SetSharePrice, Execute, AddOwner, RemoveOwner, DepositWithPrice, RequestDeposit, FulfillDeposit |
-| 0x106 | MathOverflow        | checked_mul / checked_pow returned None             | DepositWithPrice, Withdraw, FulfillDeposit |
-| 0x107 | InsufficientFunds   | vault_base_ata balance < base_to_return             | Withdraw (SPL Transfer CPI fails)  |
+| 0x105 | InvalidDiscriminator| Account data[0] != VAULT_DISCRIMINATOR (1)          | SetSharePrice, Execute, AddOwner, RemoveOwner, DepositWithPrice, RequestDeposit, FulfillDeposit, WithdrawWithPrice, RequestWithdraw, FulfillWithdraw |
+| 0x106 | MathOverflow        | checked_mul / checked_pow returned None             | DepositWithPrice, FulfillDeposit, WithdrawWithPrice, FulfillWithdraw |
+| 0x107 | InsufficientFunds   | vault_base_ata balance < base_to_return             | WithdrawWithPrice, FulfillWithdraw (SPL Transfer CPI fails) |
 | 0x108 | DuplicateOwner      | Pubkey already present in owners array              | AddOwner                           |
-| 0x109 | InvalidPendingDeposit| PendingDeposit account has wrong discriminator      | FulfillDeposit                     |
+| 0x109 | InvalidPendingDeposit| PendingDeposit account has wrong discriminator     | FulfillDeposit                     |
+| 0x10A | InvalidPendingWithdraw| PendingWithdraw account has wrong discriminator   | FulfillWithdraw                    |
 
 All codes are `ProgramError::Custom(code)`. Base offset 0x100 avoids collision
 with built-in `ProgramError` variants.
@@ -234,9 +254,11 @@ year, `2` years exemption threshold (unchanged since Solana mainnet launch).
 | VaultState  | 432      | (432+128)*3480*2     | 3,897,600 |
 | ShareMint   | 82       | (82+128)*3480*2      | 1,461,600 |
 | PendingDeposit | 80    | (80+128)*3480*2      | 1,447,680 |
+| PendingWithdraw | 80   | (80+128)*3480*2      | 1,447,680 |
 
 VaultState and ShareMint rent is transferred from the admin during `Initialize`.
 PendingDeposit rent is paid by the depositor during `RequestDeposit` and refunded on `FulfillDeposit`.
+PendingWithdraw rent is paid by the withdrawer during `RequestWithdraw` and refunded on `FulfillWithdraw`.
 
 ---
 
@@ -249,7 +271,6 @@ instruction_data  ->  split_first()  ->  (discriminator, remaining_data)
                                                |
                             match discriminator {
                               0x00 => Initialize::try_from((data, accounts))?.process()
-                              0x02 => Withdraw::try_from(...)?.process()
                               0x03 => SetSharePrice::try_from(...)?.process()
                               0x04 => Execute::try_from(...)?.process()
                               0x05 => AddOwner::try_from(...)?.process()
@@ -257,6 +278,9 @@ instruction_data  ->  split_first()  ->  (discriminator, remaining_data)
                               0x07 => DepositWithPrice::try_from(...)?.process()
                               0x08 => RequestDeposit::try_from(...)?.process()
                               0x09 => FulfillDeposit::try_from(...)?.process()
+                              0x0A => WithdrawWithPrice::try_from(...)?.process()
+                              0x0B => RequestWithdraw::try_from(...)?.process()
+                              0x0C => FulfillWithdraw::try_from(...)?.process()
                               _    => Err(InvalidInstructionData)
                             }
 ```
@@ -273,10 +297,9 @@ from `split_first().ok_or(...)` before the match is reached.
 
 ## Cross-References
 
-Instruction detail docs (to be written alongside this file):
+Instruction detail docs:
 
 - [00-initialize.md](./00-initialize.md)
-- [02-withdraw.md](./02-withdraw.md)
 - [03-set-share-price.md](./03-set-share-price.md)
 - [04-execute.md](./04-execute.md)
 - [05-add-owner.md](./05-add-owner.md)
@@ -284,6 +307,9 @@ Instruction detail docs (to be written alongside this file):
 - [07-deposit-with-price.md](./07-deposit-with-price.md)
 - [08-request-deposit.md](./08-request-deposit.md)
 - [09-fulfill-deposit.md](./09-fulfill-deposit.md)
+- [0A-withdraw-with-price.md](./0A-withdraw-with-price.md)
+- [0B-request-withdraw.md](./0B-request-withdraw.md)
+- [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)
 
 Source files:
 

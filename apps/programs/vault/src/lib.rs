@@ -24,8 +24,9 @@ pub mod rent;
 pub mod state;
 
 use instructions::{
-    AddOwner, DepositWithPrice, Execute, FulfillDeposit, Initialize,
-    RemoveOwner, RequestDeposit, SetSharePrice, Withdraw,
+    AddOwner, DepositWithPrice, Execute, FulfillDeposit, FulfillWithdraw,
+    Initialize, RemoveOwner, RequestDeposit, RequestWithdraw, SetSharePrice,
+    WithdrawWithPrice,
 };
 
 /// Route instructions by single-byte discriminator.
@@ -41,9 +42,6 @@ pub fn process_instruction(
     match discriminator {
         &Initialize::DISCRIMINATOR => {
             Initialize::try_from((data, accounts))?.process()
-        }
-        &Withdraw::DISCRIMINATOR => {
-            Withdraw::try_from((data, accounts))?.process()
         }
         &SetSharePrice::DISCRIMINATOR => {
             SetSharePrice::try_from((data, accounts))?.process()
@@ -65,6 +63,15 @@ pub fn process_instruction(
         }
         &FulfillDeposit::DISCRIMINATOR => {
             FulfillDeposit::try_from((data, accounts))?.process()
+        }
+        &WithdrawWithPrice::DISCRIMINATOR => {
+            WithdrawWithPrice::try_from((data, accounts))?.process()
+        }
+        &RequestWithdraw::DISCRIMINATOR => {
+            RequestWithdraw::try_from((data, accounts))?.process()
+        }
+        &FulfillWithdraw::DISCRIMINATOR => {
+            FulfillWithdraw::try_from((data, accounts))?.process()
         }
         _ => Err(ProgramError::InvalidInstructionData),
     }

@@ -162,7 +162,7 @@ fn run_deposit_expect_err(
     );
 }
 
-/// Helper to run a withdraw and assert an error.
+/// Helper to run a WithdrawWithPrice and assert an error.
 fn run_withdraw_expect_err(
     share_decimals: u8,
     share_price: u64,
@@ -186,19 +186,21 @@ fn run_withdraw_expect_err(
     let withdrawer_base_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        withdraw_data(shares_to_burn),
+        withdraw_with_price_data(share_price, shares_to_burn),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(withdrawer, true),
             AccountMeta::new(withdrawer_share_ata, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(vault_base_ata, false),
             AccountMeta::new(withdrawer_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer_share_ata, create_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
         (share_mint_key, create_mint(&vault_key, share_decimals, shares_to_burn)),
@@ -431,19 +433,21 @@ fn test_withdraw_high_decimals_success() {
     let withdrawer_base_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        withdraw_data(shares_to_burn),
+        withdraw_with_price_data(share_price, shares_to_burn),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(withdrawer, true),
             AccountMeta::new(withdrawer_share_ata, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(vault_base_ata, false),
             AccountMeta::new(withdrawer_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer_share_ata, create_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
         (share_mint_key, create_mint(&vault_key, share_decimals, shares_to_burn)),
@@ -489,19 +493,21 @@ fn test_withdraw_truncation_rounding() {
     let withdrawer_base_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        withdraw_data(shares_to_burn),
+        withdraw_with_price_data(share_price, shares_to_burn),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(withdrawer, true),
             AccountMeta::new(withdrawer_share_ata, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(vault_base_ata, false),
             AccountMeta::new(withdrawer_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer_share_ata, create_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
         (share_mint_key, create_mint(&vault_key, share_decimals, shares_to_burn)),
@@ -589,21 +595,22 @@ fn test_deposit_withdraw_round_trip() {
     );
     assert_eq!(shares_minted, deposit_amount); // 1:1 at this price
 
-    // ── Step 2: Withdraw using resulting accounts ──
+    // ── Step 2: WithdrawWithPrice using resulting accounts ──
     let updated_vault_base = deposit_result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_base_ata).unwrap().1.clone();
     let updated_share_mint = deposit_result.resulting_accounts.iter()
         .find(|(k, _)| *k == share_mint_key).unwrap().1.clone();
 
     let withdraw_ix = build_instruction(
-        withdraw_data(shares_minted),
+        withdraw_with_price_data(share_price, shares_minted),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(user, true),
             AccountMeta::new(user_share_ata, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(vault_base_ata, false),
             AccountMeta::new(user_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
         ],
     );
@@ -612,6 +619,7 @@ fn test_deposit_withdraw_round_trip() {
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
 
     let withdraw_accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user_share_ata, user_shares_after_deposit),
         (share_mint_key, updated_share_mint),
@@ -705,7 +713,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
     // 10 * 10^6 / 3_000_000 = 3 (truncated)
     assert_eq!(shares_minted, 3);
 
-    // ── Step 2: Withdraw ──
+    // ── Step 2: WithdrawWithPrice ──
     let updated_vault_base = deposit_result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_base_ata).unwrap().1.clone();
     let updated_share_mint = deposit_result.resulting_accounts.iter()
@@ -714,19 +722,21 @@ fn test_deposit_withdraw_round_trip_lossy() {
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
 
     let withdraw_ix = build_instruction(
-        withdraw_data(shares_minted),
+        withdraw_with_price_data(share_price, shares_minted),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(user, true),
             AccountMeta::new(user_share_ata, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(vault_base_ata, false),
             AccountMeta::new(user_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
         ],
     );
 
     let withdraw_accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user_share_ata, user_shares_after),
         (share_mint_key, updated_share_mint),

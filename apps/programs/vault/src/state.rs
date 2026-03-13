@@ -124,6 +124,33 @@ impl PendingDeposit {
     pub const LEN: usize = core::mem::size_of::<Self>();
 }
 
+/// Account discriminator for PendingWithdraw.
+pub const PENDING_WITHDRAW_DISCRIMINATOR: u8 = 3;
+
+/// On-chain pending withdraw state — zero-copy via bytemuck.
+///
+/// Layout (80 bytes total):
+///   discriminator  (1)  — account type guard (3)
+///   bump           (1)  — PDA bump seed
+///   _padding       (6)  — alignment
+///   vault_state    (32) — vault this withdraw belongs to
+///   withdrawer     (32) — who requested the withdraw
+///   shares         (8)  — share tokens that were burned
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct PendingWithdraw {
+    pub discriminator: u8,
+    pub bump: u8,
+    pub _padding: [u8; 6],
+    pub vault_state: [u8; 32],
+    pub withdrawer: [u8; 32],
+    pub shares: u64,
+}
+
+impl PendingWithdraw {
+    pub const LEN: usize = core::mem::size_of::<Self>();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -154,6 +181,13 @@ mod tests {
         // 1+1+6+32+32+8 = 80
         assert_eq!(PendingDeposit::LEN, 80);
         assert_eq!(PendingDeposit::LEN, core::mem::size_of::<PendingDeposit>());
+    }
+
+    #[test]
+    fn test_pending_withdraw_len() {
+        // 1+1+6+32+32+8 = 80
+        assert_eq!(PendingWithdraw::LEN, 80);
+        assert_eq!(PendingWithdraw::LEN, core::mem::size_of::<PendingWithdraw>());
     }
 
     #[test]
