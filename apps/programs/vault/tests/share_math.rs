@@ -59,7 +59,7 @@ fn create_token_account(mint: &Pubkey, owner: &Pubkey, amount: u64) -> Account {
     }
 }
 
-/// Helper to run a deposit and return resulting accounts.
+/// Helper to run a DepositWithPrice and return resulting accounts.
 fn run_deposit(
     share_decimals: u8,
     share_price: u64,
@@ -81,19 +81,21 @@ fn run_deposit(
     let depositor_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        deposit_data(deposit_amount),
+        deposit_with_price_data(share_price, deposit_amount),
         vec![
-            AccountMeta::new_readonly(depositor, true),
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, true),            // admin (signer)
+            AccountMeta::new_readonly(depositor, true),        // depositor (signer)
+            AccountMeta::new(depositor_base_ata, false),       // depositor's base token
+            AccountMeta::new(vault_base_ata, false),           // vault's base token
+            AccountMeta::new(vault_key, false),                // vault_state (writable)
+            AccountMeta::new(share_mint_key, false),           // share_mint
+            AccountMeta::new(depositor_share_ata, false),      // depositor's share token
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false), // token_program
         ],
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
@@ -106,7 +108,7 @@ fn run_deposit(
     mollusk.process_instruction(&instruction, &accounts)
 }
 
-/// Helper to run a deposit and assert an error.
+/// Helper to run a DepositWithPrice and assert an error.
 fn run_deposit_expect_err(
     share_decimals: u8,
     share_price: u64,
@@ -129,12 +131,13 @@ fn run_deposit_expect_err(
     let depositor_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        deposit_data(deposit_amount),
+        deposit_with_price_data(share_price, deposit_amount),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(depositor, true),
             AccountMeta::new(depositor_base_ata, false),
             AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(depositor_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
@@ -142,6 +145,7 @@ fn run_deposit_expect_err(
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
@@ -237,12 +241,13 @@ fn test_deposit_high_decimals_9() {
     let depositor_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        deposit_data(deposit_amount),
+        deposit_with_price_data(share_price, deposit_amount),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(depositor, true),
             AccountMeta::new(depositor_base_ata, false),
             AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(depositor_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
@@ -250,6 +255,7 @@ fn test_deposit_high_decimals_9() {
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
@@ -297,12 +303,13 @@ fn test_deposit_truncation_rounding() {
     let depositor_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        deposit_data(deposit_amount),
+        deposit_with_price_data(share_price, deposit_amount),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(depositor, true),
             AccountMeta::new(depositor_base_ata, false),
             AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(depositor_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
@@ -310,6 +317,7 @@ fn test_deposit_truncation_rounding() {
     );
 
     let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
@@ -541,14 +549,15 @@ fn test_deposit_withdraw_round_trip() {
     let vault_base_ata = Pubkey::new_unique();
     let user_share_ata = Pubkey::new_unique();
 
-    // ── Step 1: Deposit ──
+    // ── Step 1: DepositWithPrice ──
     let deposit_ix = build_instruction(
-        deposit_data(deposit_amount),
+        deposit_with_price_data(share_price, deposit_amount),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(user, true),
             AccountMeta::new(user_base_ata, false),
             AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(user_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
@@ -556,6 +565,7 @@ fn test_deposit_withdraw_round_trip() {
     );
 
     let deposit_accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user_base_ata, create_token_account(&base_mint, &user, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
@@ -580,7 +590,6 @@ fn test_deposit_withdraw_round_trip() {
     assert_eq!(shares_minted, deposit_amount); // 1:1 at this price
 
     // ── Step 2: Withdraw using resulting accounts ──
-    // Extract updated accounts from deposit
     let updated_vault_base = deposit_result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_base_ata).unwrap().1.clone();
     let updated_share_mint = deposit_result.resulting_accounts.iter()
@@ -599,7 +608,6 @@ fn test_deposit_withdraw_round_trip() {
         ],
     );
 
-    // Use resulting accounts from deposit as inputs to withdraw
     let vault_account = deposit_result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
 
@@ -659,14 +667,15 @@ fn test_deposit_withdraw_round_trip_lossy() {
     let vault_base_ata = Pubkey::new_unique();
     let user_share_ata = Pubkey::new_unique();
 
-    // ── Step 1: Deposit ──
+    // ── Step 1: DepositWithPrice ──
     let deposit_ix = build_instruction(
-        deposit_data(deposit_amount),
+        deposit_with_price_data(share_price, deposit_amount),
         vec![
+            AccountMeta::new_readonly(admin, true),
             AccountMeta::new_readonly(user, true),
             AccountMeta::new(user_base_ata, false),
             AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new_readonly(vault_key, false),
+            AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(user_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
@@ -674,6 +683,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
     );
 
     let deposit_accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (user_base_ata, create_token_account(&base_mint, &user, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),

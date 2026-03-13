@@ -22,6 +22,8 @@ pub enum VaultError {
     InsufficientFunds = 0x107,
     /// Duplicate owner.
     DuplicateOwner = 0x108,
+    /// Pending deposit account has wrong discriminator or is invalid.
+    InvalidPendingDeposit = 0x109,
 }
 
 impl From<VaultError> for ProgramError {
@@ -72,6 +74,10 @@ mod tests {
             ProgramError::Custom(0x108),
             ProgramError::from(VaultError::DuplicateOwner)
         );
+        assert_eq!(
+            ProgramError::Custom(0x109),
+            ProgramError::from(VaultError::InvalidPendingDeposit)
+        );
     }
 
     #[test]
@@ -86,6 +92,7 @@ mod tests {
             VaultError::MathOverflow as u32,
             VaultError::InsufficientFunds as u32,
             VaultError::DuplicateOwner as u32,
+            VaultError::InvalidPendingDeposit as u32,
         ];
         for i in 0..codes.len() {
             for j in (i + 1)..codes.len() {

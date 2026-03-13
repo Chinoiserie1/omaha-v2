@@ -36,28 +36,32 @@ apps/programs/vault/
 ├── Cargo.toml              # Crate config, dependency versions
 ├── CLAUDE.md               # This file
 ├── src/
-│   ├── lib.rs              # Entrypoint + instruction routing (7 discriminators)
-│   ├── state.rs            # VaultState (432 bytes, bytemuck Pod)
-│   ├── error.rs            # 9 custom errors (0x100-0x108)
+│   ├── lib.rs              # Entrypoint + instruction routing (9 discriminators)
+│   ├── state.rs            # VaultState (432B) + PendingDeposit (80B, bytemuck Pod)
+│   ├── error.rs            # 10 custom errors (0x100-0x109)
 │   ├── rent.rs             # Const fn rent exemption calculation
 │   └── instructions/
 │       ├── mod.rs          # Re-exports all instruction structs
 │       ├── initialize.rs   # Create vault PDA + share mint PDA
-│       ├── deposit.rs      # Transfer base tokens in, mint shares
 │       ├── withdraw.rs     # Burn shares, transfer base tokens out
 │       ├── set_share_price.rs  # Admin-only price update
 │       ├── execute.rs      # Generic CPI passthrough (key feature)
 │       ├── add_owner.rs    # Admin-only: add operator
-│       └── remove_owner.rs # Admin-only: remove operator
+│       ├── remove_owner.rs # Admin-only: remove operator
+│       ├── deposit_with_price.rs  # Admin: set price + deposit atomically
+│       ├── request_deposit.rs     # User: request async deposit (step 1)
+│       └── fulfill_deposit.rs     # Admin: fulfill pending deposit (step 2)
 └── tests/
     ├── helpers.rs          # Shared test utilities (mollusk setup, account builders)
     ├── initialize.rs       # Integration tests for Initialize instruction
-    ├── deposit.rs          # Integration tests for Deposit instruction
     ├── withdraw.rs         # Integration tests for Withdraw instruction
     ├── set_share_price.rs  # Integration tests for SetSharePrice instruction
     ├── execute.rs          # Integration tests for Execute (CPI passthrough)
     ├── add_owner.rs        # Integration tests for AddOwner instruction
     ├── remove_owner.rs     # Integration tests for RemoveOwner instruction
+    ├── deposit_with_price.rs # Integration tests for DepositWithPrice instruction
+    ├── request_deposit.rs  # Integration tests for RequestDeposit instruction
+    ├── fulfill_deposit.rs  # Integration tests for FulfillDeposit instruction
     ├── routing.rs          # Integration tests for instruction discriminator routing
     └── share_math.rs       # Unit tests for share price math
 ```
@@ -67,12 +71,14 @@ apps/programs/vault/
 | Disc | Instruction | Access | Description |
 |------|------------|--------|-------------|
 | 0x00 | Initialize | Admin (signer) | Creates vault PDA, share mint PDA, writes initial state |
-| 0x01 | Deposit | Anyone | Transfers base tokens to vault, mints shares to depositor |
 | 0x02 | Withdraw | Anyone | Burns shares from withdrawer, transfers base tokens out |
 | 0x03 | SetSharePrice | Admin only | Updates `share_price` in vault state |
 | 0x04 | Execute | Admin or Owner | Generic CPI — vault PDA signs any instruction to any program |
 | 0x05 | AddOwner | Admin only | Adds an operator pubkey (max 10) |
 | 0x06 | RemoveOwner | Admin only | Removes an operator pubkey (swap-remove) |
+| 0x07 | DepositWithPrice | Admin only | Sets share price + deposits atomically (2 signers) |
+| 0x08 | RequestDeposit | Anyone | Creates PendingDeposit PDA, transfers base tokens to vault |
+| 0x09 | FulfillDeposit | Admin only | Sets price, mints shares for pending deposit, closes PDA |
 
 ## PDA Seeds
 
@@ -80,6 +86,7 @@ apps/programs/vault/
 |-----|-------|-----------|
 | vault_state | `["vault", admin_pubkey, base_mint]` | Program owns the account |
 | share_mint | `["share_mint", vault_state_pubkey]` | vault_state PDA is mint authority |
+| pending_deposit | `["pending_deposit", vault_state_pubkey, depositor_pubkey]` | Program owns; closed after fulfill |
 
 ## Share Token Math
 
@@ -103,13 +110,24 @@ All arithmetic uses checked math to prevent overflow.
 | 104 | 8 | share_price | Price per share (base token smallest units) |
 | 112 | 320 | owners | Up to 10 operator pubkeys (32 bytes each) |
 
+## PendingDeposit Layout (80 bytes)
+
+| Offset | Size | Field | Description |
+|--------|------|-------|-------------|
+| 0 | 1 | discriminator | Account type guard (always 2) |
+| 1 | 1 | bump | PDA bump seed |
+| 2 | 6 | _padding | Alignment padding |
+| 8 | 32 | vault_state | Vault this deposit belongs to |
+| 40 | 32 | depositor | Who made the deposit |
+| 72 | 8 | amount | Base token amount deposited |
+
 ## Access Control
 
-| Role | Initialize | Deposit | Withdraw | SetSharePrice | Execute | AddOwner | RemoveOwner |
-|------|-----------|---------|----------|---------------|---------|----------|-------------|
-| Admin | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Owner | No | Yes | Yes | No | Yes | No | No |
-| Anyone | No | Yes | Yes | No | No | No | No |
+| Role | Initialize | Withdraw | SetSharePrice | Execute | AddOwner | RemoveOwner | DepositWithPrice | RequestDeposit | FulfillDeposit |
+|------|-----------|----------|---------------|---------|----------|-------------|-----------------|----------------|----------------|
+| Admin | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Owner | No | Yes | No | Yes | No | No | No | Yes | No |
+| Anyone | No | Yes | No | No | No | No | No | Yes | No |
 
 ## Error Codes
 
@@ -124,16 +142,17 @@ All arithmetic uses checked math to prevent overflow.
 | 0x106 | MathOverflow | Arithmetic overflow in share calculation |
 | 0x107 | InsufficientFunds | Vault lacks base tokens for withdrawal |
 | 0x108 | DuplicateOwner | Owner already exists (add) |
+| 0x109 | InvalidPendingDeposit | Pending deposit account invalid |
 
 ## Build & Test
 
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (74 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (88 tests total)
 ```
 
-The test suite has **74 tests**: 22 unit tests (state logic, share math) and 52 integration tests via `mollusk-svm`.
+The test suite has **88 tests**: 23 unit tests (state logic, share math) and 65 integration tests via `mollusk-svm`.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 

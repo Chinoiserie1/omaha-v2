@@ -106,13 +106,6 @@ pub fn initialize_data(share_decimals: u8, share_price: u64) -> Vec<u8> {
     data
 }
 
-/// Build Deposit instruction data: [disc=0x01] [amount: u64 LE].
-pub fn deposit_data(amount: u64) -> Vec<u8> {
-    let mut data = vec![0x01];
-    data.extend_from_slice(&amount.to_le_bytes());
-    data
-}
-
 /// Build Withdraw instruction data: [disc=0x02] [shares: u64 LE].
 pub fn withdraw_data(shares: u64) -> Vec<u8> {
     let mut data = vec![0x02];
@@ -146,4 +139,66 @@ pub fn remove_owner_data(owner: &Pubkey) -> Vec<u8> {
     let mut data = vec![0x06];
     data.extend_from_slice(owner.as_ref());
     data
+}
+
+/// Build DepositWithPrice instruction data: [disc=0x07] [price: u64 LE] [amount: u64 LE].
+pub fn deposit_with_price_data(price: u64, amount: u64) -> Vec<u8> {
+    let mut data = vec![0x07];
+    data.extend_from_slice(&price.to_le_bytes());
+    data.extend_from_slice(&amount.to_le_bytes());
+    data
+}
+
+/// Build RequestDeposit instruction data: [disc=0x08] [amount: u64 LE].
+pub fn request_deposit_data(amount: u64) -> Vec<u8> {
+    let mut data = vec![0x08];
+    data.extend_from_slice(&amount.to_le_bytes());
+    data
+}
+
+/// Build FulfillDeposit instruction data: [disc=0x09] [price: u64 LE].
+pub fn fulfill_deposit_data(price: u64) -> Vec<u8> {
+    let mut data = vec![0x09];
+    data.extend_from_slice(&price.to_le_bytes());
+    data
+}
+
+/// Derive pending deposit PDA: seeds = ["pending_deposit", vault_state, depositor].
+pub fn pending_deposit_pda(vault_state: &Pubkey, depositor: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[b"pending_deposit", vault_state.as_ref(), depositor.as_ref()],
+        &program_id(),
+    )
+}
+
+/// Create raw PendingDeposit bytes with the given parameters.
+pub fn create_pending_deposit_data(
+    vault_state: &Pubkey,
+    depositor: &Pubkey,
+    bump: u8,
+    amount: u64,
+) -> Vec<u8> {
+    use omaha_vault::state::PendingDeposit;
+
+    let mut data = vec![0u8; PendingDeposit::LEN];
+
+    data[0] = 2; // PENDING_DEPOSIT_DISCRIMINATOR
+    data[1] = bump;
+    // _padding at [2..8] = zeroed
+    data[8..40].copy_from_slice(vault_state.as_ref());
+    data[40..72].copy_from_slice(depositor.as_ref());
+    data[72..80].copy_from_slice(&amount.to_le_bytes());
+
+    data
+}
+
+/// Create a pending deposit account owned by the program with the given data.
+pub fn make_pending_deposit_account(data: Vec<u8>) -> Account {
+    Account {
+        lamports: 1_000_000_000,
+        data,
+        owner: program_id(),
+        executable: false,
+        rent_epoch: 0,
+    }
 }

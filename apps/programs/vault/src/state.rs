@@ -97,6 +97,33 @@ impl VaultState {
     }
 }
 
+/// Account discriminator for PendingDeposit.
+pub const PENDING_DEPOSIT_DISCRIMINATOR: u8 = 2;
+
+/// On-chain pending deposit state — zero-copy via bytemuck.
+///
+/// Layout (80 bytes total):
+///   discriminator  (1)  — account type guard (2)
+///   bump           (1)  — PDA bump seed
+///   _padding       (6)  — alignment
+///   vault_state    (32) — vault this deposit belongs to
+///   depositor      (32) — who made the deposit
+///   amount         (8)  — base token amount deposited
+#[repr(C)]
+#[derive(Clone, Copy, Pod, Zeroable)]
+pub struct PendingDeposit {
+    pub discriminator: u8,
+    pub bump: u8,
+    pub _padding: [u8; 6],
+    pub vault_state: [u8; 32],
+    pub depositor: [u8; 32],
+    pub amount: u64,
+}
+
+impl PendingDeposit {
+    pub const LEN: usize = core::mem::size_of::<Self>();
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -120,6 +147,13 @@ mod tests {
         // 1+1+1+1+4+32+32+32+8+320 = 432
         assert_eq!(VaultState::LEN, 432);
         assert_eq!(VaultState::LEN, core::mem::size_of::<VaultState>());
+    }
+
+    #[test]
+    fn test_pending_deposit_len() {
+        // 1+1+6+32+32+8 = 80
+        assert_eq!(PendingDeposit::LEN, 80);
+        assert_eq!(PendingDeposit::LEN, core::mem::size_of::<PendingDeposit>());
     }
 
     #[test]
