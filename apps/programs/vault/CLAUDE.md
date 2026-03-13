@@ -35,20 +35,31 @@ A minimal Solana program that manages a tokenized vault. Users deposit base toke
 apps/programs/vault/
 ├── Cargo.toml              # Crate config, dependency versions
 ├── CLAUDE.md               # This file
-└── src/
-    ├── lib.rs              # Entrypoint + instruction routing (7 discriminators)
-    ├── state.rs            # VaultState (464 bytes, bytemuck Pod)
-    ├── error.rs            # 9 custom errors (0x100-0x108)
-    ├── rent.rs             # Const fn rent exemption calculation
-    └── instructions/
-        ├── mod.rs          # Re-exports all instruction structs
-        ├── initialize.rs   # Create vault PDA + share mint PDA
-        ├── deposit.rs      # Transfer base tokens in, mint shares
-        ├── withdraw.rs     # Burn shares, transfer base tokens out
-        ├── set_share_price.rs  # Admin-only price update
-        ├── execute.rs      # Generic CPI passthrough (key feature)
-        ├── add_owner.rs    # Admin-only: add operator
-        └── remove_owner.rs # Admin-only: remove operator
+├── src/
+│   ├── lib.rs              # Entrypoint + instruction routing (7 discriminators)
+│   ├── state.rs            # VaultState (432 bytes, bytemuck Pod)
+│   ├── error.rs            # 9 custom errors (0x100-0x108)
+│   ├── rent.rs             # Const fn rent exemption calculation
+│   └── instructions/
+│       ├── mod.rs          # Re-exports all instruction structs
+│       ├── initialize.rs   # Create vault PDA + share mint PDA
+│       ├── deposit.rs      # Transfer base tokens in, mint shares
+│       ├── withdraw.rs     # Burn shares, transfer base tokens out
+│       ├── set_share_price.rs  # Admin-only price update
+│       ├── execute.rs      # Generic CPI passthrough (key feature)
+│       ├── add_owner.rs    # Admin-only: add operator
+│       └── remove_owner.rs # Admin-only: remove operator
+└── tests/
+    ├── helpers.rs          # Shared test utilities (mollusk setup, account builders)
+    ├── initialize.rs       # Integration tests for Initialize instruction
+    ├── deposit.rs          # Integration tests for Deposit instruction
+    ├── withdraw.rs         # Integration tests for Withdraw instruction
+    ├── set_share_price.rs  # Integration tests for SetSharePrice instruction
+    ├── execute.rs          # Integration tests for Execute (CPI passthrough)
+    ├── add_owner.rs        # Integration tests for AddOwner instruction
+    ├── remove_owner.rs     # Integration tests for RemoveOwner instruction
+    ├── routing.rs          # Integration tests for instruction discriminator routing
+    └── share_math.rs       # Unit tests for share price math
 ```
 
 ## Instructions
@@ -77,7 +88,7 @@ apps/programs/vault/
 
 All arithmetic uses checked math to prevent overflow.
 
-## VaultState Layout (464 bytes)
+## VaultState Layout (432 bytes)
 
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
@@ -119,8 +130,26 @@ All arithmetic uses checked math to prevent overflow.
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # cargo test (unit tests, no BPF)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (74 tests total)
 ```
+
+The test suite has **74 tests**: 22 unit tests (state logic, share math) and 52 integration tests via `mollusk-svm`.
+
+Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
+
+### Test Dev-Dependencies
+
+| Crate | Version | Purpose |
+|-------|---------|---------|
+| mollusk-svm | 0.7 | Lightweight SVM test harness (no validator) |
+| mollusk-svm-programs-token | 0.7 | Preloaded SPL Token program for mollusk |
+| solana-pubkey | 3.0 | Pubkey type for test account construction |
+| solana-account | 3.4 | Account data builder |
+| solana-instruction | 3.2 | Instruction construction |
+| solana-program-error | 3.0 | Error type assertions |
+| solana-program-pack | 3.1 | Pack/Unpack trait for SPL state |
+| spl-token-interface | 2.0 | SPL Token account / mint state |
+| solana-program-option | 3.0 | COption used in SPL mint state |
 
 ## Execute Instruction (CPI Passthrough)
 
