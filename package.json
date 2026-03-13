@@ -48,7 +48,7 @@
     "wt:create": "bash scripts/worktree-create.sh",
     "wt:clean": "bash scripts/worktree-clean.sh",
     "program:build": "cargo build-sbf --manifest-path apps/programs/vault/Cargo.toml --features bpf-entrypoint",
-    "program:test": "cargo test --manifest-path apps/programs/vault/Cargo.toml",
+    "program:test": "SBF_OUT_DIR=$PWD/target/deploy cargo test --manifest-path apps/programs/vault/Cargo.toml",
     "prepare": "husky"
   },
   "devDependencies": {

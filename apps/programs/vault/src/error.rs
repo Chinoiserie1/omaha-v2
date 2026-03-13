@@ -29,3 +29,75 @@ impl From<VaultError> for ProgramError {
         ProgramError::Custom(e as u32)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_error_codes() {
+        assert_eq!(
+            ProgramError::Custom(0x100),
+            ProgramError::from(VaultError::Unauthorized)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x101),
+            ProgramError::from(VaultError::InvalidSharePrice)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x102),
+            ProgramError::from(VaultError::InvalidAmount)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x103),
+            ProgramError::from(VaultError::OwnersFull)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x104),
+            ProgramError::from(VaultError::OwnerNotFound)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x105),
+            ProgramError::from(VaultError::InvalidDiscriminator)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x106),
+            ProgramError::from(VaultError::MathOverflow)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x107),
+            ProgramError::from(VaultError::InsufficientFunds)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x108),
+            ProgramError::from(VaultError::DuplicateOwner)
+        );
+    }
+
+    #[test]
+    fn test_error_code_no_collision() {
+        let codes = [
+            VaultError::Unauthorized as u32,
+            VaultError::InvalidSharePrice as u32,
+            VaultError::InvalidAmount as u32,
+            VaultError::OwnersFull as u32,
+            VaultError::OwnerNotFound as u32,
+            VaultError::InvalidDiscriminator as u32,
+            VaultError::MathOverflow as u32,
+            VaultError::InsufficientFunds as u32,
+            VaultError::DuplicateOwner as u32,
+        ];
+        for i in 0..codes.len() {
+            for j in (i + 1)..codes.len() {
+                assert_ne!(codes[i], codes[j], "collision at index {} and {}", i, j);
+            }
+        }
+    }
+
+    #[test]
+    fn test_error_codes_start_at_0x100() {
+        assert_eq!(VaultError::Unauthorized as u32, 0x100);
+        // All error codes should be >= 0x100 to avoid collision with built-in ProgramError
+        assert!(VaultError::DuplicateOwner as u32 >= 0x100);
+    }
+}

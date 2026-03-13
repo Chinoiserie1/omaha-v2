@@ -96,3 +96,158 @@ impl VaultState {
         false
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use bytemuck::Zeroable;
+
+    fn make_key(byte: u8) -> [u8; 32] {
+        let mut k = [0u8; 32];
+        k[0] = byte;
+        k
+    }
+
+    fn make_state(admin: [u8; 32]) -> VaultState {
+        let mut state = VaultState::zeroed();
+        state.admin = admin;
+        state.discriminator = VAULT_DISCRIMINATOR;
+        state
+    }
+
+    #[test]
+    fn test_vault_state_len() {
+        // 1+1+1+1+4+32+32+32+8+320 = 432
+        assert_eq!(VaultState::LEN, 432);
+        assert_eq!(VaultState::LEN, core::mem::size_of::<VaultState>());
+    }
+
+    #[test]
+    fn test_is_admin_match() {
+        let admin = make_key(1);
+        let state = make_state(admin);
+        assert!(state.is_admin(&admin));
+    }
+
+    #[test]
+    fn test_is_admin_mismatch() {
+        let state = make_state(make_key(1));
+        assert!(!state.is_admin(&make_key(2)));
+    }
+
+    #[test]
+    fn test_is_authorized_admin() {
+        let admin = make_key(1);
+        let state = make_state(admin);
+        assert!(state.is_authorized(&admin));
+    }
+
+    #[test]
+    fn test_is_authorized_owner() {
+        let admin = make_key(1);
+        let owner = make_key(2);
+        let mut state = make_state(admin);
+        state.add_owner(&owner);
+        assert!(state.is_authorized(&owner));
+    }
+
+    #[test]
+    fn test_is_authorized_stranger() {
+        let state = make_state(make_key(1));
+        assert!(!state.is_authorized(&make_key(99)));
+    }
+
+    #[test]
+    fn test_add_owner_success() {
+        let mut state = make_state(make_key(1));
+        let owner = make_key(10);
+        assert!(state.add_owner(&owner));
+        assert_eq!(state.num_owners, 1);
+        assert_eq!(state.owners[0], owner);
+    }
+
+    #[test]
+    fn test_add_owner_duplicate() {
+        let mut state = make_state(make_key(1));
+        let owner = make_key(10);
+        assert!(state.add_owner(&owner));
+        assert!(!state.add_owner(&owner));
+        assert_eq!(state.num_owners, 1);
+    }
+
+    #[test]
+    fn test_add_owner_full() {
+        let mut state = make_state(make_key(1));
+        for i in 0..MAX_OWNERS {
+            assert!(state.add_owner(&make_key(10 + i as u8)));
+        }
+        assert_eq!(state.num_owners, MAX_OWNERS as u8);
+        assert!(!state.add_owner(&make_key(99)));
+    }
+
+    #[test]
+    fn test_add_multiple_owners() {
+        let mut state = make_state(make_key(1));
+        for i in 0..MAX_OWNERS {
+            let key = make_key(10 + i as u8);
+            assert!(state.add_owner(&key));
+            assert!(state.is_authorized(&key));
+        }
+        assert_eq!(state.num_owners, MAX_OWNERS as u8);
+    }
+
+    #[test]
+    fn test_remove_owner_success() {
+        let mut state = make_state(make_key(1));
+        let owner = make_key(10);
+        state.add_owner(&owner);
+        assert!(state.remove_owner(&owner));
+        assert_eq!(state.num_owners, 0);
+        assert!(!state.is_authorized(&owner));
+    }
+
+    #[test]
+    fn test_remove_owner_not_found() {
+        let mut state = make_state(make_key(1));
+        assert!(!state.remove_owner(&make_key(99)));
+    }
+
+    #[test]
+    fn test_remove_owner_swap_behavior() {
+        let mut state = make_state(make_key(1));
+        let a = make_key(10);
+        let b = make_key(11);
+        let c = make_key(12);
+        state.add_owner(&a);
+        state.add_owner(&b);
+        state.add_owner(&c);
+
+        // Remove middle owner (b) — last owner (c) should swap into slot 1
+        assert!(state.remove_owner(&b));
+        assert_eq!(state.num_owners, 2);
+        assert_eq!(state.owners[0], a);
+        assert_eq!(state.owners[1], c);
+        assert_eq!(state.owners[2], [0u8; 32]);
+    }
+
+    #[test]
+    fn test_remove_last_owner() {
+        let mut state = make_state(make_key(1));
+        let owner = make_key(10);
+        state.add_owner(&owner);
+        assert!(state.remove_owner(&owner));
+        assert_eq!(state.num_owners, 0);
+        assert_eq!(state.owners[0], [0u8; 32]);
+    }
+
+    #[test]
+    fn test_add_remove_add_cycle() {
+        let mut state = make_state(make_key(1));
+        let owner = make_key(10);
+        assert!(state.add_owner(&owner));
+        assert!(state.remove_owner(&owner));
+        assert!(state.add_owner(&owner));
+        assert_eq!(state.num_owners, 1);
+        assert!(state.is_authorized(&owner));
+    }
+}
