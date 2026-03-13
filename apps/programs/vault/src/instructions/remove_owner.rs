@@ -14,7 +14,7 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 ///   1. `[writable]`  vault_state
 ///
 /// Data:
-///   [0]     discriminator (0x06)
+///   [0]     discriminator (0x02)
 ///   [1..33] owner_to_remove pubkey (32 bytes)
 pub struct RemoveOwner<'a> {
     admin: &'a AccountInfo,
@@ -23,7 +23,7 @@ pub struct RemoveOwner<'a> {
 }
 
 impl<'a> RemoveOwner<'a> {
-    pub const DISCRIMINATOR: u8 = 6;
+    pub const DISCRIMINATOR: u8 = 2;
 
     pub fn process(self) -> ProgramResult {
         let mut data = self.vault_state.try_borrow_mut_data()?;

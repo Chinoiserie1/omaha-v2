@@ -188,16 +188,16 @@ pub fn execute_data(target_data: &[u8]) -> Vec<u8> {
     data
 }
 
-/// Build AddOwner instruction data: [disc=0x05] [owner: 32 bytes].
+/// Build AddOwner instruction data: [disc=0x01] [owner: 32 bytes].
 pub fn add_owner_data(owner: &Pubkey) -> Vec<u8> {
-    let mut data = vec![0x05];
+    let mut data = vec![0x01];
     data.extend_from_slice(owner.as_ref());
     data
 }
 
-/// Build RemoveOwner instruction data: [disc=0x06] [owner: 32 bytes].
+/// Build RemoveOwner instruction data: [disc=0x02] [owner: 32 bytes].
 pub fn remove_owner_data(owner: &Pubkey) -> Vec<u8> {
-    let mut data = vec![0x06];
+    let mut data = vec![0x02];
     data.extend_from_slice(owner.as_ref());
     data
 }
@@ -225,7 +225,7 @@ pub fn fulfill_deposit_data(price: u64) -> Vec<u8> {
 }
 
 /// Build UpdateFees instruction data:
-/// [disc=0x0D] [entry: u16] [exit: u16] [mgmt: u16] [perf: u16] [receiver: 32].
+/// [disc=0x05] [entry: u16] [exit: u16] [mgmt: u16] [perf: u16] [receiver: 32].
 pub fn update_fees_data(
     entry_fee_bps: u16,
     exit_fee_bps: u16,
@@ -233,7 +233,7 @@ pub fn update_fees_data(
     performance_fee_bps: u16,
     fee_receiver: &Pubkey,
 ) -> Vec<u8> {
-    let mut data = vec![0x0D];
+    let mut data = vec![0x05];
     data.extend_from_slice(&entry_fee_bps.to_le_bytes());
     data.extend_from_slice(&exit_fee_bps.to_le_bytes());
     data.extend_from_slice(&management_fee_bps.to_le_bytes());
@@ -242,9 +242,9 @@ pub fn update_fees_data(
     data
 }
 
-/// Build CollectFees instruction data: [disc=0x0E] [timestamp: i64 LE].
+/// Build CollectFees instruction data: [disc=0x06] [timestamp: i64 LE].
 pub fn collect_fees_data(current_timestamp: i64) -> Vec<u8> {
-    let mut data = vec![0x0E];
+    let mut data = vec![0x06];
     data.extend_from_slice(&current_timestamp.to_le_bytes());
     data
 }
@@ -268,7 +268,7 @@ pub fn create_pending_deposit_data(
 
     let mut data = vec![0u8; PendingDeposit::LEN];
 
-    data[0] = 2; // PENDING_DEPOSIT_DISCRIMINATOR
+    data[0] = 0xA2; // PENDING_DEPOSIT_DISCRIMINATOR
     data[1] = bump;
     // _padding at [2..8] = zeroed
     data[8..40].copy_from_slice(vault_state.as_ref());
@@ -308,7 +308,7 @@ pub fn create_pending_withdraw_data(
 
     let mut data = vec![0u8; PendingWithdraw::LEN];
 
-    data[0] = 3; // PENDING_WITHDRAW_DISCRIMINATOR
+    data[0] = 0xA3; // PENDING_WITHDRAW_DISCRIMINATOR
     data[1] = bump;
     // _padding at [2..8] = zeroed
     data[8..40].copy_from_slice(vault_state.as_ref());

@@ -77,21 +77,23 @@ apps/programs/vault/
 
 ## Instructions
 
-| Disc | Instruction | Access | Description |
-|------|------------|--------|-------------|
-| 0x00 | Initialize | Admin (signer) | Creates vault PDA, share mint PDA, writes initial state |
-| 0x03 | SetSharePrice | Admin only | Updates `share_price` in vault state |
-| 0x04 | Execute | Admin or Owner | Generic CPI — vault PDA signs any instruction to any program |
-| 0x05 | AddOwner | Admin only | Adds an operator pubkey (max 10) |
-| 0x06 | RemoveOwner | Admin only | Removes an operator pubkey (swap-remove) |
-| 0x07 | DepositWithPrice | Admin only | Sets share price + deposits atomically (2 signers) |
-| 0x08 | RequestDeposit | Anyone | Creates PendingDeposit PDA, transfers base tokens to vault |
-| 0x09 | FulfillDeposit | Admin only | Sets price, mints shares for pending deposit, closes PDA |
-| 0x0A | WithdrawWithPrice | Admin only | Sets share price + withdraws atomically (2 signers) |
-| 0x0B | RequestWithdraw | Anyone | Burns shares, creates PendingWithdraw PDA |
-| 0x0C | FulfillWithdraw | Admin only | Sets price, transfers base tokens, closes PendingWithdraw PDA |
-| 0x0D | UpdateFees | Admin only | Sets fee BPS values (entry/exit/mgmt/perf) + fee receiver pubkey |
-| 0x0E | CollectFees | Admin only | Mints management + performance fee shares to fee receiver |
+Instruction discriminators use the `0x00–0x0C` range. Account discriminators use a separate `0xA1–0xA3` range to avoid collisions.
+
+| Disc | Instruction | Group | Access | Description |
+|------|------------|-------|--------|-------------|
+| 0x00 | Initialize | Setup | Admin (signer) | Creates vault PDA, share mint PDA, writes initial state |
+| 0x01 | AddOwner | Setup | Admin only | Adds an operator pubkey (max 10) |
+| 0x02 | RemoveOwner | Setup | Admin only | Removes an operator pubkey (swap-remove) |
+| 0x03 | SetSharePrice | Admin Ops | Admin only | Updates `share_price` in vault state |
+| 0x04 | Execute | Admin Ops | Admin or Owner | Generic CPI — vault PDA signs any instruction to any program |
+| 0x05 | UpdateFees | Fee Mgmt | Admin only | Sets fee BPS values (entry/exit/mgmt/perf) + fee receiver pubkey |
+| 0x06 | CollectFees | Fee Mgmt | Admin only | Mints management + performance fee shares to fee receiver |
+| 0x07 | DepositWithPrice | Deposit | Admin only | Sets share price + deposits atomically (2 signers) |
+| 0x08 | RequestDeposit | Deposit | Anyone | Creates PendingDeposit PDA, transfers base tokens to vault |
+| 0x09 | FulfillDeposit | Deposit | Admin only | Sets price, mints shares for pending deposit, closes PDA |
+| 0x0A | WithdrawWithPrice | Withdraw | Admin only | Sets share price + withdraws atomically (2 signers) |
+| 0x0B | RequestWithdraw | Withdraw | Anyone | Burns shares, creates PendingWithdraw PDA |
+| 0x0C | FulfillWithdraw | Withdraw | Admin only | Sets price, transfers base tokens, closes PendingWithdraw PDA |
 
 ## PDA Seeds
 
@@ -132,7 +134,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
-| 0 | 1 | discriminator | Account type guard (always 1) |
+| 0 | 1 | discriminator | Account type guard (always 0xA1) |
 | 1 | 1 | bump | Vault PDA bump seed |
 | 2 | 1 | share_decimals | Share token decimal places |
 | 3 | 1 | num_owners | Active owner count (0..10) |
@@ -154,7 +156,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
-| 0 | 1 | discriminator | Account type guard (always 2) |
+| 0 | 1 | discriminator | Account type guard (always 0xA2) |
 | 1 | 1 | bump | PDA bump seed |
 | 2 | 6 | _padding | Alignment padding |
 | 8 | 32 | vault_state | Vault this deposit belongs to |
@@ -165,7 +167,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
-| 0 | 1 | discriminator | Account type guard (always 3) |
+| 0 | 1 | discriminator | Account type guard (always 0xA3) |
 | 1 | 1 | bump | PDA bump seed |
 | 2 | 6 | _padding | Alignment padding |
 | 8 | 32 | vault_state | Vault this withdrawal belongs to |
@@ -189,7 +191,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 0x102 | InvalidAmount | Deposit/withdraw amount must be > 0 |
 | 0x103 | OwnersFull | Owner list at capacity (10) |
 | 0x104 | OwnerNotFound | Owner not in list (remove) |
-| 0x105 | InvalidDiscriminator | Wrong account discriminator |
+| 0x105 | InvalidDiscriminator | Wrong account discriminator (expected 0xA1/0xA2/0xA3) |
 | 0x106 | MathOverflow | Arithmetic overflow in share calculation |
 | 0x107 | InsufficientFunds | Vault lacks base tokens for withdrawal |
 | 0x108 | DuplicateOwner | Owner already exists (add) |

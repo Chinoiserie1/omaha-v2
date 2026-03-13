@@ -14,7 +14,7 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 ///   1. `[writable]`  vault_state
 ///
 /// Data:
-///   [0]     discriminator (0x05)
+///   [0]     discriminator (0x01)
 ///   [1..33] new_owner pubkey (32 bytes)
 pub struct AddOwner<'a> {
     admin: &'a AccountInfo,
@@ -23,7 +23,7 @@ pub struct AddOwner<'a> {
 }
 
 impl<'a> AddOwner<'a> {
-    pub const DISCRIMINATOR: u8 = 5;
+    pub const DISCRIMINATOR: u8 = 1;
 
     pub fn process(self) -> ProgramResult {
         let mut data = self.vault_state.try_borrow_mut_data()?;

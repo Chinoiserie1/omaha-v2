@@ -2,7 +2,7 @@
 
 | Property | Value |
 |----------|-------|
-| Discriminator | `0x0E` |
+| Discriminator | `0x06` |
 | Access | Admin only |
 | Source | [`../src/instructions/collect_fees.rs`](../src/instructions/collect_fees.rs) |
 
@@ -62,7 +62,7 @@ Admin
 ```
 Byte offset  Size  Type    Description
 -----------  ----  ------  ---------------------
-0            1     u8      Discriminator (0x0E)
+0            1     u8      Discriminator (0x06)
 1..9         8     i64 LE  Current unix timestamp (must be > 0)
 ```
 
@@ -120,7 +120,7 @@ Checked in `TryFrom`:
 | `admin` is a signer | `MissingRequiredSignature` |
 | `vault_state` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `data.len() >= 8` | `InvalidInstructionData` |
 | `current_timestamp > 0` | `InvalidInstructionData` |
 
@@ -144,6 +144,6 @@ Checked in `process()`:
 ## Cross-References
 
 - [README.md](./README.md) — Program overview and full instruction table
-- [0D-update-fees.md](./0D-update-fees.md) — Configure fee parameters
+- [05-update-fees.md](./05-update-fees.md) — Configure fee parameters
 - [07-deposit-with-price.md](./07-deposit-with-price.md) — Entry fees on deposit
 - [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) — Exit fees on withdraw

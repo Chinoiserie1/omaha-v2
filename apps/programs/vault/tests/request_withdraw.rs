@@ -113,7 +113,7 @@ fn test_request_withdraw_success() {
     let pending_account = result.resulting_accounts.iter()
         .find(|(k, _)| *k == pending_key).unwrap().1.clone();
     assert_eq!(pending_account.data.len(), PendingWithdraw::LEN);
-    assert_eq!(pending_account.data[0], 3); // PENDING_WITHDRAW_DISCRIMINATOR
+    assert_eq!(pending_account.data[0], 0xA3); // PENDING_WITHDRAW_DISCRIMINATOR
     assert_eq!(pending_account.owner, program_id());
 
     // Verify stored withdrawer

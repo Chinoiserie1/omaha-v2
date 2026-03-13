@@ -2,7 +2,7 @@
 
 | Property | Value |
 |----------|-------|
-| Discriminator | `0x0D` |
+| Discriminator | `0x05` |
 | Access | Admin only |
 | Source | [`../src/instructions/update_fees.rs`](../src/instructions/update_fees.rs) |
 
@@ -41,7 +41,7 @@ Admin
 ```
 Byte offset  Size  Type    Description
 -----------  ----  ------  ---------------------
-0            1     u8      Discriminator (0x0D)
+0            1     u8      Discriminator (0x05)
 1..3         2     u16 LE  Entry fee (BPS, max 1000 = 10%)
 3..5         2     u16 LE  Exit fee (BPS, max 1000 = 10%)
 5..7         2     u16 LE  Management fee (BPS, max 1000 = 10%)
@@ -70,7 +70,7 @@ Checked in `TryFrom`:
 | `admin` is a signer | `MissingRequiredSignature` |
 | `vault_state` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `data.len() >= 40` | `InvalidInstructionData` |
 | All fees within max limits | `FeeExceedsMaximum` (0x10B) |
 
@@ -89,7 +89,7 @@ Checked in `process()`:
 ## Cross-References
 
 - [README.md](./README.md) — Program overview and full instruction table
-- [0E-collect-fees.md](./0E-collect-fees.md) — Collect management and performance fees
+- [06-collect-fees.md](./06-collect-fees.md) — Collect management and performance fees
 - [07-deposit-with-price.md](./07-deposit-with-price.md) — Entry fee applied during deposit
 - [09-fulfill-deposit.md](./09-fulfill-deposit.md) — Entry fee applied during async deposit
 - [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) — Exit fee applied during withdraw

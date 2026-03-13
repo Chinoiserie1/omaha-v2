@@ -82,7 +82,7 @@ fn test_discriminator_0x03_routes_to_set_share_price() {
 }
 
 #[test]
-fn test_discriminator_0x05_routes_to_add_owner() {
+fn test_discriminator_0x01_routes_to_add_owner() {
     let mollusk = setup();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -115,7 +115,7 @@ fn test_discriminator_0x05_routes_to_add_owner() {
 }
 
 #[test]
-fn test_discriminator_0x06_routes_to_remove_owner() {
+fn test_discriminator_0x02_routes_to_remove_owner() {
     let mollusk = setup();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();

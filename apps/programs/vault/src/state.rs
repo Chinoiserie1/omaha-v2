@@ -6,7 +6,8 @@ use bytemuck::{Pod, Zeroable};
 pub const MAX_OWNERS: usize = 10;
 
 /// Account discriminator for VaultState.
-pub const VAULT_DISCRIMINATOR: u8 = 1;
+/// Uses 0xA1 range to avoid collision with instruction discriminators (0x00–0x0C).
+pub const VAULT_DISCRIMINATOR: u8 = 0xA1;
 
 /// On-chain vault state — zero-copy via bytemuck.
 ///
@@ -118,12 +119,13 @@ impl VaultState {
 }
 
 /// Account discriminator for PendingDeposit.
-pub const PENDING_DEPOSIT_DISCRIMINATOR: u8 = 2;
+/// Uses 0xA2 range to avoid collision with instruction discriminators.
+pub const PENDING_DEPOSIT_DISCRIMINATOR: u8 = 0xA2;
 
 /// On-chain pending deposit state — zero-copy via bytemuck.
 ///
 /// Layout (80 bytes total):
-///   discriminator  (1)  — account type guard (2)
+///   discriminator  (1)  — account type guard (0xA2)
 ///   bump           (1)  — PDA bump seed
 ///   _padding       (6)  — alignment
 ///   vault_state    (32) — vault this deposit belongs to
@@ -145,12 +147,13 @@ impl PendingDeposit {
 }
 
 /// Account discriminator for PendingWithdraw.
-pub const PENDING_WITHDRAW_DISCRIMINATOR: u8 = 3;
+/// Uses 0xA3 range to avoid collision with instruction discriminators.
+pub const PENDING_WITHDRAW_DISCRIMINATOR: u8 = 0xA3;
 
 /// On-chain pending withdraw state — zero-copy via bytemuck.
 ///
 /// Layout (80 bytes total):
-///   discriminator  (1)  — account type guard (3)
+///   discriminator  (1)  — account type guard (0xA3)
 ///   bump           (1)  — PDA bump seed
 ///   _padding       (6)  — alignment
 ///   vault_state    (32) — vault this withdraw belongs to

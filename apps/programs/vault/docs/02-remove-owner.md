@@ -1,6 +1,6 @@
-# Instruction 0x06 — RemoveOwner
+# Instruction 0x02 — RemoveOwner
 
-- **Discriminator**: `0x06`
+- **Discriminator**: `0x02`
 - **Access**: Admin only
 - **Source**: [`../src/instructions/remove_owner.rs`](../src/instructions/remove_owner.rs)
 
@@ -15,7 +15,7 @@ Caller
   │
   ├─ accounts[0]: admin (signer)
   ├─ accounts[1]: vault_state (writable)
-  └─ data: [0x06][owner_to_remove: 32 bytes]
+  └─ data: [0x02][owner_to_remove: 32 bytes]
             │
             ▼
   try_from validation
@@ -47,7 +47,7 @@ Caller
 
 | Bytes | Field | Description |
 |-------|-------|-------------|
-| 0 | `discriminator` | `0x06` — stripped before `try_from` receives `data` |
+| 0 | `discriminator` | `0x02` — stripped before `try_from` receives `data` |
 | 1–32 | `owner_to_remove` | 32-byte pubkey of the operator to remove |
 
 **Total**: 33 bytes (including discriminator).
@@ -100,6 +100,6 @@ Complexity: O(n) linear scan to find the index + O(1) removal. Order is NOT pres
 
 ## Cross-References
 
-- [05-add-owner.md](./05-add-owner.md) — symmetric addition instruction
+- [01-add-owner.md](./01-add-owner.md) — symmetric addition instruction
 - [04-execute.md](./04-execute.md) — instruction that owners are authorized to call
 - [README.md](./README.md) — full instruction index and VaultState layout

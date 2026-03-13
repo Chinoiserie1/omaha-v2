@@ -136,7 +136,7 @@ account data — no serialization/deserialization.
 
 | Offset | Size | Field               | Type          | Description                              |
 |--------|------|---------------------|---------------|------------------------------------------|
-| 0      | 1    | discriminator       | u8            | Account type guard; always 1             |
+| 0      | 1    | discriminator       | u8            | Account type guard; always 0xA1          |
 | 1      | 1    | bump                | u8            | vault_state PDA canonical bump           |
 | 2      | 1    | share_decimals      | u8            | Decimal places for share token           |
 | 3      | 1    | num_owners          | u8            | Active operator count (0..=10)           |
@@ -160,21 +160,21 @@ Total: 1+1+1+1+2+2+2+2+4+32+32+32+32+8+8+8+320 = **488 bytes**
 
 ## Instruction Summary Table
 
-| Disc  | Name              | Access             | Accounts | Data (after disc) | Doc                           |
-|-------|-------------------|--------------------|----------|--------------------|-------------------------------|
-| 0x00  | Initialize        | Admin signer       | 6        | 1 + 8 bytes        | [00-initialize.md](./00-initialize.md)       |
-| 0x03  | SetSharePrice     | Admin only         | 2        | 8 bytes            | [03-set-share-price.md](./03-set-share-price.md) |
-| 0x04  | Execute           | Admin or Owner     | 3+N      | variable           | [04-execute.md](./04-execute.md)             |
-| 0x05  | AddOwner          | Admin only         | 2        | 32 bytes           | [05-add-owner.md](./05-add-owner.md)         |
-| 0x06  | RemoveOwner       | Admin only         | 2        | 32 bytes           | [06-remove-owner.md](./06-remove-owner.md)   |
-| 0x07  | DepositWithPrice  | Admin only         | 8        | 8 + 8 bytes        | [07-deposit-with-price.md](./07-deposit-with-price.md) |
-| 0x08  | RequestDeposit    | Anyone             | 7        | 8 bytes            | [08-request-deposit.md](./08-request-deposit.md)       |
-| 0x09  | FulfillDeposit    | Admin only         | 7        | 8 bytes            | [09-fulfill-deposit.md](./09-fulfill-deposit.md)       |
-| 0x0A  | WithdrawWithPrice | Admin only         | 8        | 8 + 8 bytes        | [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) |
-| 0x0B  | RequestWithdraw   | Anyone             | 7        | 8 bytes            | [0B-request-withdraw.md](./0B-request-withdraw.md)     |
-| 0x0C  | FulfillWithdraw   | Admin only         | 7        | 8 bytes            | [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)     |
-| 0x0D  | UpdateFees        | Admin only         | 2        | 40 bytes           | [0D-update-fees.md](./0D-update-fees.md)               |
-| 0x0E  | CollectFees       | Admin only         | 5        | 8 bytes            | [0E-collect-fees.md](./0E-collect-fees.md)              |
+| Disc  | Name              | Group              | Access             | Accounts | Data (after disc) | Doc                           |
+|-------|-------------------|--------------------|--------------------|----------|--------------------|-------------------------------|
+| 0x00  | Initialize        | Setup              | Admin signer       | 6        | 1 + 8 bytes        | [00-initialize.md](./00-initialize.md)       |
+| 0x01  | AddOwner          | Setup              | Admin only         | 2        | 32 bytes           | [01-add-owner.md](./01-add-owner.md)         |
+| 0x02  | RemoveOwner       | Setup              | Admin only         | 2        | 32 bytes           | [02-remove-owner.md](./02-remove-owner.md)   |
+| 0x03  | SetSharePrice     | Admin Ops          | Admin only         | 2        | 8 bytes            | [03-set-share-price.md](./03-set-share-price.md) |
+| 0x04  | Execute           | Admin Ops          | Admin or Owner     | 3+N      | variable           | [04-execute.md](./04-execute.md)             |
+| 0x05  | UpdateFees        | Fee Mgmt           | Admin only         | 2        | 40 bytes           | [05-update-fees.md](./05-update-fees.md)     |
+| 0x06  | CollectFees       | Fee Mgmt           | Admin only         | 5        | 8 bytes            | [06-collect-fees.md](./06-collect-fees.md)   |
+| 0x07  | DepositWithPrice  | Deposit            | Admin only         | 8        | 8 + 8 bytes        | [07-deposit-with-price.md](./07-deposit-with-price.md) |
+| 0x08  | RequestDeposit    | Deposit            | Anyone             | 7        | 8 bytes            | [08-request-deposit.md](./08-request-deposit.md)       |
+| 0x09  | FulfillDeposit    | Deposit            | Admin only         | 7        | 8 bytes            | [09-fulfill-deposit.md](./09-fulfill-deposit.md)       |
+| 0x0A  | WithdrawWithPrice | Withdraw           | Admin only         | 8        | 8 + 8 bytes        | [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) |
+| 0x0B  | RequestWithdraw   | Withdraw           | Anyone             | 7        | 8 bytes            | [0B-request-withdraw.md](./0B-request-withdraw.md)     |
+| 0x0C  | FulfillWithdraw   | Withdraw           | Admin only         | 7        | 8 bytes            | [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)     |
 
 Data column excludes the leading discriminator byte consumed by `process_instruction`.
 
@@ -271,7 +271,7 @@ shares_to_mint = 10_000_000 * 10^6 / 1_500_000
 | 0x102 | InvalidAmount       | Deposit/withdraw amount or resulting shares = 0     | DepositWithPrice, Withdraw, RequestDeposit |
 | 0x103 | OwnersFull          | owners array at capacity (10)                       | AddOwner                           |
 | 0x104 | OwnerNotFound       | Pubkey not present in owners array                  | RemoveOwner                        |
-| 0x105 | InvalidDiscriminator| Account data[0] != VAULT_DISCRIMINATOR (1)          | SetSharePrice, Execute, AddOwner, RemoveOwner, DepositWithPrice, RequestDeposit, FulfillDeposit, WithdrawWithPrice, RequestWithdraw, FulfillWithdraw |
+| 0x105 | InvalidDiscriminator| Account data[0] != expected discriminator (0xA1/0xA2/0xA3) | SetSharePrice, Execute, AddOwner, RemoveOwner, DepositWithPrice, RequestDeposit, FulfillDeposit, WithdrawWithPrice, RequestWithdraw, FulfillWithdraw |
 | 0x106 | MathOverflow        | checked_mul / checked_pow returned None             | DepositWithPrice, FulfillDeposit, WithdrawWithPrice, FulfillWithdraw |
 | 0x107 | InsufficientFunds   | vault_base_ata balance < base_to_return             | WithdrawWithPrice, FulfillWithdraw (SPL Transfer CPI fails) |
 | 0x108 | DuplicateOwner      | Pubkey already present in owners array              | AddOwner                           |
@@ -317,19 +317,24 @@ PendingWithdraw rent is paid by the withdrawer during `RequestWithdraw` and refu
 instruction_data  ->  split_first()  ->  (discriminator, remaining_data)
                                                |
                             match discriminator {
+                              // Setup (0–2)
                               0x00 => Initialize::try_from((data, accounts))?.process()
+                              0x01 => AddOwner::try_from(...)?.process()
+                              0x02 => RemoveOwner::try_from(...)?.process()
+                              // Admin Ops (3–4)
                               0x03 => SetSharePrice::try_from(...)?.process()
                               0x04 => Execute::try_from(...)?.process()
-                              0x05 => AddOwner::try_from(...)?.process()
-                              0x06 => RemoveOwner::try_from(...)?.process()
+                              // Fee Mgmt (5–6)
+                              0x05 => UpdateFees::try_from(...)?.process()
+                              0x06 => CollectFees::try_from(...)?.process()
+                              // Deposit Flow (7–9)
                               0x07 => DepositWithPrice::try_from(...)?.process()
                               0x08 => RequestDeposit::try_from(...)?.process()
                               0x09 => FulfillDeposit::try_from(...)?.process()
+                              // Withdraw Flow (10–12)
                               0x0A => WithdrawWithPrice::try_from(...)?.process()
                               0x0B => RequestWithdraw::try_from(...)?.process()
                               0x0C => FulfillWithdraw::try_from(...)?.process()
-                              0x0D => UpdateFees::try_from(...)?.process()
-                              0x0E => CollectFees::try_from(...)?.process()
                               _    => Err(InvalidInstructionData)
                             }
 ```
@@ -351,16 +356,16 @@ Instruction detail docs:
 - [00-initialize.md](./00-initialize.md)
 - [03-set-share-price.md](./03-set-share-price.md)
 - [04-execute.md](./04-execute.md)
-- [05-add-owner.md](./05-add-owner.md)
-- [06-remove-owner.md](./06-remove-owner.md)
+- [01-add-owner.md](./01-add-owner.md)
+- [02-remove-owner.md](./02-remove-owner.md)
 - [07-deposit-with-price.md](./07-deposit-with-price.md)
 - [08-request-deposit.md](./08-request-deposit.md)
 - [09-fulfill-deposit.md](./09-fulfill-deposit.md)
 - [0A-withdraw-with-price.md](./0A-withdraw-with-price.md)
 - [0B-request-withdraw.md](./0B-request-withdraw.md)
 - [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)
-- [0D-update-fees.md](./0D-update-fees.md)
-- [0E-collect-fees.md](./0E-collect-fees.md)
+- [05-update-fees.md](./05-update-fees.md)
+- [06-collect-fees.md](./06-collect-fees.md)
 
 Source files:
 

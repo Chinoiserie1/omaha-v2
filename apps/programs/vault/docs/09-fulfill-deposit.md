@@ -88,10 +88,10 @@ Checked in `TryFrom`:
 | `admin` is a signer | `MissingRequiredSignature` |
 | `vault_state` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `pending_deposit` is writable | `InvalidAccountData` |
 | `pending_deposit` owned by this program | `IllegalOwner` |
-| `pending_deposit` discriminator == 2 | `InvalidPendingDeposit` (0x109) |
+| `pending_deposit` discriminator == 0xA2 | `InvalidPendingDeposit` (0x109) |
 | `depositor` is writable | `InvalidAccountData` |
 | `data.len() >= 8` | `InvalidInstructionData` |
 | `new_share_price > 0` | `InvalidSharePrice` (0x101) |
@@ -129,4 +129,4 @@ The depositor receives ~1,447,680 lamports back (the rent they paid during `Requ
 - [08-request-deposit.md](./08-request-deposit.md) — Step 1: user requests deposit
 - [07-deposit-with-price.md](./07-deposit-with-price.md) — Synchronous alternative (atomic price + deposit)
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
-- [0D-update-fees.md](./0D-update-fees.md) — Configure entry fee BPS and fee receiver
+- [05-update-fees.md](./05-update-fees.md) — Configure entry fee BPS and fee receiver

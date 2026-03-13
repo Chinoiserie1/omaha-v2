@@ -85,7 +85,7 @@ Checked in `TryFrom`:
 | `withdrawer` is a signer | `MissingRequiredSignature` |
 | `withdrawer` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `data.len() >= 8` | `InvalidInstructionData` |
 | `shares > 0` | `InvalidAmount` (0x102) |
 

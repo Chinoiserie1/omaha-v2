@@ -31,6 +31,13 @@ use instructions::{
 };
 
 /// Route instructions by single-byte discriminator.
+///
+/// Instruction groups:
+///   0–2:   Setup (Initialize, AddOwner, RemoveOwner)
+///   3–4:   Admin Operations (SetSharePrice, Execute)
+///   5–6:   Fee Management (UpdateFees, CollectFees)
+///   7–9:   Deposit Flow (DepositWithPrice, RequestDeposit, FulfillDeposit)
+///   10–12: Withdraw Flow (WithdrawWithPrice, RequestWithdraw, FulfillWithdraw)
 pub fn process_instruction(
     _program_id: &Pubkey,
     accounts: &[AccountInfo],
@@ -41,14 +48,9 @@ pub fn process_instruction(
         .ok_or(ProgramError::InvalidInstructionData)?;
 
     match discriminator {
+        // Setup (0–2)
         &Initialize::DISCRIMINATOR => {
             Initialize::try_from((data, accounts))?.process()
-        }
-        &SetSharePrice::DISCRIMINATOR => {
-            SetSharePrice::try_from((data, accounts))?.process()
-        }
-        &Execute::DISCRIMINATOR => {
-            Execute::try_from((data, accounts))?.process()
         }
         &AddOwner::DISCRIMINATOR => {
             AddOwner::try_from((data, accounts))?.process()
@@ -56,6 +58,21 @@ pub fn process_instruction(
         &RemoveOwner::DISCRIMINATOR => {
             RemoveOwner::try_from((data, accounts))?.process()
         }
+        // Admin Operations (3–4)
+        &SetSharePrice::DISCRIMINATOR => {
+            SetSharePrice::try_from((data, accounts))?.process()
+        }
+        &Execute::DISCRIMINATOR => {
+            Execute::try_from((data, accounts))?.process()
+        }
+        // Fee Management (5–6)
+        &UpdateFees::DISCRIMINATOR => {
+            UpdateFees::try_from((data, accounts))?.process()
+        }
+        &CollectFees::DISCRIMINATOR => {
+            CollectFees::try_from((data, accounts))?.process()
+        }
+        // Deposit Flow (7–9)
         &DepositWithPrice::DISCRIMINATOR => {
             DepositWithPrice::try_from((data, accounts))?.process()
         }
@@ -65,6 +82,7 @@ pub fn process_instruction(
         &FulfillDeposit::DISCRIMINATOR => {
             FulfillDeposit::try_from((data, accounts))?.process()
         }
+        // Withdraw Flow (10–12)
         &WithdrawWithPrice::DISCRIMINATOR => {
             WithdrawWithPrice::try_from((data, accounts))?.process()
         }
@@ -73,12 +91,6 @@ pub fn process_instruction(
         }
         &FulfillWithdraw::DISCRIMINATOR => {
             FulfillWithdraw::try_from((data, accounts))?.process()
-        }
-        &UpdateFees::DISCRIMINATOR => {
-            UpdateFees::try_from((data, accounts))?.process()
-        }
-        &CollectFees::DISCRIMINATOR => {
-            CollectFees::try_from((data, accounts))?.process()
         }
         _ => Err(ProgramError::InvalidInstructionData),
     }

@@ -26,7 +26,7 @@ const MINT_SUPPLY_OFFSET: usize = 36;
 ///   4. `[]`          token_program
 ///
 /// Data:
-///   [0]    discriminator (0x0E)
+///   [0]    discriminator (0x06)
 ///   [1..9] current_timestamp (i64 LE) — current unix timestamp
 pub struct CollectFees<'a> {
     admin: &'a AccountInfo,
@@ -38,7 +38,7 @@ pub struct CollectFees<'a> {
 }
 
 impl<'a> CollectFees<'a> {
-    pub const DISCRIMINATOR: u8 = 0x0E;
+    pub const DISCRIMINATOR: u8 = 6;
 
     pub fn process(self) -> ProgramResult {
         // Read total supply from share mint account

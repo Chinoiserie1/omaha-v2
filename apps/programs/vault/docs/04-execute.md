@@ -173,13 +173,13 @@ Validation in `TryFrom` is intentionally separated from business logic in `proce
 - **No program allowlist.** The `target_program` is only checked to be executable. Any deployed program on the cluster is a valid target.
 - **No reentrancy guard.** If a target program calls back into this vault program, there is no guard to prevent it. The borrow drop before CPI is the only protection against runtime panics; it does not prevent logical reentrancy.
 - **Remaining accounts are forwarded verbatim.** The vault does not inspect or restrict which accounts are passed to the target program beyond capping at 32.
-- **Access control is the security boundary.** Protect admin and owner keys with hardware wallets or multisig. Rotate compromised keys immediately using [AddOwner](./05-add-owner.md) and [RemoveOwner](./06-remove-owner.md).
+- **Access control is the security boundary.** Protect admin and owner keys with hardware wallets or multisig. Rotate compromised keys immediately using [AddOwner](./01-add-owner.md) and [RemoveOwner](./02-remove-owner.md).
 
 ---
 
 ## Cross-References
 
 - [README.md](./README.md) — Program overview, VaultState layout, PDA seeds, error codes
-- [05-add-owner.md](./05-add-owner.md) — Add operator pubkeys to the authorized owner list
-- [06-remove-owner.md](./06-remove-owner.md) — Remove operator pubkeys from the authorized owner list
+- [01-add-owner.md](./01-add-owner.md) — Add operator pubkeys to the authorized owner list
+- [02-remove-owner.md](./02-remove-owner.md) — Remove operator pubkeys from the authorized owner list
 - [03-set-share-price.md](./03-set-share-price.md) — Admin-only share price update (for context on admin-only vs admin-or-owner access)

@@ -82,7 +82,7 @@ Checked in `TryFrom`:
 | `withdrawer` is a signer | `MissingRequiredSignature` |
 | `vault_state` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `data.len() >= 16` | `InvalidInstructionData` |
 | `new_share_price > 0` | `InvalidSharePrice` (0x101) |
 | `shares_to_burn > 0` | `InvalidAmount` (0x102) |
@@ -109,4 +109,4 @@ Checked in `process()`:
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
 - [0B-request-withdraw.md](./0B-request-withdraw.md) — Async withdraw alternative (step 1)
 - [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md) — Async withdraw alternative (step 2)
-- [0D-update-fees.md](./0D-update-fees.md) — Configure exit fee BPS
+- [05-update-fees.md](./05-update-fees.md) — Configure exit fee BPS

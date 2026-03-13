@@ -64,7 +64,7 @@ fn test_initialize_success() {
 
     assert_eq!(vault_account.owner, program_id());
     assert_eq!(vault_account.data.len(), VaultState::LEN);
-    assert_eq!(vault_account.data[0], 1); // discriminator
+    assert_eq!(vault_account.data[0], 0xA1); // discriminator
     assert_eq!(vault_account.data[2], share_decimals);
     assert_eq!(vault_account.data[3], 0); // num_owners
     assert_eq!(&vault_account.data[16..48], admin.as_ref());

@@ -82,10 +82,10 @@ Checked in `TryFrom`:
 | `admin` is a signer | `MissingRequiredSignature` |
 | `vault_state` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `pending_withdraw` is writable | `InvalidAccountData` |
 | `pending_withdraw` owned by this program | `IllegalOwner` |
-| `pending_withdraw` discriminator == 3 | `InvalidPendingWithdraw` (0x10A) |
+| `pending_withdraw` discriminator == 0xA3 | `InvalidPendingWithdraw` (0x10A) |
 | `withdrawer` is writable | `InvalidAccountData` |
 | `data.len() >= 8` | `InvalidInstructionData` |
 | `new_share_price > 0` | `InvalidSharePrice` (0x101) |
@@ -122,4 +122,4 @@ The withdrawer receives ~1,447,680 lamports back (the rent they paid during `Req
 - [0B-request-withdraw.md](./0B-request-withdraw.md) — Step 1: user requests withdrawal
 - [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) — Synchronous alternative (atomic price + withdraw)
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
-- [0D-update-fees.md](./0D-update-fees.md) — Configure exit fee BPS
+- [05-update-fees.md](./05-update-fees.md) — Configure exit fee BPS

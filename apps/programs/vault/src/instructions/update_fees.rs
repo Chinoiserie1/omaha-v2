@@ -18,7 +18,7 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 ///   1. `[writable]`  vault_state — PDA (fees updated)
 ///
 /// Data:
-///   [0]     discriminator (0x0D)
+///   [0]     discriminator (0x05)
 ///   [1..3]  entry_fee_bps (u16 LE)
 ///   [3..5]  exit_fee_bps (u16 LE)
 ///   [5..7]  management_fee_bps (u16 LE)
@@ -35,7 +35,7 @@ pub struct UpdateFees<'a> {
 }
 
 impl<'a> UpdateFees<'a> {
-    pub const DISCRIMINATOR: u8 = 0x0D;
+    pub const DISCRIMINATOR: u8 = 5;
 
     pub fn process(self) -> ProgramResult {
         let mut data = self.vault_state.try_borrow_mut_data()?;

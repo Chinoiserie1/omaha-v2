@@ -84,7 +84,7 @@ Checked in `TryFrom`:
 | `depositor` is a signer | `MissingRequiredSignature` |
 | `depositor` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
-| `vault_state` discriminator == 1 | `InvalidDiscriminator` (0x105) |
+| `vault_state` discriminator == 0xA1 | `InvalidDiscriminator` (0x105) |
 | `data.len() >= 8` | `InvalidInstructionData` |
 | `amount > 0` | `InvalidAmount` (0x102) |
 

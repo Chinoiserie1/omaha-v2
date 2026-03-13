@@ -1,6 +1,6 @@
-# Instruction 0x05 — AddOwner
+# Instruction 0x01 — AddOwner
 
-- **Discriminator**: `0x05`
+- **Discriminator**: `0x01`
 - **Access**: Admin only
 - **Source**: [`../src/instructions/add_owner.rs`](../src/instructions/add_owner.rs)
 
@@ -15,7 +15,7 @@ Caller
   │
   ├─ accounts[0]: admin (signer)
   ├─ accounts[1]: vault_state (writable)
-  └─ data: [0x05][new_owner: 32 bytes]
+  └─ data: [0x01][new_owner: 32 bytes]
             │
             ▼
   try_from validation
@@ -45,7 +45,7 @@ Caller
 
 | Bytes | Field | Description |
 |-------|-------|-------------|
-| 0 | `discriminator` | `0x05` — stripped before `try_from` receives `data` |
+| 0 | `discriminator` | `0x01` — stripped before `try_from` receives `data` |
 | 1–32 | `new_owner` | 32-byte pubkey of the operator to add |
 
 **Total**: 33 bytes (including discriminator).
@@ -94,6 +94,6 @@ owners array (320 bytes):
 
 ## Cross-References
 
-- [06-remove-owner.md](./06-remove-owner.md) — symmetric removal instruction
+- [02-remove-owner.md](./02-remove-owner.md) — symmetric removal instruction
 - [04-execute.md](./04-execute.md) — instruction that owners are authorized to call
 - [README.md](./README.md) — full instruction index and VaultState layout
