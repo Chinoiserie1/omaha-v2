@@ -13,8 +13,7 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 ///
 /// The admin sets the new share price, then shares are burned from the
 /// withdrawer and base tokens are transferred from the vault at the new
-/// price. This guarantees the price used for this withdrawal is exactly
-/// the one set.
+/// price. If exit fees are configured, the fee amount stays in the vault.
 ///
 /// Accounts:
 ///   0. `[signer]`    admin              — must be vault admin
@@ -69,12 +68,26 @@ impl<'a> WithdrawWithPrice<'a> {
         let share_multiplier = 10u64
             .checked_pow(state.share_decimals as u32)
             .ok_or(VaultError::MathOverflow)?;
-        let base_to_return = self
+        let gross_base = self
             .shares_to_burn
             .checked_mul(self.new_share_price)
             .ok_or(VaultError::MathOverflow)?
             .checked_div(share_multiplier)
             .ok_or(VaultError::MathOverflow)?;
+
+        if gross_base == 0 {
+            return Err(VaultError::InvalidAmount.into());
+        }
+
+        // Apply exit fee (fee stays in vault)
+        let exit_fee_bps = state.exit_fee_bps;
+        let base_to_return = if exit_fee_bps > 0 {
+            let (net, _fee) = crate::fees::apply_fee(gross_base, exit_fee_bps)
+                .ok_or(VaultError::MathOverflow)?;
+            net
+        } else {
+            gross_base
+        };
 
         if base_to_return == 0 {
             return Err(VaultError::InvalidAmount.into());

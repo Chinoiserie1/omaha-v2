@@ -26,6 +26,10 @@ pub enum VaultError {
     InvalidPendingDeposit = 0x109,
     /// Pending withdraw account has wrong discriminator or is invalid.
     InvalidPendingWithdraw = 0x10A,
+    /// Fee basis points exceed the allowed maximum.
+    FeeExceedsMaximum = 0x10B,
+    /// No accrued fees to collect.
+    NoFeesToCollect = 0x10C,
 }
 
 impl From<VaultError> for ProgramError {
@@ -84,6 +88,14 @@ mod tests {
             ProgramError::Custom(0x10A),
             ProgramError::from(VaultError::InvalidPendingWithdraw)
         );
+        assert_eq!(
+            ProgramError::Custom(0x10B),
+            ProgramError::from(VaultError::FeeExceedsMaximum)
+        );
+        assert_eq!(
+            ProgramError::Custom(0x10C),
+            ProgramError::from(VaultError::NoFeesToCollect)
+        );
     }
 
     #[test]
@@ -100,6 +112,8 @@ mod tests {
             VaultError::DuplicateOwner as u32,
             VaultError::InvalidPendingDeposit as u32,
             VaultError::InvalidPendingWithdraw as u32,
+            VaultError::FeeExceedsMaximum as u32,
+            VaultError::NoFeesToCollect as u32,
         ];
         for i in 0..codes.len() {
             for j in (i + 1)..codes.len() {
@@ -111,7 +125,6 @@ mod tests {
     #[test]
     fn test_error_codes_start_at_0x100() {
         assert_eq!(VaultError::Unauthorized as u32, 0x100);
-        // All error codes should be >= 0x100 to avoid collision with built-in ProgramError
-        assert!(VaultError::DuplicateOwner as u32 >= 0x100);
+        assert!(VaultError::NoFeesToCollect as u32 >= 0x100);
     }
 }

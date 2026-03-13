@@ -10,17 +10,24 @@ pub const VAULT_DISCRIMINATOR: u8 = 1;
 
 /// On-chain vault state — zero-copy via bytemuck.
 ///
-/// Layout (464 bytes total):
-///   discriminator  (1)  — account type guard
-///   bump           (1)  — vault PDA bump seed
-///   share_decimals (1)  — share token decimal places
-///   num_owners     (1)  — active owner count (0..MAX_OWNERS)
-///   _padding       (4)  — alignment
-///   admin          (32) — admin pubkey
-///   share_mint     (32) — share SPL token mint
-///   base_mint      (32) — deposit token mint (e.g. USDC)
-///   share_price    (8)  — price per share in base-token smallest units
-///   owners       (320)  — up to 10 operator pubkeys
+/// Layout (488 bytes total):
+///   discriminator       (1)  — account type guard
+///   bump                (1)  — vault PDA bump seed
+///   share_decimals      (1)  — share token decimal places
+///   num_owners          (1)  — active owner count (0..MAX_OWNERS)
+///   entry_fee_bps       (2)  — entry/subscription fee in basis points
+///   exit_fee_bps        (2)  — exit/redemption fee in basis points
+///   management_fee_bps  (2)  — annual management fee in basis points
+///   performance_fee_bps (2)  — performance fee in basis points
+///   _padding            (4)  — alignment
+///   admin               (32) — admin pubkey
+///   share_mint          (32) — share SPL token mint
+///   base_mint           (32) — deposit token mint (e.g. USDC)
+///   fee_receiver        (32) — manager's pubkey for fee share distribution
+///   share_price         (8)  — price per share in base-token smallest units
+///   high_water_mark     (8)  — highest share price for performance fee
+///   last_fee_timestamp  (8)  — last management fee collection (unix seconds)
+///   owners              (320) — up to 10 operator pubkeys
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct VaultState {
@@ -28,11 +35,18 @@ pub struct VaultState {
     pub bump: u8,
     pub share_decimals: u8,
     pub num_owners: u8,
+    pub entry_fee_bps: u16,
+    pub exit_fee_bps: u16,
+    pub management_fee_bps: u16,
+    pub performance_fee_bps: u16,
     pub _padding: [u8; 4],
     pub admin: [u8; 32],
     pub share_mint: [u8; 32],
     pub base_mint: [u8; 32],
+    pub fee_receiver: [u8; 32],
     pub share_price: u64,
+    pub high_water_mark: u64,
+    pub last_fee_timestamp: i64,
     pub owners: [[u8; 32]; MAX_OWNERS],
 }
 
@@ -94,6 +108,12 @@ impl VaultState {
             }
         }
         false
+    }
+
+    /// Returns true if fees are configured (fee_receiver is set).
+    #[inline]
+    pub fn has_fee_receiver(&self) -> bool {
+        self.fee_receiver != [0u8; 32]
     }
 }
 
@@ -171,21 +191,19 @@ mod tests {
 
     #[test]
     fn test_vault_state_len() {
-        // 1+1+1+1+4+32+32+32+8+320 = 432
-        assert_eq!(VaultState::LEN, 432);
+        // 1+1+1+1 + 2+2+2+2 + 4 + 32+32+32+32 + 8+8+8 + 320 = 488
+        assert_eq!(VaultState::LEN, 488);
         assert_eq!(VaultState::LEN, core::mem::size_of::<VaultState>());
     }
 
     #[test]
     fn test_pending_deposit_len() {
-        // 1+1+6+32+32+8 = 80
         assert_eq!(PendingDeposit::LEN, 80);
         assert_eq!(PendingDeposit::LEN, core::mem::size_of::<PendingDeposit>());
     }
 
     #[test]
     fn test_pending_withdraw_len() {
-        // 1+1+6+32+32+8 = 80
         assert_eq!(PendingWithdraw::LEN, 80);
         assert_eq!(PendingWithdraw::LEN, core::mem::size_of::<PendingWithdraw>());
     }
@@ -317,5 +335,30 @@ mod tests {
         assert!(state.add_owner(&owner));
         assert_eq!(state.num_owners, 1);
         assert!(state.is_authorized(&owner));
+    }
+
+    #[test]
+    fn test_has_fee_receiver_false() {
+        let state = make_state(make_key(1));
+        assert!(!state.has_fee_receiver());
+    }
+
+    #[test]
+    fn test_has_fee_receiver_true() {
+        let mut state = make_state(make_key(1));
+        state.fee_receiver = make_key(42);
+        assert!(state.has_fee_receiver());
+    }
+
+    #[test]
+    fn test_fee_fields_default_zero() {
+        let state = VaultState::zeroed();
+        assert_eq!(state.entry_fee_bps, 0);
+        assert_eq!(state.exit_fee_bps, 0);
+        assert_eq!(state.management_fee_bps, 0);
+        assert_eq!(state.performance_fee_bps, 0);
+        assert_eq!(state.high_water_mark, 0);
+        assert_eq!(state.last_fee_timestamp, 0);
+        assert!(!state.has_fee_receiver());
     }
 }

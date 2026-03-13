@@ -13,7 +13,7 @@ use crate::state::{PendingDeposit, VaultState, PENDING_DEPOSIT_DISCRIMINATOR, VA
 ///
 /// The admin sets the new share price, shares are calculated from the
 /// pending deposit amount, minted to the depositor, and the PendingDeposit
-/// PDA is closed (rent refunded to depositor).
+/// PDA is closed (rent refunded to depositor). Entry fees are applied if configured.
 ///
 /// Accounts:
 ///   0. `[signer]`    admin              — must be vault admin
@@ -23,6 +23,7 @@ use crate::state::{PendingDeposit, VaultState, PENDING_DEPOSIT_DISCRIMINATOR, VA
 ///   4. `[writable]`  depositor_share_ata — destination for minted shares
 ///   5. `[writable]`  depositor          — receives rent refund (NOT a signer)
 ///   6. `[]`          token_program
+///   7. `[writable]`  fee_receiver_ata   — (optional) destination for fee shares
 ///
 /// Data:
 ///   [0]    discriminator (0x09)
@@ -35,6 +36,7 @@ pub struct FulfillDeposit<'a> {
     depositor_share_ata: &'a AccountInfo,
     depositor: &'a AccountInfo,
     _token_program: &'a AccountInfo,
+    fee_receiver_ata: Option<&'a AccountInfo>,
     new_share_price: u64,
 }
 
@@ -71,6 +73,8 @@ impl<'a> FulfillDeposit<'a> {
         let vault_bump;
         let admin_bytes;
         let base_mint_bytes;
+        let entry_fee_bps;
+        let has_fee_receiver;
         {
             let mut vs_data = self.vault_state.try_borrow_mut_data()?;
             let state: &mut VaultState =
@@ -93,21 +97,31 @@ impl<'a> FulfillDeposit<'a> {
             vault_bump = state.bump;
             admin_bytes = state.admin;
             base_mint_bytes = state.base_mint;
+            entry_fee_bps = state.entry_fee_bps;
+            has_fee_receiver = state.has_fee_receiver();
         }
 
         // Calculate shares to mint: amount * 10^share_decimals / share_price
         let share_multiplier = 10u64
             .checked_pow(share_decimals as u32)
             .ok_or(VaultError::MathOverflow)?;
-        let shares_to_mint = deposit_amount
+        let gross_shares = deposit_amount
             .checked_mul(share_multiplier)
             .ok_or(VaultError::MathOverflow)?
             .checked_div(self.new_share_price)
             .ok_or(VaultError::MathOverflow)?;
 
-        if shares_to_mint == 0 {
+        if gross_shares == 0 {
             return Err(VaultError::InvalidAmount.into());
         }
+
+        // Apply entry fee
+        let (user_shares, fee_shares) = if entry_fee_bps > 0 && has_fee_receiver {
+            crate::fees::apply_fee(gross_shares, entry_fee_bps)
+                .ok_or(VaultError::MathOverflow)?
+        } else {
+            (gross_shares, 0u64)
+        };
 
         // Mint share tokens to depositor (vault_state PDA is mint authority)
         let vault_bump_bytes = [vault_bump];
@@ -123,9 +137,23 @@ impl<'a> FulfillDeposit<'a> {
             mint: self.share_mint,
             account: self.depositor_share_ata,
             mint_authority: self.vault_state,
-            amount: shares_to_mint,
+            amount: user_shares,
         }
         .invoke_signed(&signers)?;
+
+        // Mint fee shares to fee receiver
+        if fee_shares > 0 {
+            let fee_ata = self
+                .fee_receiver_ata
+                .ok_or(ProgramError::NotEnoughAccountKeys)?;
+            MintTo {
+                mint: self.share_mint,
+                account: fee_ata,
+                mint_authority: self.vault_state,
+                amount: fee_shares,
+            }
+            .invoke_signed(&signers)?;
+        }
 
         // Close pending_deposit: refund rent lamports to depositor
         {
@@ -192,6 +220,9 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for FulfillDeposit<'a> {
             return Err(ProgramError::InvalidAccountData);
         }
 
+        // Optional fee_receiver_ata (8th account, index 7)
+        let fee_receiver_ata = accounts.get(7);
+
         // Parse instruction data: [new_share_price: u64 LE]
         if data.len() < 8 {
             return Err(ProgramError::InvalidInstructionData);
@@ -213,6 +244,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for FulfillDeposit<'a> {
             depositor_share_ata,
             depositor,
             _token_program: token_program,
+            fee_receiver_ata,
             new_share_price,
         })
     }

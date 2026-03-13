@@ -13,6 +13,8 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 
 /// Initialize a new vault.
 ///
+/// All fee fields default to 0 (no fees). Use UpdateFees to configure fees.
+///
 /// Accounts:
 ///   0. `[signer, writable]` admin — pays for account creation, becomes vault admin
 ///   1. `[writable]`         vault_state — PDA: ["vault", admin, base_mint]
@@ -108,7 +110,7 @@ impl<'a> Initialize<'a> {
         }
         .invoke()?;
 
-        // Write vault state
+        // Write vault state (fee fields are zeroed by CreateAccount)
         let mut data = self.vault_state.try_borrow_mut_data()?;
         let state: &mut VaultState =
             bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
@@ -117,10 +119,14 @@ impl<'a> Initialize<'a> {
         state.bump = vault_bump;
         state.share_decimals = self.share_decimals;
         state.num_owners = 0;
+        // entry_fee_bps, exit_fee_bps, management_fee_bps, performance_fee_bps = 0
         state.admin = *admin_key;
         state.share_mint = *self.share_mint.key();
         state.base_mint = *base_mint_key;
+        // fee_receiver = [0; 32] (no fees until UpdateFees is called)
         state.share_price = self.share_price;
+        state.high_water_mark = self.share_price;
+        // last_fee_timestamp = 0 (initialized on first CollectFees call)
 
         Ok(())
     }

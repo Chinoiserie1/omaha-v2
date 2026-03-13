@@ -14,6 +14,7 @@ use crate::state::{PendingWithdraw, VaultState, PENDING_WITHDRAW_DISCRIMINATOR, 
 /// The admin sets the new share price, base tokens are calculated from the
 /// pending withdraw shares, transferred to the withdrawer, and the
 /// PendingWithdraw PDA is closed (rent refunded to withdrawer).
+/// Exit fees are applied if configured (fee stays in vault).
 ///
 /// Accounts:
 ///   0. `[signer]`    admin              — must be vault admin
@@ -71,6 +72,7 @@ impl<'a> FulfillWithdraw<'a> {
         let vault_bump;
         let admin_bytes;
         let base_mint_bytes;
+        let exit_fee_bps;
         {
             let mut vs_data = self.vault_state.try_borrow_mut_data()?;
             let state: &mut VaultState =
@@ -88,17 +90,31 @@ impl<'a> FulfillWithdraw<'a> {
             vault_bump = state.bump;
             admin_bytes = state.admin;
             base_mint_bytes = state.base_mint;
+            exit_fee_bps = state.exit_fee_bps;
         }
 
         // Calculate base tokens to return: shares * share_price / 10^share_decimals
         let share_multiplier = 10u64
             .checked_pow(share_decimals as u32)
             .ok_or(VaultError::MathOverflow)?;
-        let base_to_return = pending_shares
+        let gross_base = pending_shares
             .checked_mul(self.new_share_price)
             .ok_or(VaultError::MathOverflow)?
             .checked_div(share_multiplier)
             .ok_or(VaultError::MathOverflow)?;
+
+        if gross_base == 0 {
+            return Err(VaultError::InvalidAmount.into());
+        }
+
+        // Apply exit fee (fee stays in vault)
+        let base_to_return = if exit_fee_bps > 0 {
+            let (net, _fee) = crate::fees::apply_fee(gross_base, exit_fee_bps)
+                .ok_or(VaultError::MathOverflow)?;
+            net
+        } else {
+            gross_base
+        };
 
         if base_to_return == 0 {
             return Err(VaultError::InvalidAmount.into());

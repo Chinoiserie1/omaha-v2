@@ -10,6 +10,8 @@
 
 Atomically sets the share price and deposits base tokens in a single instruction. The admin sets the new share price, and shares are minted to the depositor at that exact price. This guarantees price isolation — no other deposit can use the new price before this one completes.
 
+If entry fees are configured (via `UpdateFees`), fee shares are deducted from the gross mint and sent to the fee receiver's token account. The depositor receives `gross_shares - fee_shares`.
+
 Inspired by GLAM Protocol's instant subscription model where price feeds are included in the same transaction, and Lagoon Finance's curator-settles pattern.
 
 ## Flow Diagram
@@ -33,9 +35,17 @@ Admin + Depositor
   │       depositor_base_ata → vault_base_ata
   │       authority: depositor (signer)
   │
-  └─ 6. MintTo shares (Token CPI, invoke_signed)
+  ├─ 6. Apply entry fee (if configured)
+  │       └─ (user_shares, fee_shares) = apply_fee(gross_shares, entry_fee_bps)
+  │
+  ├─ 7. MintTo user shares (Token CPI, invoke_signed)
+  │       mint: share_mint
+  │       destination: depositor_share_ata
+  │       authority: vault_state PDA (signs with bump)
+  │
+  └─ 8. MintTo fee shares (if fee_shares > 0)
           mint: share_mint
-          destination: depositor_share_ata
+          destination: fee_receiver_ata (optional account #8)
           authority: vault_state PDA (signs with bump)
 ```
 
@@ -51,6 +61,7 @@ Admin + Depositor
 | 5 | `share_mint` | Yes | No | Share token mint (vault_state is authority) |
 | 6 | `depositor_share_ata` | Yes | No | Destination ATA to receive minted shares |
 | 7 | `token_program` | No | No | SPL Token program |
+| 8 | `fee_receiver_ata` | Yes | No | (Optional) Destination for entry fee shares |
 
 ## Instruction Data Layout
 
@@ -102,3 +113,4 @@ Checked in `process()`:
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
 - [08-request-deposit.md](./08-request-deposit.md) — Async deposit alternative (step 1)
 - [09-fulfill-deposit.md](./09-fulfill-deposit.md) — Async deposit alternative (step 2)
+- [0D-update-fees.md](./0D-update-fees.md) — Configure entry fee BPS and fee receiver

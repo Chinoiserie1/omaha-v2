@@ -10,6 +10,8 @@
 
 Step 2 of the async Request → Fulfill withdraw flow. The admin sets the share price, calculates the base token payout from the pending withdraw shares, transfers base tokens to the withdrawer, and closes the `PendingWithdraw` PDA (refunding rent to the withdrawer).
 
+If exit fees are configured (via `UpdateFees`), the fee amount is deducted from the base tokens returned. The fee stays in the vault, benefiting remaining shareholders.
+
 Inspired by Lagoon Finance's curator-settles pattern where the valuation oracle proposes a price off-chain and the curator accepts it, processing pending withdrawals at that price.
 
 ## Flow Diagram
@@ -29,11 +31,15 @@ Admin
   │       └─ update share_price to new_share_price
   │       └─ read share_decimals, bump, admin, base_mint
   │
-  ├─ 5. Calculate base_to_return
+  ├─ 5. Calculate gross_base
   │       └─ shares * new_share_price / 10^share_decimals
   │       └─ error if result == 0 (0x102)
   │
-  ├─ 6. Transfer base tokens (Token CPI, invoke_signed)
+  ├─ 6. Apply exit fee (if configured)
+  │       └─ (base_to_return, fee) = apply_fee(gross_base, exit_fee_bps)
+  │       └─ fee stays in vault (not transferred)
+  │
+  ├─ 7. Transfer base tokens (Token CPI, invoke_signed)
   │       from:      vault_base_ata
   │       to:        withdrawer_base_ata
   │       authority: vault_state PDA (signs with bump)
@@ -116,3 +122,4 @@ The withdrawer receives ~1,447,680 lamports back (the rent they paid during `Req
 - [0B-request-withdraw.md](./0B-request-withdraw.md) — Step 1: user requests withdrawal
 - [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) — Synchronous alternative (atomic price + withdraw)
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
+- [0D-update-fees.md](./0D-update-fees.md) — Configure exit fee BPS

@@ -103,7 +103,7 @@ Performed inside `TryFrom<(&[u8], &[AccountInfo])>`:
 
 ## State After Success
 
-`VaultState` written at `vault_state` account (432 bytes, zero-copy via bytemuck):
+`VaultState` written at `vault_state` account (488 bytes, zero-copy via bytemuck):
 
 | Field | Value |
 |-------|-------|
@@ -111,10 +111,17 @@ Performed inside `TryFrom<(&[u8], &[AccountInfo])>`:
 | `bump` | Canonical bump for `["vault", admin, base_mint]` |
 | `share_decimals` | Value from instruction data |
 | `num_owners` | `0` |
+| `entry_fee_bps` | `0` (no entry fee) |
+| `exit_fee_bps` | `0` (no exit fee) |
+| `management_fee_bps` | `0` (no management fee) |
+| `performance_fee_bps` | `0` (no performance fee) |
 | `admin` | `admin` pubkey |
 | `share_mint` | `share_mint` pubkey |
 | `base_mint` | `base_mint` pubkey |
+| `fee_receiver` | All zeroes (no fee receiver) |
 | `share_price` | Value from instruction data |
+| `high_water_mark` | Same as `share_price` |
+| `last_fee_timestamp` | `0` (initialized on first `CollectFees` call) |
 | `owners` | All zeroes (no operators yet) |
 
 Share mint initialized with:

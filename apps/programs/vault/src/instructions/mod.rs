@@ -9,6 +9,8 @@ pub mod fulfill_deposit;
 pub mod withdraw_with_price;
 pub mod request_withdraw;
 pub mod fulfill_withdraw;
+pub mod update_fees;
+pub mod collect_fees;
 
 pub use initialize::Initialize;
 pub use set_share_price::SetSharePrice;
@@ -21,3 +23,5 @@ pub use fulfill_deposit::FulfillDeposit;
 pub use withdraw_with_price::WithdrawWithPrice;
 pub use request_withdraw::RequestWithdraw;
 pub use fulfill_withdraw::FulfillWithdraw;
+pub use update_fees::UpdateFees;
+pub use collect_fees::CollectFees;

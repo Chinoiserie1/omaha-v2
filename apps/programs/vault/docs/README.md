@@ -20,7 +20,7 @@ See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
       v
  +--------------------+          PDA seeds
  |   VaultState PDA   |  <---  ["vault", admin, base_mint]
- |  (432 bytes)       |
+ |  (488 bytes)       |
  |  admin             |          PDA seeds
  |  share_price       |  <---  ["share_mint", vault_state]
  |  num_owners        |               |
@@ -103,6 +103,13 @@ See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
      |                          |
      | -- FulfillWithdraw -----> |  Admin sets price, transfers base tokens
      |    new_price              |  for pending withdraw, closes PDA
+     |                          |
+     | -- UpdateFees ----------> |  Admin configures fee BPS values
+     |    entry, exit, mgmt,    |  + fee receiver pubkey
+     |    perf, receiver        |
+     |                          |
+     | -- CollectFees ---------> |  Admin mints management + performance
+     |    current_timestamp     |  fee shares to fee receiver
 ```
 
 ---
@@ -122,25 +129,32 @@ No private key is required.
 
 ---
 
-## VaultState Account Layout (432 bytes)
+## VaultState Account Layout (488 bytes)
 
 `#[repr(C)]` with `bytemuck::Pod + bytemuck::Zeroable`. Cast directly from raw
 account data — no serialization/deserialization.
 
-| Offset | Size | Field           | Type          | Description                          |
-|--------|------|-----------------|---------------|--------------------------------------|
-| 0      | 1    | discriminator   | u8            | Account type guard; always 1         |
-| 1      | 1    | bump            | u8            | vault_state PDA canonical bump       |
-| 2      | 1    | share_decimals  | u8            | Decimal places for share token       |
-| 3      | 1    | num_owners      | u8            | Active operator count (0..=10)       |
-| 4      | 4    | _padding        | [u8; 4]       | Alignment to 8-byte boundary         |
-| 8      | 32   | admin           | [u8; 32]      | Admin pubkey                         |
-| 40     | 32   | share_mint      | [u8; 32]      | Share SPL token mint pubkey          |
-| 72     | 32   | base_mint       | [u8; 32]      | Deposit token mint (e.g. USDC)       |
-| 104    | 8    | share_price     | u64 (LE)      | Price per share in base token units  |
-| 112    | 320  | owners          | [[u8;32]; 10] | Operator pubkeys; zeroed if unused   |
+| Offset | Size | Field               | Type          | Description                              |
+|--------|------|---------------------|---------------|------------------------------------------|
+| 0      | 1    | discriminator       | u8            | Account type guard; always 1             |
+| 1      | 1    | bump                | u8            | vault_state PDA canonical bump           |
+| 2      | 1    | share_decimals      | u8            | Decimal places for share token           |
+| 3      | 1    | num_owners          | u8            | Active operator count (0..=10)           |
+| 4      | 2    | entry_fee_bps       | u16 (LE)      | Entry fee in basis points (max 1000)     |
+| 6      | 2    | exit_fee_bps        | u16 (LE)      | Exit fee in basis points (max 1000)      |
+| 8      | 2    | management_fee_bps  | u16 (LE)      | Management fee in basis points (max 1000)|
+| 10     | 2    | performance_fee_bps | u16 (LE)      | Performance fee in basis points (max 5000)|
+| 12     | 4    | _padding            | [u8; 4]       | Alignment to 8-byte boundary             |
+| 16     | 32   | admin               | [u8; 32]      | Admin pubkey                             |
+| 48     | 32   | share_mint          | [u8; 32]      | Share SPL token mint pubkey              |
+| 80     | 32   | base_mint           | [u8; 32]      | Deposit token mint (e.g. USDC)           |
+| 112    | 32   | fee_receiver        | [u8; 32]      | Fee receiver pubkey (all zeros = none)   |
+| 144    | 8    | share_price         | u64 (LE)      | Price per share in base token units      |
+| 152    | 8    | high_water_mark     | u64 (LE)      | HWM for performance fee calculation      |
+| 160    | 8    | last_fee_timestamp  | i64 (LE)      | Unix timestamp of last fee collection    |
+| 168    | 320  | owners              | [[u8;32]; 10] | Operator pubkeys; zeroed if unused       |
 
-Total: 1+1+1+1+4+32+32+32+8+320 = **432 bytes**
+Total: 1+1+1+1+2+2+2+2+4+32+32+32+32+8+8+8+320 = **488 bytes**
 
 ---
 
@@ -159,6 +173,8 @@ Total: 1+1+1+1+4+32+32+32+8+320 = **432 bytes**
 | 0x0A  | WithdrawWithPrice | Admin only         | 8        | 8 + 8 bytes        | [0A-withdraw-with-price.md](./0A-withdraw-with-price.md) |
 | 0x0B  | RequestWithdraw   | Anyone             | 7        | 8 bytes            | [0B-request-withdraw.md](./0B-request-withdraw.md)     |
 | 0x0C  | FulfillWithdraw   | Admin only         | 7        | 8 bytes            | [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)     |
+| 0x0D  | UpdateFees        | Admin only         | 2        | 40 bytes           | [0D-update-fees.md](./0D-update-fees.md)               |
+| 0x0E  | CollectFees       | Admin only         | 5        | 8 bytes            | [0E-collect-fees.md](./0E-collect-fees.md)              |
 
 Data column excludes the leading discriminator byte consumed by `process_instruction`.
 
@@ -179,6 +195,8 @@ Data column excludes the leading discriminator byte consumed by `process_instruc
 | WithdrawWithPrice | Yes   | No    | No     |
 | RequestWithdraw   | Yes   | Yes   | Yes    |
 | FulfillWithdraw   | Yes   | No    | No     |
+| UpdateFees        | Yes   | No    | No     |
+| CollectFees       | Yes   | No    | No     |
 
 "Owner" means a pubkey present in `VaultState.owners[0..num_owners]`.
 `is_authorized` checks admin first, then iterates the active owner slots.
@@ -200,7 +218,34 @@ base_to_return = shares_to_burn * share_price / 10^share_decimals
 ```
 
 All arithmetic uses `checked_mul` / `checked_div`. Integer truncation applies
-(Solana has no floating-point in on-chain code).
+(Solana has no floating-point in on-chain code). Fee math uses `u128` intermediates
+to prevent overflow with large supplies.
+
+---
+
+## Fee System
+
+Four fee types, all in basis points (10,000 = 100%):
+
+| Fee Type | Max BPS | Mechanism | Charged By |
+|----------|---------|-----------|------------|
+| Entry | 1,000 (10%) | Deducted from minted shares; fee shares minted to fee_receiver | DepositWithPrice, FulfillDeposit |
+| Exit | 1,000 (10%) | Deducted from base tokens returned; fee stays in vault | WithdrawWithPrice, FulfillWithdraw |
+| Management | 1,000 (10%) | Time-based AUM; new shares minted to fee_receiver | CollectFees |
+| Performance | 5,000 (50%) | HWM-based; new shares minted to fee_receiver | CollectFees |
+
+**Entry fee** — `apply_fee(gross_shares, entry_bps)` → `(user_shares, fee_shares)`. Fee shares
+are minted to the `fee_receiver_ata` (optional 9th/8th account in deposit instructions).
+
+**Exit fee** — `apply_fee(gross_base, exit_bps)` → `(net_base, fee)`. The fee stays in the
+vault (not transferred), benefiting remaining shareholders.
+
+**Management fee** — `total_supply * mgmt_bps * elapsed / (BPS * SECONDS_PER_YEAR)`. Minted
+as new shares to dilute existing holders proportionally.
+
+**Performance fee** — Only charged when `share_price > high_water_mark`:
+`(price - hwm) * total_supply * perf_bps / (price * BPS)`. HWM is updated to current
+price after collection.
 
 **Worked example** — `share_decimals = 6`, `share_price = 1_500_000` (1.5 USDC per share), deposit 10 USDC:
 
@@ -232,6 +277,8 @@ shares_to_mint = 10_000_000 * 10^6 / 1_500_000
 | 0x108 | DuplicateOwner      | Pubkey already present in owners array              | AddOwner                           |
 | 0x109 | InvalidPendingDeposit| PendingDeposit account has wrong discriminator     | FulfillDeposit                     |
 | 0x10A | InvalidPendingWithdraw| PendingWithdraw account has wrong discriminator   | FulfillWithdraw                    |
+| 0x10B | FeeExceedsMaximum   | Fee BPS exceeds allowed maximum                     | UpdateFees                         |
+| 0x10C | NoFeesToCollect     | No fee receiver set or no fees to collect            | CollectFees                        |
 
 All codes are `ProgramError::Custom(code)`. Base offset 0x100 avoids collision
 with built-in `ProgramError` variants.
@@ -251,7 +298,7 @@ year, `2` years exemption threshold (unchanged since Solana mainnet launch).
 
 | Account     | data_len | Calculation          | Lamports  |
 |-------------|----------|----------------------|-----------|
-| VaultState  | 432      | (432+128)*3480*2     | 3,897,600 |
+| VaultState  | 488      | (488+128)*3480*2     | 4,287,360 |
 | ShareMint   | 82       | (82+128)*3480*2      | 1,461,600 |
 | PendingDeposit | 80    | (80+128)*3480*2      | 1,447,680 |
 | PendingWithdraw | 80   | (80+128)*3480*2      | 1,447,680 |
@@ -281,6 +328,8 @@ instruction_data  ->  split_first()  ->  (discriminator, remaining_data)
                               0x0A => WithdrawWithPrice::try_from(...)?.process()
                               0x0B => RequestWithdraw::try_from(...)?.process()
                               0x0C => FulfillWithdraw::try_from(...)?.process()
+                              0x0D => UpdateFees::try_from(...)?.process()
+                              0x0E => CollectFees::try_from(...)?.process()
                               _    => Err(InvalidInstructionData)
                             }
 ```
@@ -310,12 +359,15 @@ Instruction detail docs:
 - [0A-withdraw-with-price.md](./0A-withdraw-with-price.md)
 - [0B-request-withdraw.md](./0B-request-withdraw.md)
 - [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md)
+- [0D-update-fees.md](./0D-update-fees.md)
+- [0E-collect-fees.md](./0E-collect-fees.md)
 
 Source files:
 
 - [../src/lib.rs](../src/lib.rs) — entrypoint and routing
 - [../src/state.rs](../src/state.rs) — VaultState definition
 - [../src/error.rs](../src/error.rs) — error codes
+- [../src/fees.rs](../src/fees.rs) — fee math (entry/exit/management/performance)
 - [../src/rent.rs](../src/rent.rs) — rent exemption formula
 - [../src/instructions/](../src/instructions/) — one file per instruction
 - [../CLAUDE.md](../CLAUDE.md) — build commands, API constraints, test suite

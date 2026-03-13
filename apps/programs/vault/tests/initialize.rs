@@ -67,11 +67,11 @@ fn test_initialize_success() {
     assert_eq!(vault_account.data[0], 1); // discriminator
     assert_eq!(vault_account.data[2], share_decimals);
     assert_eq!(vault_account.data[3], 0); // num_owners
-    assert_eq!(&vault_account.data[8..40], admin.as_ref());
-    assert_eq!(&vault_account.data[40..72], share_mint_key.as_ref());
-    assert_eq!(&vault_account.data[72..104], base_mint.as_ref());
+    assert_eq!(&vault_account.data[16..48], admin.as_ref());
+    assert_eq!(&vault_account.data[48..80], share_mint_key.as_ref());
+    assert_eq!(&vault_account.data[80..112], base_mint.as_ref());
     assert_eq!(
-        u64::from_le_bytes(vault_account.data[104..112].try_into().unwrap()),
+        u64::from_le_bytes(vault_account.data[144..152].try_into().unwrap()),
         share_price
     );
 

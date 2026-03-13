@@ -10,6 +10,8 @@
 
 Atomically sets the share price and processes a withdrawal in a single instruction. The admin sets the new share price, shares are burned from the withdrawer, and base tokens are transferred out at that exact price. This guarantees price isolation — no other withdrawal can use the new price before this one completes.
 
+If exit fees are configured (via `UpdateFees`), the fee amount is deducted from the base tokens returned. The fee stays in the vault, benefiting remaining shareholders.
+
 Synchronous counterpart to the async `RequestWithdraw` → `FulfillWithdraw` flow. Inspired by GLAM Protocol's instant redemption model where price feeds are included in the same transaction.
 
 ## Flow Diagram
@@ -23,11 +25,15 @@ Admin + Withdrawer
   │
   ├─ 2. Update share_price to new_share_price
   │
-  ├─ 3. Calculate base_to_return
+  ├─ 3. Calculate gross_base
   │       └─ shares_to_burn * share_price / 10^share_decimals
   │       └─ error if result == 0 (0x102)
   │
-  ├─ 4. Drop data borrow (required before CPI)
+  ├─ 4. Apply exit fee (if configured)
+  │       └─ (base_to_return, fee) = apply_fee(gross_base, exit_fee_bps)
+  │       └─ fee stays in vault (not transferred)
+  │
+  ├─ 5. Drop data borrow (required before CPI)
   │
   ├─ 5. Burn shares (Token CPI)
   │       from:      withdrawer_share_ata
@@ -103,3 +109,4 @@ Checked in `process()`:
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
 - [0B-request-withdraw.md](./0B-request-withdraw.md) — Async withdraw alternative (step 1)
 - [0C-fulfill-withdraw.md](./0C-fulfill-withdraw.md) — Async withdraw alternative (step 2)
+- [0D-update-fees.md](./0D-update-fees.md) — Configure exit fee BPS

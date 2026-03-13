@@ -10,6 +10,8 @@
 
 Step 2 of the async Request → Fulfill deposit flow. The admin sets the share price, calculates shares from the pending deposit amount, mints shares to the depositor, and closes the `PendingDeposit` PDA (refunding rent to the depositor).
 
+If entry fees are configured (via `UpdateFees`), fee shares are deducted from the gross mint and sent to the fee receiver's token account. The depositor receives `gross_shares - fee_shares`.
+
 Inspired by Lagoon Finance's curator-settles pattern where the valuation oracle proposes a price off-chain and the curator accepts it, processing pending deposits at that price.
 
 ## Flow Diagram
@@ -34,12 +36,20 @@ Admin
   │       └─ amount * 10^share_decimals / new_share_price
   │       └─ error if result == 0 (0x102)
   │
-  ├─ 6. MintTo shares (Token CPI, invoke_signed)
+  ├─ 6. Apply entry fee (if configured)
+  │       └─ (user_shares, fee_shares) = apply_fee(gross_shares, entry_fee_bps)
+  │
+  ├─ 7. MintTo user shares (Token CPI, invoke_signed)
   │       mint: share_mint
   │       destination: depositor_share_ata
   │       authority: vault_state PDA (signs with bump)
   │
-  └─ 7. Close PendingDeposit PDA
+  ├─ 8. MintTo fee shares (if fee_shares > 0)
+  │       mint: share_mint
+  │       destination: fee_receiver_ata (optional account #7)
+  │       authority: vault_state PDA (signs with bump)
+  │
+  └─ 9. Close PendingDeposit PDA
           └─ transfer rent lamports to depositor
           └─ zero account data via close()
 ```
@@ -55,6 +65,7 @@ Admin
 | 4 | `depositor_share_ata` | Yes | No | Destination ATA to receive minted shares |
 | 5 | `depositor` | Yes | No | Receives rent refund — NOT a signer |
 | 6 | `token_program` | No | No | SPL Token program |
+| 7 | `fee_receiver_ata` | Yes | No | (Optional) Destination for entry fee shares |
 
 ## Instruction Data Layout
 
@@ -118,3 +129,4 @@ The depositor receives ~1,447,680 lamports back (the rent they paid during `Requ
 - [08-request-deposit.md](./08-request-deposit.md) — Step 1: user requests deposit
 - [07-deposit-with-price.md](./07-deposit-with-price.md) — Synchronous alternative (atomic price + deposit)
 - [03-set-share-price.md](./03-set-share-price.md) — Standalone price update
+- [0D-update-fees.md](./0D-update-fees.md) — Configure entry fee BPS and fee receiver

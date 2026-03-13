@@ -19,13 +19,14 @@ pinocchio::default_allocator!();
 pinocchio::nostd_panic_handler!();
 
 pub mod error;
+pub mod fees;
 pub mod instructions;
 pub mod rent;
 pub mod state;
 
 use instructions::{
-    AddOwner, DepositWithPrice, Execute, FulfillDeposit, FulfillWithdraw,
-    Initialize, RemoveOwner, RequestDeposit, RequestWithdraw, SetSharePrice,
+    AddOwner, CollectFees, DepositWithPrice, Execute, FulfillDeposit, FulfillWithdraw,
+    Initialize, RemoveOwner, RequestDeposit, RequestWithdraw, SetSharePrice, UpdateFees,
     WithdrawWithPrice,
 };
 
@@ -72,6 +73,12 @@ pub fn process_instruction(
         }
         &FulfillWithdraw::DISCRIMINATOR => {
             FulfillWithdraw::try_from((data, accounts))?.process()
+        }
+        &UpdateFees::DISCRIMINATOR => {
+            UpdateFees::try_from((data, accounts))?.process()
+        }
+        &CollectFees::DISCRIMINATOR => {
+            CollectFees::try_from((data, accounts))?.process()
         }
         _ => Err(ProgramError::InvalidInstructionData),
     }

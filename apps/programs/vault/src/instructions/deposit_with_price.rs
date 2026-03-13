@@ -12,8 +12,8 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 /// Admin-only: set share price and deposit in a single atomic instruction.
 ///
 /// The admin sets the new share price, then base tokens are transferred
-/// from the depositor and shares are minted at the new price. This
-/// guarantees the price used for this deposit is exactly the one set.
+/// from the depositor and shares are minted at the new price. If entry fees
+/// are configured, fee shares are minted to the fee receiver.
 ///
 /// Accounts:
 ///   0. `[signer]`    admin              — must be vault admin
@@ -24,6 +24,7 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 ///   5. `[writable]`  share_mint         — share token mint
 ///   6. `[writable]`  depositor_share_ata — destination for minted shares
 ///   7. `[]`          token_program
+///   8. `[writable]`  fee_receiver_ata   — (optional) destination for fee shares
 ///
 /// Data:
 ///   [0]     discriminator (0x07)
@@ -38,6 +39,7 @@ pub struct DepositWithPrice<'a> {
     share_mint: &'a AccountInfo,
     depositor_share_ata: &'a AccountInfo,
     _token_program: &'a AccountInfo,
+    fee_receiver_ata: Option<&'a AccountInfo>,
     new_share_price: u64,
     deposit_amount: u64,
 }
@@ -68,16 +70,26 @@ impl<'a> DepositWithPrice<'a> {
         let share_multiplier = 10u64
             .checked_pow(state.share_decimals as u32)
             .ok_or(VaultError::MathOverflow)?;
-        let shares_to_mint = self
+        let gross_shares = self
             .deposit_amount
             .checked_mul(share_multiplier)
             .ok_or(VaultError::MathOverflow)?
             .checked_div(self.new_share_price)
             .ok_or(VaultError::MathOverflow)?;
 
-        if shares_to_mint == 0 {
+        if gross_shares == 0 {
             return Err(VaultError::InvalidAmount.into());
         }
+
+        // Apply entry fee
+        let entry_fee_bps = state.entry_fee_bps;
+        let has_fee_receiver = state.has_fee_receiver();
+        let (user_shares, fee_shares) = if entry_fee_bps > 0 && has_fee_receiver {
+            crate::fees::apply_fee(gross_shares, entry_fee_bps)
+                .ok_or(VaultError::MathOverflow)?
+        } else {
+            (gross_shares, 0u64)
+        };
 
         // Copy values needed for PDA signing before dropping borrow
         let vault_bump = state.bump;
@@ -110,9 +122,23 @@ impl<'a> DepositWithPrice<'a> {
             mint: self.share_mint,
             account: self.depositor_share_ata,
             mint_authority: self.vault_state,
-            amount: shares_to_mint,
+            amount: user_shares,
         }
         .invoke_signed(&signers)?;
+
+        // Mint fee shares to fee receiver
+        if fee_shares > 0 {
+            let fee_ata = self
+                .fee_receiver_ata
+                .ok_or(ProgramError::NotEnoughAccountKeys)?;
+            MintTo {
+                mint: self.share_mint,
+                account: fee_ata,
+                mint_authority: self.vault_state,
+                amount: fee_shares,
+            }
+            .invoke_signed(&signers)?;
+        }
 
         Ok(())
     }
@@ -152,6 +178,9 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for DepositWithPrice<'a> {
             }
         }
 
+        // Optional fee_receiver_ata (9th account, index 8)
+        let fee_receiver_ata = accounts.get(8);
+
         // Parse instruction data: [new_share_price: u64 LE] [deposit_amount: u64 LE]
         if data.len() < 16 {
             return Err(ProgramError::InvalidInstructionData);
@@ -183,6 +212,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for DepositWithPrice<'a> {
             share_mint,
             depositor_share_ata,
             _token_program: token_program,
+            fee_receiver_ata,
             new_share_price,
             deposit_amount,
         })

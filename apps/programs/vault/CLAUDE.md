@@ -36,9 +36,10 @@ apps/programs/vault/
 ├── Cargo.toml              # Crate config, dependency versions
 ├── CLAUDE.md               # This file
 ├── src/
-│   ├── lib.rs              # Entrypoint + instruction routing (12 discriminators)
-│   ├── state.rs            # VaultState (432B) + PendingDeposit (80B) + PendingWithdraw (80B, bytemuck Pod)
-│   ├── error.rs            # 11 custom errors (0x100-0x10A)
+│   ├── lib.rs              # Entrypoint + instruction routing (13 discriminators)
+│   ├── state.rs            # VaultState (488B) + PendingDeposit (80B) + PendingWithdraw (80B, bytemuck Pod)
+│   ├── error.rs            # 13 custom errors (0x100-0x10C)
+│   ├── fees.rs             # Pure fee math (entry/exit/management/performance)
 │   ├── rent.rs             # Const fn rent exemption calculation
 │   └── instructions/
 │       ├── mod.rs          # Re-exports all instruction structs
@@ -47,12 +48,14 @@ apps/programs/vault/
 │       ├── execute.rs      # Generic CPI passthrough (key feature)
 │       ├── add_owner.rs    # Admin-only: add operator
 │       ├── remove_owner.rs # Admin-only: remove operator
-│       ├── deposit_with_price.rs  # Admin: set price + deposit atomically
+│       ├── deposit_with_price.rs  # Admin: set price + deposit atomically (+ entry fee)
 │       ├── request_deposit.rs     # User: request async deposit (step 1)
-│       ├── fulfill_deposit.rs     # Admin: fulfill pending deposit (step 2)
-│       ├── withdraw_with_price.rs # Admin: set price + withdraw atomically
+│       ├── fulfill_deposit.rs     # Admin: fulfill pending deposit (step 2, + entry fee)
+│       ├── withdraw_with_price.rs # Admin: set price + withdraw atomically (+ exit fee)
 │       ├── request_withdraw.rs    # User: request async withdraw (step 1)
-│       └── fulfill_withdraw.rs    # Admin: fulfill pending withdraw (step 2)
+│       ├── fulfill_withdraw.rs    # Admin: fulfill pending withdraw (step 2, + exit fee)
+│       ├── update_fees.rs         # Admin: set fee BPS values + fee receiver
+│       └── collect_fees.rs        # Admin: mint management + performance fee shares
 └── tests/
     ├── helpers.rs          # Shared test utilities (mollusk setup, account builders)
     ├── initialize.rs       # Integration tests for Initialize instruction
@@ -66,6 +69,8 @@ apps/programs/vault/
     ├── withdraw_with_price.rs # Integration tests for WithdrawWithPrice instruction
     ├── request_withdraw.rs # Integration tests for RequestWithdraw instruction
     ├── fulfill_withdraw.rs # Integration tests for FulfillWithdraw instruction
+    ├── update_fees.rs      # Integration tests for UpdateFees instruction
+    ├── collect_fees.rs     # Integration tests for CollectFees instruction
     ├── routing.rs          # Integration tests for instruction discriminator routing
     └── share_math.rs       # Unit tests for share price math
 ```
@@ -85,6 +90,8 @@ apps/programs/vault/
 | 0x0A | WithdrawWithPrice | Admin only | Sets share price + withdraws atomically (2 signers) |
 | 0x0B | RequestWithdraw | Anyone | Burns shares, creates PendingWithdraw PDA |
 | 0x0C | FulfillWithdraw | Admin only | Sets price, transfers base tokens, closes PendingWithdraw PDA |
+| 0x0D | UpdateFees | Admin only | Sets fee BPS values (entry/exit/mgmt/perf) + fee receiver pubkey |
+| 0x0E | CollectFees | Admin only | Mints management + performance fee shares to fee receiver |
 
 ## PDA Seeds
 
@@ -100,9 +107,28 @@ apps/programs/vault/
 - **Deposit**: `shares_to_mint = amount * 10^share_decimals / share_price`
 - **Withdraw**: `base_to_return = shares_to_burn * share_price / 10^share_decimals`
 
-All arithmetic uses checked math to prevent overflow.
+All arithmetic uses checked math to prevent overflow. Fee math uses `u128` intermediates.
 
-## VaultState Layout (432 bytes)
+## Fee System
+
+Four fee types, all in basis points (BPS, 10,000 = 100%):
+
+| Fee Type | Max BPS | How It Works |
+|----------|---------|--------------|
+| Entry | 1,000 (10%) | Deducted from minted shares on deposit; fee shares minted to fee_receiver |
+| Exit | 1,000 (10%) | Deducted from base tokens returned on withdraw; stays in vault |
+| Management | 1,000 (10%) | Time-based AUM fee; `total_supply * mgmt_bps * elapsed / (BPS * SECONDS_PER_YEAR)` |
+| Performance | 5,000 (50%) | HWM-based; `(price - hwm) * total_supply * perf_bps / (price * BPS)` |
+
+- **Entry fee**: Manager earns newly minted share tokens on each deposit
+- **Exit fee**: Stays in vault, benefiting remaining shareholders
+- **Management fee**: Collected via `CollectFees`, minted as new shares
+- **Performance fee**: Only charged when share price exceeds high water mark (HWM)
+- **CollectFees first call**: Initializes `last_fee_timestamp`, mints no fees
+
+Fee receiver is an optional account in deposit instructions (via `accounts.get(N)`).
+
+## VaultState Layout (488 bytes)
 
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
@@ -110,12 +136,19 @@ All arithmetic uses checked math to prevent overflow.
 | 1 | 1 | bump | Vault PDA bump seed |
 | 2 | 1 | share_decimals | Share token decimal places |
 | 3 | 1 | num_owners | Active owner count (0..10) |
-| 4 | 4 | _padding | Alignment padding |
-| 8 | 32 | admin | Admin pubkey |
-| 40 | 32 | share_mint | Share SPL token mint |
-| 72 | 32 | base_mint | Deposit token mint |
-| 104 | 8 | share_price | Price per share (base token smallest units) |
-| 112 | 320 | owners | Up to 10 operator pubkeys (32 bytes each) |
+| 4 | 2 | entry_fee_bps | Entry fee in basis points |
+| 6 | 2 | exit_fee_bps | Exit fee in basis points |
+| 8 | 2 | management_fee_bps | Management fee in basis points |
+| 10 | 2 | performance_fee_bps | Performance fee in basis points |
+| 12 | 4 | _padding | Alignment padding |
+| 16 | 32 | admin | Admin pubkey |
+| 48 | 32 | share_mint | Share SPL token mint |
+| 80 | 32 | base_mint | Deposit token mint |
+| 112 | 32 | fee_receiver | Fee receiver pubkey (all zeros = none) |
+| 144 | 8 | share_price | Price per share (base token smallest units) |
+| 152 | 8 | high_water_mark | HWM for performance fee calculation |
+| 160 | 8 | last_fee_timestamp | Unix timestamp of last fee collection |
+| 168 | 320 | owners | Up to 10 operator pubkeys (32 bytes each) |
 
 ## PendingDeposit Layout (80 bytes)
 
@@ -141,11 +174,11 @@ All arithmetic uses checked math to prevent overflow.
 
 ## Access Control
 
-| Role | Initialize | SetSharePrice | Execute | AddOwner | RemoveOwner | DepositWithPrice | RequestDeposit | FulfillDeposit | WithdrawWithPrice | RequestWithdraw | FulfillWithdraw |
-|------|-----------|---------------|---------|----------|-------------|-----------------|----------------|----------------|-------------------|-----------------|-----------------|
-| Admin | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
-| Owner | No | No | Yes | No | No | No | Yes | No | No | Yes | No |
-| Anyone | No | No | No | No | No | No | Yes | No | No | Yes | No |
+| Role | Initialize | SetSharePrice | Execute | AddOwner | RemoveOwner | DepositWithPrice | RequestDeposit | FulfillDeposit | WithdrawWithPrice | RequestWithdraw | FulfillWithdraw | UpdateFees | CollectFees |
+|------|-----------|---------------|---------|----------|-------------|-----------------|----------------|----------------|-------------------|-----------------|-----------------|------------|-------------|
+| Admin | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Owner | No | No | Yes | No | No | No | Yes | No | No | Yes | No | No | No |
+| Anyone | No | No | No | No | No | No | Yes | No | No | Yes | No | No | No |
 
 ## Error Codes
 
@@ -162,16 +195,18 @@ All arithmetic uses checked math to prevent overflow.
 | 0x108 | DuplicateOwner | Owner already exists (add) |
 | 0x109 | InvalidPendingDeposit | Pending deposit account invalid |
 | 0x10A | InvalidPendingWithdraw | Pending withdraw account invalid |
+| 0x10B | FeeExceedsMaximum | Fee BPS exceeds allowed maximum |
+| 0x10C | NoFeesToCollect | No fee receiver set or no fees to collect |
 
 ## Build & Test
 
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (102 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (144 tests total)
 ```
 
-The test suite has **102 tests**: 24 unit tests (state logic, share math) and 78 integration tests via `mollusk-svm`.
+The test suite has **144 tests**: 53 unit tests (state, fees, share math) and 91 integration tests via `mollusk-svm`.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 
