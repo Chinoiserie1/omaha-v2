@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Monorepo Overview
 
-This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native), Prisma ORM, and TypeScript. The monorepo contains three applications and shared packages managed via pnpm workspaces.
+This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native), Prisma ORM, TypeScript, and on-chain Solana programs (Rust/Pinocchio). The monorepo contains four applications and shared packages managed via pnpm workspaces.
 
 ### Flow Documentation
 
@@ -26,6 +26,9 @@ Each app has its own detailed CLAUDE.md file:
 
 - **`apps/native/`** - Expo SDK 54 React Native application
   - See [apps/native/CLAUDE.md](./apps/native/CLAUDE.md)
+
+- **`apps/programs/vault/`** - Solana on-chain tokenized vault program (Rust/Pinocchio)
+  - See [apps/programs/vault/CLAUDE.md](./apps/programs/vault/CLAUDE.md)
 
 ### Packages
 
@@ -182,6 +185,16 @@ pnpm test
 pnpm clean
 ```
 
+### Solana Program Commands
+
+```bash
+# Build the vault program (BPF target)
+pnpm program:build
+
+# Run vault program unit tests
+pnpm program:test
+```
+
 ## Environment Variables
 
 Create a `.env` file in the root directory (see `.env.example`):
@@ -208,6 +221,7 @@ Environment variables are managed in `turbo.json` under `globalEnv`.
 | Validation   | Zod                 | 3.x               |
 | Linting      | ESLint              | 9.x (flat config) |
 | Language     | TypeScript          | 5.7.x             |
+| On-chain     | Pinocchio (Rust)    | 0.9.x             |
 
 ### ESM Only
 
