@@ -1,0 +1,21 @@
+[package]
+name = "omaha-vault"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[lib]
+crate-type = ["lib", "cdylib"]
+
+[features]
+default = []
+bpf-entrypoint = []
+test-sbf = []
+
+[dependencies]
+pinocchio = "0.9"
+pinocchio-system = "0.4"
+pinocchio-token = "0.4"
+pinocchio-pubkey = "0.2"
+pinocchio-log = "0.4"
+bytemuck = { version = "1", features = ["derive"] }

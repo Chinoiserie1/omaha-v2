@@ -50,6 +50,9 @@ packages/database/generated
 # TypeScript
 *.tsbuildinfo
 
+# Rust / Solana
+target
+
 # Misc
 .cache
 
