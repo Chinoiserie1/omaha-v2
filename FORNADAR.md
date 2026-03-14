@@ -24,6 +24,7 @@ Autopilot (Omaha) is a Quant strategy platform for crypto, stocks, and commoditi
   - Classification and synthesis pipelines are **thread-aware**: tweets sharing a `conversationId` are grouped and concatenated into a single `[THREAD]` text block before being sent to the LLM, so a 5-tweet thread counts as one cohesive signal rather than 5 independent entries
 - **Shared package** (`packages/shared`) provides Zod schemas, DTOs, and types used by all apps
 - **Database package** (`packages/database`) wraps Prisma client and schema
+- **Omaha Programs SDK** (`packages/omaha-programs-sdk`) provides fully-typed TypeScript instruction builders for the Solana vault program (13 instructions, 4 PDA helpers, 3 state deserializers, fee math utilities) — consumed by the backend to construct on-chain transactions without requiring Anchor IDL
 - **`algoEnabled` flag** on the `Quant` model allows opting out individual Quants from the automated pipeline (tweet sync, classification, thesis generation). Quants with `algoEnabled: false` (e.g. those using a predefined strategy) remain listed but skip all cron-driven processing
 
 ### Entity Model (March 2026)
@@ -50,6 +51,7 @@ User (1) ──── (0..1) Quant (1) ──── (0..1) Vault
 | Mobile | Expo SDK 54 / React Native | Cross-platform, Privy auth |
 | Backend | Fastify 5 | High perf, schema validation |
 | Database | PostgreSQL + Prisma 6 | Type-safe queries, migrations |
+| On-chain SDK | Solana web3.js + custom SDK | Type-safe instruction builders without Anchor IDL |
 | Styling | Tailwind CSS v4 | Utility-first, fast iteration |
 | Validation | Zod 3 | Runtime + static type safety |
 | Blockchain | Solana (GLAM Protocol) | Tokenized vault management |

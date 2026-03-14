@@ -42,6 +42,10 @@ Each package has its own detailed CLAUDE.md file:
 
   - See [packages/database/CLAUDE.md](./packages/database/CLAUDE.md)
 
+- **`packages/omaha-programs-sdk/`** - Fully-typed TypeScript SDK for Solana vault program instructions
+
+  - See [packages/omaha-programs-sdk/CLAUDE.md](./packages/omaha-programs-sdk/CLAUDE.md)
+
 - **`packages/config-eslint/`** - Shared ESLint 9 flat configurations
 
   - See [packages/config-eslint/CLAUDE.md](./packages/config-eslint/CLAUDE.md)
