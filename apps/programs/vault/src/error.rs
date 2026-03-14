@@ -30,6 +30,8 @@ pub enum VaultError {
     FeeExceedsMaximum = 0x10B,
     /// No accrued fees to collect.
     NoFeesToCollect = 0x10C,
+    /// Metadata string exceeds max length.
+    InvalidMetadata = 0x10D,
 }
 
 impl From<VaultError> for ProgramError {
@@ -96,6 +98,10 @@ mod tests {
             ProgramError::Custom(0x10C),
             ProgramError::from(VaultError::NoFeesToCollect)
         );
+        assert_eq!(
+            ProgramError::Custom(0x10D),
+            ProgramError::from(VaultError::InvalidMetadata)
+        );
     }
 
     #[test]
@@ -114,6 +120,7 @@ mod tests {
             VaultError::InvalidPendingWithdraw as u32,
             VaultError::FeeExceedsMaximum as u32,
             VaultError::NoFeesToCollect as u32,
+            VaultError::InvalidMetadata as u32,
         ];
         for i in 0..codes.len() {
             for j in (i + 1)..codes.len() {

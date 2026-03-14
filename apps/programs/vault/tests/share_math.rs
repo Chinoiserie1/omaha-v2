@@ -7,31 +7,7 @@ use solana_instruction::AccountMeta;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
-/// Create a packed SPL Mint account.
-fn create_mint(authority: &Pubkey, decimals: u8, supply: u64) -> Account {
-    use solana_program_pack::Pack;
-    use spl_token_interface::state::Mint;
-
-    let mint = Mint {
-        mint_authority: solana_program_option::COption::Some(*authority),
-        supply,
-        decimals,
-        is_initialized: true,
-        freeze_authority: solana_program_option::COption::None,
-    };
-    let mut data = vec![0u8; Mint::LEN];
-    Mint::pack(mint, &mut data).unwrap();
-
-    Account {
-        lamports: 1_000_000_000,
-        data,
-        owner: TOKEN_PROGRAM_ID,
-        executable: false,
-        rent_epoch: 0,
-    }
-}
-
-/// Create a packed SPL Token account.
+/// Create a packed SPL Token account (legacy — for base token operations).
 fn create_token_account(mint: &Pubkey, owner: &Pubkey, amount: u64) -> Account {
     use solana_program_pack::Pack;
     use spl_token_interface::state::Account as TokenAccount;
@@ -65,57 +41,7 @@ fn run_deposit(
     share_price: u64,
     deposit_amount: u64,
 ) -> mollusk_svm::result::InstructionResult {
-    let mollusk = setup_with_token();
-    let admin = Pubkey::new_unique();
-    let depositor = Pubkey::new_unique();
-    let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
-    let share_mint_key = Pubkey::new_unique();
-
-    let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
-    );
-
-    let depositor_base_ata = Pubkey::new_unique();
-    let vault_base_ata = Pubkey::new_unique();
-    let depositor_share_ata = Pubkey::new_unique();
-
-    let instruction = build_instruction(
-        deposit_with_price_data(share_price, deposit_amount),
-        vec![
-            AccountMeta::new_readonly(admin, true),            // admin (signer)
-            AccountMeta::new_readonly(depositor, true),        // depositor (signer)
-            AccountMeta::new(depositor_base_ata, false),       // depositor's base token
-            AccountMeta::new(vault_base_ata, false),           // vault's base token
-            AccountMeta::new(vault_key, false),                // vault_state (writable)
-            AccountMeta::new(share_mint_key, false),           // share_mint
-            AccountMeta::new(depositor_share_ata, false),      // depositor's share token
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false), // token_program
-        ],
-    );
-
-    let accounts = vec![
-        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
-        (depositor, Account::new(1_000_000_000, 0, &Pubkey::default())),
-        (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
-        (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
-        (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, 0)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
-    ];
-
-    mollusk.process_instruction(&instruction, &accounts)
-}
-
-/// Helper to run a DepositWithPrice and assert an error.
-fn run_deposit_expect_err(
-    share_decimals: u8,
-    share_price: u64,
-    deposit_amount: u64,
-    expected_err: ProgramError,
-) {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -141,6 +67,7 @@ fn run_deposit_expect_err(
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(depositor_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -150,9 +77,62 @@ fn run_deposit_expect_err(
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, 0)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"", b"", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_instruction(&instruction, &accounts)
+}
+
+/// Helper to run a DepositWithPrice and assert an error.
+fn run_deposit_expect_err(
+    share_decimals: u8,
+    share_price: u64,
+    deposit_amount: u64,
+    expected_err: ProgramError,
+) {
+    let mollusk = setup_with_both_tokens();
+    let admin = Pubkey::new_unique();
+    let depositor = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let share_mint_key = Pubkey::new_unique();
+
+    let vault_data = create_vault_state_data(
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+    );
+
+    let depositor_base_ata = Pubkey::new_unique();
+    let vault_base_ata = Pubkey::new_unique();
+    let depositor_share_ata = Pubkey::new_unique();
+
+    let instruction = build_instruction(
+        deposit_with_price_data(share_price, deposit_amount),
+        vec![
+            AccountMeta::new_readonly(admin, true),
+            AccountMeta::new_readonly(depositor, true),
+            AccountMeta::new(depositor_base_ata, false),
+            AccountMeta::new(vault_base_ata, false),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new(depositor_share_ata, false),
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (depositor, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
+        (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
+        (vault_key, make_vault_account(vault_data)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"", b"", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
+        mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -170,7 +150,7 @@ fn run_withdraw_expect_err(
     vault_base_balance: u64,
     expected_err: ProgramError,
 ) {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -196,18 +176,20 @@ fn run_withdraw_expect_err(
             AccountMeta::new(withdrawer_base_ata, false),
             AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
-        (withdrawer_share_ata, create_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, shares_to_burn)),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, shares_to_burn, b"", b"", b"")),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, vault_base_balance)),
         (withdrawer_base_ata, create_token_account(&base_mint, &withdrawer, 0)),
         (vault_key, make_vault_account(vault_data)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -223,7 +205,7 @@ fn run_withdraw_expect_err(
 fn test_deposit_high_decimals_9() {
     // decimals=9, price=1_000_000_000 (1:1), amount=5_000_000_000 (5 tokens)
     // shares = 5_000_000_000 * 10^9 / 1_000_000_000 = 5_000_000_000
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -253,6 +235,7 @@ fn test_deposit_high_decimals_9() {
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(depositor_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -262,9 +245,10 @@ fn test_deposit_high_decimals_9() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, 0)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"", b"", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -285,7 +269,7 @@ fn test_deposit_truncation_rounding() {
     // amount = 10_000_000 (10 USDC)
     // shares = 10_000_000 * 10^6 / 3_000_000 = 10_000_000_000_000 / 3_000_000 = 3_333_333
     // (truncated, not 3_333_333.333...)
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -315,6 +299,7 @@ fn test_deposit_truncation_rounding() {
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(depositor_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -324,9 +309,10 @@ fn test_deposit_truncation_rounding() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, 0)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"", b"", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -413,7 +399,7 @@ fn test_withdraw_rounds_to_zero_base() {
 fn test_withdraw_high_decimals_success() {
     // decimals=9, price=1_000_000_000 (1:1), shares=3_000_000_000
     // base = 3_000_000_000 * 1_000_000_000 / 10^9 = 3_000_000_000
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -443,18 +429,20 @@ fn test_withdraw_high_decimals_success() {
             AccountMeta::new(withdrawer_base_ata, false),
             AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
-        (withdrawer_share_ata, create_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, shares_to_burn)),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, shares_to_burn, b"", b"", b"")),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 10_000_000_000)),
         (withdrawer_base_ata, create_token_account(&base_mint, &withdrawer, 0)),
         (vault_key, make_vault_account(vault_data)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -473,7 +461,7 @@ fn test_withdraw_high_decimals_success() {
 fn test_withdraw_truncation_rounding() {
     // decimals=6, price=3_000_000 (3x), shares=10_000_000
     // base = 10_000_000 * 3_000_000 / 10^6 = 30_000_000_000_000 / 1_000_000 = 30_000_000
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -503,18 +491,20 @@ fn test_withdraw_truncation_rounding() {
             AccountMeta::new(withdrawer_base_ata, false),
             AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
-        (withdrawer_share_ata, create_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, shares_to_burn)),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, shares_to_burn, b"", b"", b"")),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 100_000_000)),
         (withdrawer_base_ata, create_token_account(&base_mint, &withdrawer, 0)),
         (vault_key, make_vault_account(vault_data)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -536,7 +526,7 @@ fn test_withdraw_truncation_rounding() {
 fn test_deposit_withdraw_round_trip() {
     // At 1:1 price (decimals=6, price=1_000_000), deposit 7_500_000 then withdraw same shares.
     // Should get back exactly the same amount.
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let user = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -567,6 +557,7 @@ fn test_deposit_withdraw_round_trip() {
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(user_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -576,9 +567,10 @@ fn test_deposit_withdraw_round_trip() {
         (user_base_ata, create_token_account(&base_mint, &user, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, 0)),
-        (user_share_ata, create_token_account(&share_mint_key, &user, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"", b"", b"")),
+        (user_share_ata, create_token2022_token_account(&share_mint_key, &user, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let deposit_result = mollusk.process_and_validate_instruction(
@@ -612,6 +604,7 @@ fn test_deposit_withdraw_round_trip() {
             AccountMeta::new(user_base_ata, false),
             AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -627,6 +620,7 @@ fn test_deposit_withdraw_round_trip() {
         (user_base_ata, create_token_account(&base_mint, &user, 0)), // fresh dest
         (vault_key, vault_account),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let withdraw_result = mollusk.process_and_validate_instruction(
@@ -656,7 +650,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
     // Deposit: shares = 10 * 10^6 / 3_000_000 = 10_000_000 / 3_000_000 = 3 (truncated from 3.33)
     // Withdraw: base = 3 * 3_000_000 / 10^6 = 9_000_000 / 1_000_000 = 9
     // User deposited 10, gets back 9 → lost 1 to rounding
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let user = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -687,6 +681,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(user_share_ata, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -696,9 +691,10 @@ fn test_deposit_withdraw_round_trip_lossy() {
         (user_base_ata, create_token_account(&base_mint, &user, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals, 0)),
-        (user_share_ata, create_token_account(&share_mint_key, &user, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"", b"", b"")),
+        (user_share_ata, create_token2022_token_account(&share_mint_key, &user, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let deposit_result = mollusk.process_and_validate_instruction(
@@ -732,6 +728,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
             AccountMeta::new(user_base_ata, false),
             AccountMeta::new(vault_key, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
@@ -744,6 +741,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
         (user_base_ata, create_token_account(&base_mint, &user, 0)),
         (vault_key, vault_account),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let withdraw_result = mollusk.process_and_validate_instruction(

@@ -23,6 +23,7 @@ pub mod fees;
 pub mod instructions;
 pub mod rent;
 pub mod state;
+pub mod token2022;
 
 use instructions::{
     AddOwner, CollectFees, DepositWithPrice, Execute, FulfillDeposit, FulfillWithdraw,

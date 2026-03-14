@@ -4,10 +4,10 @@ use pinocchio::{
     program_error::ProgramError,
     ProgramResult,
 };
-use pinocchio_token::instructions::MintTo;
 
 use crate::error::VaultError;
 use crate::state::{PendingDeposit, VaultState, PENDING_DEPOSIT_DISCRIMINATOR, VAULT_DISCRIMINATOR};
+use crate::token2022;
 
 /// Admin-only: fulfill a pending deposit by setting share price and minting shares.
 ///
@@ -35,7 +35,7 @@ pub struct FulfillDeposit<'a> {
     share_mint: &'a AccountInfo,
     depositor_share_ata: &'a AccountInfo,
     depositor: &'a AccountInfo,
-    _token_program: &'a AccountInfo,
+    token_program: &'a AccountInfo,
     fee_receiver_ata: Option<&'a AccountInfo>,
     new_share_price: u64,
 }
@@ -133,26 +133,28 @@ impl<'a> FulfillDeposit<'a> {
         ];
         let signers: [Signer; 1] = [Signer::from(&seeds)];
 
-        MintTo {
-            mint: self.share_mint,
-            account: self.depositor_share_ata,
-            mint_authority: self.vault_state,
-            amount: user_shares,
-        }
-        .invoke_signed(&signers)?;
+        token2022::mint_to(
+            self.token_program,
+            self.share_mint,
+            self.depositor_share_ata,
+            self.vault_state,
+            user_shares,
+            &signers,
+        )?;
 
         // Mint fee shares to fee receiver
         if fee_shares > 0 {
             let fee_ata = self
                 .fee_receiver_ata
                 .ok_or(ProgramError::NotEnoughAccountKeys)?;
-            MintTo {
-                mint: self.share_mint,
-                account: fee_ata,
-                mint_authority: self.vault_state,
-                amount: fee_shares,
-            }
-            .invoke_signed(&signers)?;
+            token2022::mint_to(
+                self.token_program,
+                self.share_mint,
+                fee_ata,
+                self.vault_state,
+                fee_shares,
+                &signers,
+            )?;
         }
 
         // Close pending_deposit: refund rent lamports to depositor
@@ -243,7 +245,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for FulfillDeposit<'a> {
             share_mint,
             depositor_share_ata,
             depositor,
-            _token_program: token_program,
+            token_program,
             fee_receiver_ata,
             new_share_price,
         })

@@ -22,7 +22,7 @@ bytemuck = { version = "1", features = ["derive"] }
 
 [dev-dependencies]
 mollusk-svm = "0.7"
-mollusk-svm-programs-token = { version = "0.7", features = ["token"] }
+mollusk-svm-programs-token = { version = "0.7", features = ["token", "token-2022"] }
 solana-pubkey = "3.0"
 solana-account = "3.4"
 solana-instruction = "3.2"

@@ -6,10 +6,10 @@ use pinocchio::{
     ProgramResult,
 };
 use pinocchio_system::instructions::CreateAccount;
-use pinocchio_token::instructions::Burn;
 
 use crate::error::VaultError;
 use crate::state::{PendingWithdraw, VaultState, PENDING_WITHDRAW_DISCRIMINATOR, VAULT_DISCRIMINATOR};
+use crate::token2022;
 
 /// Request a withdrawal from the vault (async flow — step 1 of 2).
 ///
@@ -36,7 +36,7 @@ pub struct RequestWithdraw<'a> {
     vault_state: &'a AccountInfo,
     pending_withdraw: &'a AccountInfo,
     _system_program: &'a AccountInfo,
-    _token_program: &'a AccountInfo,
+    token_program: &'a AccountInfo,
     shares: u64,
 }
 
@@ -99,14 +99,15 @@ impl<'a> RequestWithdraw<'a> {
             state.shares = self.shares;
         }
 
-        // Burn share tokens from withdrawer
-        Burn {
-            account: self.withdrawer_share_ata,
-            mint: self.share_mint,
-            authority: self.withdrawer,
-            amount: self.shares,
-        }
-        .invoke()?;
+        // Burn share tokens from withdrawer (no PDA signer needed — withdrawer signs)
+        token2022::burn(
+            self.token_program,
+            self.withdrawer_share_ata,
+            self.share_mint,
+            self.withdrawer,
+            self.shares,
+            &[],
+        )?;
 
         Ok(())
     }
@@ -161,7 +162,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestWithdraw<'a> {
             vault_state,
             pending_withdraw,
             _system_program: system_program,
-            _token_program: token_program,
+            token_program,
             shares,
         })
     }

@@ -4,10 +4,11 @@ use pinocchio::{
     program_error::ProgramError,
     ProgramResult,
 };
-use pinocchio_token::instructions::{Burn, Transfer};
+use pinocchio_token::instructions::Transfer;
 
 use crate::error::VaultError;
 use crate::state::{VaultState, VAULT_DISCRIMINATOR};
+use crate::token2022;
 
 /// Admin-only: set share price and withdraw in a single atomic instruction.
 ///
@@ -18,12 +19,13 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 /// Accounts:
 ///   0. `[signer]`    admin              — must be vault admin
 ///   1. `[signer]`    withdrawer         — authorizes share burn
-///   2. `[writable]`  withdrawer_share_ata — shares to burn
-///   3. `[writable]`  share_mint         — share token mint
+///   2. `[writable]`  withdrawer_share_ata — shares to burn (Token 2022)
+///   3. `[writable]`  share_mint         — share token mint (Token 2022)
 ///   4. `[writable]`  vault_base_ata     — vault's base token account
 ///   5. `[writable]`  withdrawer_base_ata — receives base tokens
 ///   6. `[writable]`  vault_state        — PDA with vault config (price updated)
-///   7. `[]`          token_program
+///   7. `[]`          token_program      — legacy SPL Token (for base token transfer)
+///   8. `[]`          share_token_program — Token 2022 (for share burn)
 ///
 /// Data:
 ///   [0]     discriminator (0x0A)
@@ -38,6 +40,7 @@ pub struct WithdrawWithPrice<'a> {
     withdrawer_base_ata: &'a AccountInfo,
     vault_state: &'a AccountInfo,
     _token_program: &'a AccountInfo,
+    share_token_program: &'a AccountInfo,
     new_share_price: u64,
     shares_to_burn: u64,
 }
@@ -101,16 +104,17 @@ impl<'a> WithdrawWithPrice<'a> {
         // Drop borrow before CPI
         drop(data);
 
-        // Burn share tokens from withdrawer (withdrawer signs)
-        Burn {
-            account: self.withdrawer_share_ata,
-            mint: self.share_mint,
-            authority: self.withdrawer,
-            amount: self.shares_to_burn,
-        }
-        .invoke()?;
+        // Burn share tokens from withdrawer via Token 2022 (withdrawer signs)
+        token2022::burn(
+            self.share_token_program,
+            self.withdrawer_share_ata,
+            self.share_mint,
+            self.withdrawer,
+            self.shares_to_burn,
+            &[],
+        )?;
 
-        // Transfer base tokens: vault → withdrawer (vault_state PDA signs)
+        // Transfer base tokens: vault → withdrawer (legacy SPL Token, vault_state PDA signs)
         let vault_bump_bytes = [vault_bump];
         let seeds: [Seed; 4] = [
             Seed::from(b"vault" as &[u8]),
@@ -138,7 +142,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for WithdrawWithPrice<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [admin, withdrawer, withdrawer_share_ata, share_mint, vault_base_ata, withdrawer_base_ata, vault_state, token_program, ..] =
+        let [admin, withdrawer, withdrawer_share_ata, share_mint, vault_base_ata, withdrawer_base_ata, vault_state, token_program, share_token_program, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -197,6 +201,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for WithdrawWithPrice<'a> {
             withdrawer_base_ata,
             vault_state,
             _token_program: token_program,
+            share_token_program,
             new_share_price,
             shares_to_burn,
         })

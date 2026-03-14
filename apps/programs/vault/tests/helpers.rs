@@ -5,9 +5,13 @@ use solana_pubkey::Pubkey;
 
 use omaha_vault::state::{VaultState, VAULT_DISCRIMINATOR};
 
-/// SPL Token program ID.
+/// SPL Token program ID (legacy — for base token operations).
 pub const TOKEN_PROGRAM_ID: Pubkey =
     solana_pubkey::pubkey!("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA");
+
+/// SPL Token 2022 program ID (for share token operations).
+pub const TOKEN_2022_PROGRAM_ID: Pubkey =
+    solana_pubkey::pubkey!("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb");
 
 /// System program ID.
 pub const SYSTEM_PROGRAM_ID: Pubkey =
@@ -26,10 +30,25 @@ pub fn setup() -> Mollusk {
     Mollusk::new(&pid, "omaha_vault")
 }
 
-/// Create a Mollusk instance with vault + SPL Token programs loaded.
+/// Create a Mollusk instance with vault + legacy SPL Token programs loaded.
 pub fn setup_with_token() -> Mollusk {
     let mut mollusk = setup();
     mollusk_svm_programs_token::token::add_program(&mut mollusk);
+    mollusk
+}
+
+/// Create a Mollusk instance with vault + Token 2022 programs loaded.
+pub fn setup_with_token2022() -> Mollusk {
+    let mut mollusk = setup();
+    mollusk_svm_programs_token::token2022::add_program(&mut mollusk);
+    mollusk
+}
+
+/// Create a Mollusk instance with vault + legacy SPL Token + Token 2022 programs loaded.
+pub fn setup_with_both_tokens() -> Mollusk {
+    let mut mollusk = setup();
+    mollusk_svm_programs_token::token::add_program(&mut mollusk);
+    mollusk_svm_programs_token::token2022::add_program(&mut mollusk);
     mollusk
 }
 
@@ -145,10 +164,23 @@ pub fn build_instruction(
     Instruction::new_with_bytes(program_id(), &data, account_metas)
 }
 
-/// Build Initialize instruction data: [disc=0x00] [share_decimals: u8] [share_price: u64 LE].
-pub fn initialize_data(share_decimals: u8, share_price: u64) -> Vec<u8> {
+/// Build Initialize instruction data:
+/// [disc=0x00] [share_decimals: u8] [share_price: u64 LE] [name_len: u16] [name] [symbol_len: u16] [symbol] [uri_len: u16] [uri]
+pub fn initialize_data(
+    share_decimals: u8,
+    share_price: u64,
+    name: &[u8],
+    symbol: &[u8],
+    uri: &[u8],
+) -> Vec<u8> {
     let mut data = vec![0x00, share_decimals];
     data.extend_from_slice(&share_price.to_le_bytes());
+    data.extend_from_slice(&(name.len() as u16).to_le_bytes());
+    data.extend_from_slice(name);
+    data.extend_from_slice(&(symbol.len() as u16).to_le_bytes());
+    data.extend_from_slice(symbol);
+    data.extend_from_slice(&(uri.len() as u16).to_le_bytes());
+    data.extend_from_slice(uri);
     data
 }
 
@@ -324,6 +356,76 @@ pub fn make_pending_withdraw_account(data: Vec<u8>) -> Account {
         lamports: 1_000_000_000,
         data,
         owner: program_id(),
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+/// Create a Token 2022 mint account (no extensions, legacy-compatible 82-byte format).
+///
+/// Token 2022 accepts the standard 82-byte mint layout (same as legacy SPL Token)
+/// when the account has no extensions. No AccountType byte needed.
+pub fn create_token2022_mint(
+    authority: &Pubkey,
+    decimals: u8,
+    supply: u64,
+    _name: &[u8],
+    _symbol: &[u8],
+    _uri: &[u8],
+) -> Account {
+    use solana_program_pack::Pack;
+    use spl_token_interface::state::Mint;
+
+    let mint = Mint {
+        mint_authority: solana_program_option::COption::Some(*authority),
+        supply,
+        decimals,
+        is_initialized: true,
+        freeze_authority: solana_program_option::COption::None,
+    };
+    let mut data = vec![0u8; Mint::LEN];
+    Mint::pack(mint, &mut data).unwrap();
+
+    Account {
+        lamports: 1_000_000_000,
+        data,
+        owner: TOKEN_2022_PROGRAM_ID,
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+/// Create a Token 2022 token account (ATA) for share tokens.
+///
+/// Token 2022 accepts the standard 165-byte token account layout (same as legacy
+/// SPL Token) when the account has no extensions. No AccountType byte needed.
+pub fn create_token2022_token_account(
+    mint: &Pubkey,
+    owner: &Pubkey,
+    amount: u64,
+) -> Account {
+    use solana_program_pack::Pack;
+    use spl_token_interface::state::Account as TokenAccount;
+    use spl_token_interface::state::AccountState;
+
+    let token = TokenAccount {
+        mint: *mint,
+        owner: *owner,
+        amount,
+        delegate: solana_program_option::COption::None,
+        state: AccountState::Initialized,
+        is_native: solana_program_option::COption::None,
+        delegated_amount: 0,
+        close_authority: solana_program_option::COption::None,
+    };
+
+    let mut data = vec![0u8; TokenAccount::LEN];
+    TokenAccount::pack(token, &mut data).unwrap();
+
+    Account {
+        lamports: 1_000_000_000,
+        data,
+        owner: TOKEN_2022_PROGRAM_ID,
         executable: false,
         rent_epoch: 0,
     }

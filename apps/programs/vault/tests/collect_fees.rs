@@ -7,61 +7,9 @@ use solana_instruction::AccountMeta;
 use solana_program_error::ProgramError;
 use solana_pubkey::Pubkey;
 
-/// Create a packed SPL Mint account with a given supply.
-fn create_mint(authority: &Pubkey, decimals: u8, supply: u64) -> Account {
-    use solana_program_pack::Pack;
-    use spl_token_interface::state::Mint;
-
-    let mint = Mint {
-        mint_authority: solana_program_option::COption::Some(*authority),
-        supply,
-        decimals,
-        is_initialized: true,
-        freeze_authority: solana_program_option::COption::None,
-    };
-    let mut data = vec![0u8; Mint::LEN];
-    Mint::pack(mint, &mut data).unwrap();
-
-    Account {
-        lamports: 1_000_000_000,
-        data,
-        owner: TOKEN_PROGRAM_ID,
-        executable: false,
-        rent_epoch: 0,
-    }
-}
-
-/// Create a packed SPL Token account.
-fn create_token_account(mint: &Pubkey, owner: &Pubkey, amount: u64) -> Account {
-    use solana_program_pack::Pack;
-    use spl_token_interface::state::Account as TokenAccount;
-    use spl_token_interface::state::AccountState;
-
-    let token = TokenAccount {
-        mint: *mint,
-        owner: *owner,
-        amount,
-        delegate: solana_program_option::COption::None,
-        state: AccountState::Initialized,
-        is_native: solana_program_option::COption::None,
-        delegated_amount: 0,
-        close_authority: solana_program_option::COption::None,
-    };
-    let mut data = vec![0u8; TokenAccount::LEN];
-    TokenAccount::pack(token, &mut data).unwrap();
-
-    Account {
-        lamports: 1_000_000_000,
-        data,
-        owner: TOKEN_PROGRAM_ID,
-        executable: false,
-        rent_epoch: 0,
-    }
-}
-
 #[test]
 fn test_collect_fees_first_call_initializes_timestamp() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(&admin, &base_mint);
@@ -84,16 +32,16 @@ fn test_collect_fees_first_call_initializes_timestamp() {
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6, 100_000_000)),
-        (fee_receiver_ata, create_token_account(&share_mint_key, &fee_receiver, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
+        (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -117,7 +65,7 @@ fn test_collect_fees_first_call_initializes_timestamp() {
 
 #[test]
 fn test_collect_fees_management_fee() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(&admin, &base_mint);
@@ -143,16 +91,16 @@ fn test_collect_fees_management_fee() {
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6, total_supply)),
-        (fee_receiver_ata, create_token_account(&share_mint_key, &fee_receiver, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, total_supply, b"Test", b"TST", b"")),
+        (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     // Expected: 1_000_000_000 * 200 / 10_000 = 20_000_000 shares (2% of supply)
@@ -179,7 +127,7 @@ fn test_collect_fees_management_fee() {
 
 #[test]
 fn test_collect_fees_performance_fee() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(&admin, &base_mint);
@@ -207,16 +155,16 @@ fn test_collect_fees_performance_fee() {
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6, total_supply)),
-        (fee_receiver_ata, create_token_account(&share_mint_key, &fee_receiver, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, total_supply, b"Test", b"TST", b"")),
+        (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     // Expected perf fee: (2M - 1M) * 100M * 2000 / (2M * 10000) = 10_000_000 shares
@@ -243,7 +191,7 @@ fn test_collect_fees_performance_fee() {
 
 #[test]
 fn test_collect_fees_no_fee_receiver() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(&admin, &base_mint);
@@ -262,16 +210,16 @@ fn test_collect_fees_no_fee_receiver() {
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6, 100_000_000)),
-        (fee_receiver_ata, create_token_account(&share_mint_key, &admin, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
+        (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &admin, 0)),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -283,7 +231,7 @@ fn test_collect_fees_no_fee_receiver() {
 
 #[test]
 fn test_collect_fees_unauthorized() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let not_admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -304,16 +252,16 @@ fn test_collect_fees_unauthorized() {
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (not_admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6, 100_000_000)),
-        (fee_receiver_ata, create_token_account(&share_mint_key, &fee_receiver, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
+        (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -325,7 +273,7 @@ fn test_collect_fees_unauthorized() {
 
 #[test]
 fn test_collect_fees_price_below_hwm_no_perf_fee() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(&admin, &base_mint);
@@ -351,16 +299,16 @@ fn test_collect_fees_price_below_hwm_no_perf_fee() {
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
         ],
     );
 
     let accounts = vec![
         (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6, 100_000_000)),
-        (fee_receiver_ata, create_token_account(&share_mint_key, &fee_receiver, 0)),
-        mollusk_svm_programs_token::token::keyed_account(),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
+        (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     let result = mollusk.process_and_validate_instruction(

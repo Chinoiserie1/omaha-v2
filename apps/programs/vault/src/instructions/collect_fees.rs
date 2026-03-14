@@ -4,11 +4,11 @@ use pinocchio::{
     program_error::ProgramError,
     ProgramResult,
 };
-use pinocchio_token::instructions::MintTo;
 
 use crate::error::VaultError;
 use crate::fees;
 use crate::state::{VaultState, VAULT_DISCRIMINATOR};
+use crate::token2022;
 
 /// Offset of `supply` (u64 LE) within SPL Mint account data.
 const MINT_SUPPLY_OFFSET: usize = 36;
@@ -33,7 +33,7 @@ pub struct CollectFees<'a> {
     vault_state: &'a AccountInfo,
     share_mint: &'a AccountInfo,
     fee_receiver_ata: &'a AccountInfo,
-    _token_program: &'a AccountInfo,
+    token_program: &'a AccountInfo,
     current_timestamp: i64,
 }
 
@@ -132,13 +132,14 @@ impl<'a> CollectFees<'a> {
             ];
             let signers: [Signer; 1] = [Signer::from(&seeds)];
 
-            MintTo {
-                mint: self.share_mint,
-                account: self.fee_receiver_ata,
-                mint_authority: self.vault_state,
-                amount: total_fee_shares,
-            }
-            .invoke_signed(&signers)?;
+            token2022::mint_to(
+                self.token_program,
+                self.share_mint,
+                self.fee_receiver_ata,
+                self.vault_state,
+                total_fee_shares,
+                &signers,
+            )?;
         }
 
         Ok(())
@@ -193,7 +194,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CollectFees<'a> {
             vault_state,
             share_mint,
             fee_receiver_ata,
-            _token_program: token_program,
+            token_program,
             current_timestamp,
         })
     }

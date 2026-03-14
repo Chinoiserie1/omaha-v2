@@ -205,10 +205,10 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (144 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (145 tests total)
 ```
 
-The test suite has **144 tests**: 53 unit tests (state, fees, share math) and 91 integration tests via `mollusk-svm`.
+The test suite has **145 tests**: 53 unit tests (state, fees, share math) and 92 integration tests via `mollusk-svm`.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 

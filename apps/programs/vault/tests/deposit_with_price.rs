@@ -9,7 +9,7 @@ use solana_pubkey::Pubkey;
 
 use omaha_vault::state::VaultState;
 
-/// Create a packed SPL Mint account.
+/// Create a packed SPL Mint account (legacy token — for base token operations).
 fn create_mint(authority: &Pubkey, decimals: u8) -> Account {
     use solana_program_pack::Pack;
     use spl_token_interface::state::Mint;
@@ -33,7 +33,7 @@ fn create_mint(authority: &Pubkey, decimals: u8) -> Account {
     }
 }
 
-/// Create a packed SPL Token account.
+/// Create a packed SPL Token account (legacy token — for base token operations).
 fn create_token_account(mint: &Pubkey, owner: &Pubkey, amount: u64) -> Account {
     use solana_program_pack::Pack;
     use spl_token_interface::state::Account as TokenAccount;
@@ -63,7 +63,7 @@ fn create_token_account(mint: &Pubkey, owner: &Pubkey, amount: u64) -> Account {
 
 #[test]
 fn test_deposit_with_price_success() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -86,14 +86,15 @@ fn test_deposit_with_price_success() {
     let instruction = build_instruction(
         deposit_with_price_data(new_price, deposit_amount),
         vec![
-            AccountMeta::new_readonly(admin, true),              // admin (signer)
-            AccountMeta::new_readonly(depositor, true),          // depositor (signer)
-            AccountMeta::new(depositor_base_ata, false),          // depositor's base token
-            AccountMeta::new(vault_base_ata, false),              // vault's base token
-            AccountMeta::new(vault_key, false),                   // vault_state (writable)
-            AccountMeta::new(share_mint_key, false),              // share_mint
-            AccountMeta::new(depositor_share_ata, false),         // depositor's share token
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),   // token_program
+            AccountMeta::new_readonly(admin, true),                      // 0: admin (signer)
+            AccountMeta::new_readonly(depositor, true),                  // 1: depositor (signer)
+            AccountMeta::new(depositor_base_ata, false),                 // 2: depositor's base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state (writable)
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(depositor_share_ata, false),                // 6: depositor's share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -103,9 +104,10 @@ fn test_deposit_with_price_success() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     // shares = 10_000_000 * 10^6 / 2_000_000 = 5_000_000
@@ -138,7 +140,7 @@ fn test_deposit_with_price_success() {
 
 #[test]
 fn test_deposit_with_price_admin_is_depositor() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(&admin, &base_mint);
@@ -160,14 +162,15 @@ fn test_deposit_with_price_admin_is_depositor() {
     let instruction = build_instruction(
         deposit_with_price_data(new_price, deposit_amount),
         vec![
-            AccountMeta::new_readonly(admin, true),              // admin = depositor
-            AccountMeta::new_readonly(admin, true),              // depositor = admin
-            AccountMeta::new(admin_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(admin_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, true),                      // 0: admin = depositor
+            AccountMeta::new_readonly(admin, true),                      // 1: depositor = admin
+            AccountMeta::new(admin_base_ata, false),                     // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(admin_share_ata, false),                    // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -176,9 +179,10 @@ fn test_deposit_with_price_admin_is_depositor() {
         (admin_base_ata, create_token_account(&base_mint, &admin, deposit_amount)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, share_decimals)),
-        (admin_share_ata, create_token_account(&share_mint_key, &admin, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, 0, b"Test", b"TST", b"")),
+        (admin_share_ata, create_token2022_token_account(&share_mint_key, &admin, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -190,7 +194,7 @@ fn test_deposit_with_price_admin_is_depositor() {
 
 #[test]
 fn test_deposit_with_price_unauthorized() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let not_admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
@@ -210,14 +214,15 @@ fn test_deposit_with_price_unauthorized() {
     let instruction = build_instruction(
         deposit_with_price_data(2_000_000, 1_000_000),
         vec![
-            AccountMeta::new_readonly(not_admin, true),           // NOT admin
-            AccountMeta::new_readonly(depositor, true),
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(not_admin, true),                  // 0: NOT admin
+            AccountMeta::new_readonly(depositor, true),                  // 1: depositor
+            AccountMeta::new(depositor_base_ata, false),                 // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(depositor_share_ata, false),                // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -227,9 +232,10 @@ fn test_deposit_with_price_unauthorized() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, 1_000_000)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -241,7 +247,7 @@ fn test_deposit_with_price_unauthorized() {
 
 #[test]
 fn test_deposit_with_price_zero_price() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -259,14 +265,15 @@ fn test_deposit_with_price_zero_price() {
     let instruction = build_instruction(
         deposit_with_price_data(0, 1_000_000), // zero price
         vec![
-            AccountMeta::new_readonly(admin, true),
-            AccountMeta::new_readonly(depositor, true),
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, true),                      // 0: admin
+            AccountMeta::new_readonly(depositor, true),                  // 1: depositor
+            AccountMeta::new(depositor_base_ata, false),                 // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(depositor_share_ata, false),                // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -276,9 +283,10 @@ fn test_deposit_with_price_zero_price() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, 1_000_000)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -290,7 +298,7 @@ fn test_deposit_with_price_zero_price() {
 
 #[test]
 fn test_deposit_with_price_zero_amount() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -308,14 +316,15 @@ fn test_deposit_with_price_zero_amount() {
     let instruction = build_instruction(
         deposit_with_price_data(1_000_000, 0), // zero amount
         vec![
-            AccountMeta::new_readonly(admin, true),
-            AccountMeta::new_readonly(depositor, true),
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, true),                      // 0: admin
+            AccountMeta::new_readonly(depositor, true),                  // 1: depositor
+            AccountMeta::new(depositor_base_ata, false),                 // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(depositor_share_ata, false),                // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -325,9 +334,10 @@ fn test_deposit_with_price_zero_amount() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, 1_000_000)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -339,7 +349,7 @@ fn test_deposit_with_price_zero_amount() {
 
 #[test]
 fn test_deposit_with_price_missing_admin_signer() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -357,14 +367,15 @@ fn test_deposit_with_price_missing_admin_signer() {
     let instruction = build_instruction(
         deposit_with_price_data(1_000_000, 1_000_000),
         vec![
-            AccountMeta::new_readonly(admin, false),             // NOT signer
-            AccountMeta::new_readonly(depositor, true),
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, false),                     // 0: NOT signer
+            AccountMeta::new_readonly(depositor, true),                  // 1: depositor
+            AccountMeta::new(depositor_base_ata, false),                 // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(depositor_share_ata, false),                // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -374,9 +385,10 @@ fn test_deposit_with_price_missing_admin_signer() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, 1_000_000)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -388,7 +400,7 @@ fn test_deposit_with_price_missing_admin_signer() {
 
 #[test]
 fn test_deposit_with_price_missing_depositor_signer() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -406,14 +418,15 @@ fn test_deposit_with_price_missing_depositor_signer() {
     let instruction = build_instruction(
         deposit_with_price_data(1_000_000, 1_000_000),
         vec![
-            AccountMeta::new_readonly(admin, true),
-            AccountMeta::new_readonly(depositor, false),         // NOT signer
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(share_mint_key, false),
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, true),                      // 0: admin
+            AccountMeta::new_readonly(depositor, false),                 // 1: NOT signer
+            AccountMeta::new(depositor_base_ata, false),                 // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(share_mint_key, false),                     // 5: share_mint (Token 2022)
+            AccountMeta::new(depositor_share_ata, false),                // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -423,9 +436,10 @@ fn test_deposit_with_price_missing_depositor_signer() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, 1_000_000)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (share_mint_key, create_mint(&vault_key, 6)),
-        (depositor_share_ata, create_token_account(&share_mint_key, &depositor, 0)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&share_mint_key, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -437,7 +451,7 @@ fn test_deposit_with_price_missing_depositor_signer() {
 
 #[test]
 fn test_deposit_with_price_wrong_share_mint() {
-    let mollusk = setup_with_token();
+    let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -456,14 +470,15 @@ fn test_deposit_with_price_wrong_share_mint() {
     let instruction = build_instruction(
         deposit_with_price_data(1_000_000, 1_000_000),
         vec![
-            AccountMeta::new_readonly(admin, true),
-            AccountMeta::new_readonly(depositor, true),
-            AccountMeta::new(depositor_base_ata, false),
-            AccountMeta::new(vault_base_ata, false),
-            AccountMeta::new(vault_key, false),
-            AccountMeta::new(wrong_share_mint, false),            // wrong mint
-            AccountMeta::new(depositor_share_ata, false),
-            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(admin, true),                      // 0: admin
+            AccountMeta::new_readonly(depositor, true),                  // 1: depositor
+            AccountMeta::new(depositor_base_ata, false),                 // 2: base token (legacy)
+            AccountMeta::new(vault_base_ata, false),                     // 3: vault's base token (legacy)
+            AccountMeta::new(vault_key, false),                          // 4: vault_state
+            AccountMeta::new(wrong_share_mint, false),                   // 5: wrong mint
+            AccountMeta::new(depositor_share_ata, false),                // 6: share token (Token 2022)
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),          // 7: legacy token_program
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),     // 8: share_token_program (Token 2022)
         ],
     );
 
@@ -473,9 +488,10 @@ fn test_deposit_with_price_wrong_share_mint() {
         (depositor_base_ata, create_token_account(&base_mint, &depositor, 1_000_000)),
         (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)),
         (vault_key, make_vault_account(vault_data)),
-        (wrong_share_mint, create_mint(&vault_key, 6)),
-        (depositor_share_ata, create_token_account(&wrong_share_mint, &depositor, 0)),
+        (wrong_share_mint, create_token2022_mint(&vault_key, 6, 0, b"Test", b"TST", b"")),
+        (depositor_share_ata, create_token2022_token_account(&wrong_share_mint, &depositor, 0)),
         mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
     mollusk.process_and_validate_instruction(
