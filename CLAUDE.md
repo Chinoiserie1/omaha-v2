@@ -12,6 +12,10 @@ This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native
 - [Fund SOL (USDC → SOL for gas fees)](./docs/flow/FUND-SOL.md) — Full transaction flow from mobile UI to on-chain swap
 - [Withdraw from Vault](./docs/flow/WITHDRAW-VAULT.md) — Multi-step withdrawal flow (redeem → fulfill → claim)
 
+### Deployment
+
+- [Vault Devnet Deployment](./docs/deployment/VAULT-DEVNET.md) — Keypair inventory, step-by-step deploy commands, and troubleshooting
+
 ### Apps
 
 Each app has its own detailed CLAUDE.md file:

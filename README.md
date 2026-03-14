@@ -16,6 +16,7 @@ AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them wit
 | AI              | Anthropic Claude         | Latest   |
 | Blockchain      | Solana (@solana/web3.js) | 1.98.x   |
 | Vault Mgmt      | GLAM SDK                 | ^1.0.x   |
+| On-chain Program| Pinocchio (Rust)         | 0.9.x    |
 | Auth            | Privy                    | Latest   |
 | Language        | TypeScript (ESM only)    | 5.7.x    |
 
@@ -24,14 +25,15 @@ AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them wit
 ```
 autopilot/
 ├── apps/
-│   ├── web/           # Next.js 15 web app (port 3000)
-│   ├── back/          # Fastify 5 REST API (port 3001)
-│   └── native/        # Expo SDK 54 mobile app
+│   ├── web/              # Next.js 15 web app (port 3000)
+│   ├── back/             # Fastify 5 REST API (port 3001)
+│   ├── native/           # Expo SDK 54 mobile app
+│   └── programs/vault/   # Solana vault program (Rust/Pinocchio)
 ├── packages/
-│   ├── shared/        # Shared types, DTOs, Zod schemas
-│   ├── database/      # Prisma ORM setup, schema, client
-│   ├── solana/        # Solana utilities (@solana/web3.js wrappers)
-│   ├── config-eslint/ # Shared ESLint 9 flat configs
+│   ├── shared/           # Shared types, DTOs, Zod schemas
+│   ├── database/         # Prisma ORM setup, schema, client
+│   ├── omaha-programs-sdk/ # TypeScript SDK for vault program
+│   ├── config-eslint/    # Shared ESLint 9 flat configs
 │   └── config-typescript/ # Shared TypeScript configs
 ├── turbo.json         # Turborepo pipeline config
 ├── docker-compose.yml # PostgreSQL container
@@ -129,6 +131,14 @@ pnpm db:push        # Push schema without migration (dev only)
 pnpm db:studio      # Open Prisma Studio GUI
 ```
 
+### Solana Program
+
+```bash
+pnpm program:build   # Build vault program (BPF target)
+pnpm program:test    # Run program unit tests (148 tests)
+pnpm program:deploy  # Deploy to devnet
+```
+
 ### KOL Pipeline
 
 ```bash
@@ -204,6 +214,33 @@ See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentati
 - **SnapshotPerformance** — Period returns between portfolio snapshots
 - **Token** — Token/vault metadata (mint, decimals)
 - **TokenPrice** — Real-time token price records
+
+## Solana Vault Program
+
+The Omaha Vault program is a tokenized vault built with Pinocchio (raw Rust, no Anchor) and deployed on Solana. It manages on-chain allocations based on Quant strategies using Token 2022.
+
+### Deployed Program (Devnet)
+
+| Property          | Value                                            |
+| ----------------- | ------------------------------------------------ |
+| Program ID        | `5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR` |
+| Upgrade Authority | `GXQcRCwsCrJpueQ6cB6PSkHGXSwLydKhnWbqFmY3fT33` |
+| Program Authority | `9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf` |
+| Cluster           | `https://api.devnet.solana.com`                  |
+
+### Keypairs
+
+The program uses 4 distinct keypairs — each serves a different purpose:
+
+| Keypair | Purpose | Location |
+|---------|---------|----------|
+| **Deploy Wallet** | Pays for deployment, upgrade authority for the program binary | `~/.config/solana/id.json` |
+| **Program Keypair** | Derives the on-chain program address (Program ID) | `target/deploy/omaha_vault-keypair.json` |
+| **Program Authority** | Must co-sign `Initialize` instructions (vault creation gate) | `apps/programs/vault/program-authority-keypair.json` |
+| **Keeper** | Signs vault operations at runtime (rebalance, fees) | `KEEPER_PRIVATE_KEY` env var |
+| **Fee Payer** | Pays gas for Fund SOL flow (optional) | `FEE_PAYER_PRIVATE_KEY` env var |
+
+> See [docs/deployment/VAULT-DEVNET.md](docs/deployment/VAULT-DEVNET.md) for the full deployment guide with step-by-step instructions, keypair details, and troubleshooting.
 
 ## Environment Variables
 

@@ -78,6 +78,9 @@
     "sync-icons": {
       "cache": false,
       "dependsOn": ["^db:generate"]
+    },
+    "program:deploy": {
+      "cache": false
     }
   },
   "globalEnv": [
