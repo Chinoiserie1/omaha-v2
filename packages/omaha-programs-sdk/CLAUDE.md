@@ -9,7 +9,7 @@ This package contains a **fully-typed TypeScript SDK for building Solana Transac
 - **Solana**: @solana/web3.js ^1.98.0, @solana/spl-token ^0.4.12
 - **Build Tool**: tsup
 - **TypeScript**: 5.7.x (strict mode)
-- **Testing**: Vitest (55 tests across 4 test files)
+- **Testing**: Vitest (56 tests across 4 test files)
 - **Output**: ESM only
 
 ## Directory Structure
@@ -20,7 +20,7 @@ packages/omaha-programs-sdk/
 │   ├── index.ts                # Main export file
 │   ├── instructions/
 │   │   ├── index.ts           # Instruction exports
-│   │   ├── initialize.ts       # InitializeVault instruction
+│   │   ├── initialize.ts       # InitializeVault instruction (7 accounts, requires program_authority co-signer)
 │   │   ├── deposit-with-price.ts
 │   │   ├── request-deposit.ts
 │   │   ├── fulfill-deposit.ts
@@ -66,7 +66,7 @@ pnpm --filter @repo/omaha-programs-sdk dev
 # Type check
 pnpm --filter @repo/omaha-programs-sdk typecheck
 
-# Run tests (55 tests across 4 files)
+# Run tests (56 tests across 4 files)
 pnpm --filter @repo/omaha-programs-sdk test
 
 # Lint
@@ -77,6 +77,14 @@ pnpm --filter @repo/omaha-programs-sdk clean
 ```
 
 ## Key Features
+
+### Constants
+
+- `VAULT_PROGRAM_ID` — on-chain program address
+- `PROGRAM_AUTHORITY` — pubkey that must co-sign `Initialize` (restricts vault creation to the program operator)
+- `DISC_*` — instruction discriminators (0x00–0x0C)
+- `*_DISCRIMINATOR` — account type guards (0xA1–0xA3)
+- Fee constants: `BPS_DENOMINATOR`, `SECONDS_PER_YEAR`, `MAX_*_FEE_BPS`
 
 ### 13 Instruction Builders
 
@@ -142,12 +150,12 @@ calculatePerformanceFee(profitAmount: bigint, feeConfig: FeeConfig) => bigint
 Comprehensive error handling:
 
 ```typescript
-// Program error codes as constants
-export const ERROR_CODES = {
-  InvalidInstructionData: 6000,
-  InsufficientLiquidity: 6001,
-  InvalidSharePrice: 6002,
-  // ... 20+ more
+// Program error codes (0x100–0x10E)
+export enum VaultErrorCode {
+  Unauthorized = 0x100,
+  InvalidSharePrice = 0x101,
+  // ... through
+  UnauthorizedInitializer = 0x10E,
 }
 ```
 
@@ -273,7 +281,7 @@ depositWithPrice({
 
 ## Testing
 
-The package includes 55 tests across 4 test files:
+The package includes 56 tests across 4 test files:
 
 ```bash
 # Run all tests

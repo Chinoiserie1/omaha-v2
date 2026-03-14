@@ -31,6 +31,7 @@ A minimal Solana program that manages a tokenized vault. Users deposit base toke
 4. **`Signer` and `Seed`** live in `pinocchio::instruction`, NOT `pinocchio::cpi`.
 5. **State is zero-copy** — cast directly from account data via bytemuck. Never serialize/deserialize.
 6. **Replace program ID before mainnet deploy** — current `declare_id!` uses a dev keypair.
+7. **`PROGRAM_AUTHORITY` constant** — hardcoded pubkey in `lib.rs` that must co-sign `Initialize`. Replace before mainnet deploy alongside `declare_id!`.
 
 ## File Layout
 
@@ -41,13 +42,13 @@ apps/programs/vault/
 ├── src/
 │   ├── lib.rs              # Entrypoint + instruction routing (13 discriminators)
 │   ├── state.rs            # VaultState (488B) + PendingDeposit (80B) + PendingWithdraw (80B, bytemuck Pod)
-│   ├── error.rs            # 14 custom errors (0x100-0x10D)
+│   ├── error.rs            # 15 custom errors (0x100-0x10E)
 │   ├── fees.rs             # Pure fee math (entry/exit/management/performance)
 │   ├── rent.rs             # Const fn rent exemption calculation
 │   ├── token2022.rs        # Raw CPI wrappers for SPL Token 2022 (mint_to, burn, extensions, metadata)
 │   └── instructions/
 │       ├── mod.rs          # Re-exports all instruction structs
-│       ├── initialize.rs   # Create vault PDA + Token 2022 share mint PDA (with metadata extensions)
+│       ├── initialize.rs   # Create vault PDA + Token 2022 share mint PDA (7 accounts, requires program_authority co-signer)
 │       ├── set_share_price.rs  # Admin-only price update
 │       ├── execute.rs      # Generic CPI passthrough (key feature)
 │       ├── add_owner.rs    # Admin-only: add operator
@@ -85,7 +86,7 @@ Instruction discriminators use the `0x00–0x0C` range. Account discriminators u
 
 | Disc | Instruction | Group | Access | Description |
 |------|------------|-------|--------|-------------|
-| 0x00 | Initialize | Setup | Admin (signer) | Creates vault PDA, Token 2022 share mint PDA with metadata extensions |
+| 0x00 | Initialize | Setup | Program Authority + Admin (signers) | Creates vault PDA, Token 2022 share mint PDA with metadata extensions |
 | 0x01 | AddOwner | Setup | Admin only | Adds an operator pubkey (max 10) |
 | 0x02 | RemoveOwner | Setup | Admin only | Removes an operator pubkey (swap-remove) |
 | 0x03 | SetSharePrice | Admin Ops | Admin only | Updates `share_price` in vault state |
@@ -182,9 +183,11 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 
 | Role | Initialize | SetSharePrice | Execute | AddOwner | RemoveOwner | DepositWithPrice | RequestDeposit | FulfillDeposit | WithdrawWithPrice | RequestWithdraw | FulfillWithdraw | UpdateFees | CollectFees |
 |------|-----------|---------------|---------|----------|-------------|-----------------|----------------|----------------|-------------------|-----------------|-----------------|------------|-------------|
-| Admin | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
+| Admin | Yes* | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes | Yes |
 | Owner | No | No | Yes | No | No | No | Yes | No | No | Yes | No | No | No |
 | Anyone | No | No | No | No | No | No | Yes | No | No | Yes | No | No | No |
+
+*Initialize also requires the `PROGRAM_AUTHORITY` constant pubkey as a co-signer (account 0). This restricts vault creation to the program operator.
 
 ## Error Codes
 
@@ -204,16 +207,17 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 0x10B | FeeExceedsMaximum | Fee BPS exceeds allowed maximum |
 | 0x10C | NoFeesToCollect | No fee receiver set or no fees to collect |
 | 0x10D | InvalidMetadata | Metadata string exceeds max length (128 bytes) |
+| 0x10E | UnauthorizedInitializer | Signer is not the program authority |
 
 ## Build & Test
 
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (145 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (148 tests total)
 ```
 
-The test suite has **145 tests**: 53 unit tests (state, fees, share math) and 92 integration tests via `mollusk-svm`.
+The test suite has **148 tests**: 53 unit tests (state, fees, share math) and 95 integration tests via `mollusk-svm`.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 
