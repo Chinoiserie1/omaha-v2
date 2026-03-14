@@ -1,40 +1,17 @@
-import { PublicKey } from "@solana/web3.js";
-import { getGlamClient } from "./client.js";
-import { getConnection } from "./config.js";
-import { logger } from "../utils/logger.js";
+import type { PublicKey } from "@solana/web3.js";
+import { computeTvl } from "../services/tvl.service.js";
+import { computeSharePrice } from "../services/share-price.service.js";
 import type { VaultHolding } from "@repo/shared";
 
 /**
  * Fetch on-chain vault holdings with USD valuations.
+ * Reads SPL token accounts owned by the vault PDA + cached DB prices.
  */
 export async function getVaultHoldings(statePda: PublicKey): Promise<{
   holdings: VaultHolding[];
   totalEquityUsd: number;
 }> {
-  const client = getGlamClient(statePda);
-  const result = await client.price.getVaultHoldings("confirmed");
-
-  let totalEquityUsd = 0;
-  const holdings: VaultHolding[] = [];
-
-  for (const h of result.holdings) {
-    const valueUsd = h.uiAmount * h.price;
-    totalEquityUsd += valueUsd;
-    holdings.push({
-      mint: h.mintAddress.toBase58(),
-      symbol: h.mintAddress.toBase58().slice(0, 8),
-      uiAmount: h.uiAmount,
-      price: h.price,
-      valueUsd,
-    });
-  }
-
-  logger.debug(
-    { totalEquityUsd, holdingsCount: holdings.length },
-    "Vault holdings fetched"
-  );
-
-  return { holdings, totalEquityUsd };
+  return computeTvl(statePda);
 }
 
 /**
@@ -42,23 +19,8 @@ export async function getVaultHoldings(statePda: PublicKey): Promise<{
  * Returns null if supply is zero or data cannot be fetched.
  */
 export async function getSharePrice(statePda: PublicKey): Promise<number | null> {
-  const client = getGlamClient(statePda);
-  const stateModel = await client.fetchStateModel();
-
-  if (!stateModel.mint) return null;
-
-  const shareMint = new PublicKey(stateModel.mint);
-  const connection = getConnection();
-
-  const [{ totalEquityUsd }, supplyResult] = await Promise.all([
-    getVaultHoldings(statePda),
-    connection.getTokenSupply(shareMint),
-  ]);
-
-  const supplyUiAmount = supplyResult.value.uiAmount ?? 0;
-  if (supplyUiAmount <= 0) return null;
-
-  return totalEquityUsd / supplyUiAmount;
+  const result = await computeSharePrice(statePda);
+  return result.computedPriceUsd;
 }
 
 /**

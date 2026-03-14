@@ -1,7 +1,5 @@
 import { prisma } from "@repo/database";
-import { PublicKey } from "@solana/web3.js";
-import { createQuantVault, enableJupiterIntegration } from "../solana/vault-setup.js";
-import { deriveVaultPda } from "../solana/config.js";
+import { createQuantVault } from "../solana/vault-setup.js";
 
 function parseArgs(args: string[]): {
   quantId: string;
@@ -36,7 +34,6 @@ function parseArgs(args: string[]): {
 async function main(): Promise<void> {
   const { quantId, dryRun } = parseArgs(process.argv.slice(2));
 
-  // 1. Look up Quant in DB
   const quant = await prisma.quant.findUnique({
     where: { id: quantId },
     include: { user: true },
@@ -48,7 +45,6 @@ async function main(): Promise<void> {
 
   const username = quant.user.twitterUsername ?? quantId;
 
-  // 2. Check if vault already exists
   const existing = await prisma.vault.findUnique({
     where: { quantId: quant.id },
   });
@@ -57,22 +53,14 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-  // 3. Create GLAM vault on-chain
   console.log(`Creating vault for quant @${username}...`);
-  const { txSig, statePda } = await createQuantVault(username);
+  const { txSig, statePda, shareMint, baseTokenAta } =
+    await createQuantVault(username);
   console.log(`  Vault created: ${statePda}`);
+  console.log(`  Share Mint: ${shareMint}`);
+  console.log(`  Base Token ATA: ${baseTokenAta}`);
   console.log(`  Tx: ${txSig}`);
 
-  // 4. Enable Jupiter integration
-  console.log("Enabling Jupiter integration...");
-  const jupTx = await enableJupiterIntegration(new PublicKey(statePda));
-  console.log(`  Jupiter enabled: ${jupTx}`);
-
-  // 5. Derive glamVaultPda
-  const glamVaultPda = deriveVaultPda(new PublicKey(statePda)).toBase58();
-  console.log(`  Vault PDA: ${glamVaultPda}`);
-
-  // 6. Insert Vault row in DB
   const vaultName = `quant-${username}`;
   const vaultSymbol = `Q-${username.slice(0, 6).toUpperCase()}`;
 
@@ -80,18 +68,18 @@ async function main(): Promise<void> {
     data: {
       quantId: quant.id,
       statePda,
-      glamVaultPda,
+      shareMint,
+      baseTokenAta,
       vaultName,
       vaultSymbol,
       dryRun,
-      jupiterEnabled: true,
     },
   });
 
   console.log(`  DB record created: ${vault.id}`);
   console.log(`\nVault setup complete for @${username}`);
   console.log(`  State PDA: ${statePda}`);
-  console.log(`  Vault PDA: ${glamVaultPda}`);
+  console.log(`  Share Mint: ${shareMint}`);
   console.log(`  Dry run: ${dryRun}`);
 }
 

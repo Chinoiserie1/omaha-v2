@@ -1,8 +1,13 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { PublicKey } from "@solana/web3.js";
-import { getGlamClient } from "../../../solana/client.js";
-import { SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
-import { getSharePrice } from "../../../solana/vault-holdings.js";
+import {
+  findPendingDepositPda,
+  findPendingWithdrawPda,
+  deserializePendingDeposit,
+  deserializePendingWithdraw,
+} from "@repo/omaha-programs-sdk";
+import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
+import { computeSharePrice } from "../../../services/share-price.service.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -33,13 +38,12 @@ export async function getInvestorStatus(
   if (!vault) {
     return reply.status(404).send({ error: "Vault not found" });
   }
-
   if (!vault.statePda) {
     return reply.status(400).send({ error: "Vault has no state PDA" });
   }
 
   const statePda = new PublicKey(vault.statePda);
-  const glamClient = getGlamClient(statePda);
+  const connection = getConnection();
 
   let sharePrice: number | null = null;
   let pendingRequest: {
@@ -47,47 +51,48 @@ export async function getInvestorStatus(
     amount: number;
     createdAt: number;
   } | null = null;
-  let redeemNoticePeriod = 0;
 
-  // Fetch pending request for this wallet
+  // Check for pending deposit PDA
   try {
-    const pending = await glamClient.invest.fetchPendingRequest(walletPubkey);
-    if (pending) {
-      let isRedemption = false;
-      const reqType = pending.requestType;
-      if (typeof reqType === "object" && reqType !== null) {
-        isRedemption = "redemption" in reqType;
-      }
-
-      // The pending request has incoming/outgoing BN fields
-      const rawAmount = isRedemption
-        ? pending.outgoing.toNumber()
-        : pending.incoming.toNumber();
-      const decimals = isRedemption ? SHARE_TOKEN_MULTIPLIER : 1e6;
-
+    const [pendingDepositPda] = findPendingDepositPda(statePda, walletPubkey);
+    const depositAccount = await connection.getAccountInfo(pendingDepositPda);
+    if (depositAccount) {
+      const deposit = deserializePendingDeposit(Buffer.from(depositAccount.data));
       pendingRequest = {
-        type: isRedemption ? "REDEMPTION" : "SUBSCRIPTION",
-        amount: rawAmount / decimals,
-        createdAt: pending.createdAt.toNumber(),
+        type: "SUBSCRIPTION",
+        amount: Number(deposit.amount) / 1e6,
+        createdAt: 0, // PDA doesn't store timestamp
       };
     }
   } catch (err) {
-    logger.debug({ err, wallet }, "No pending request or error fetching");
+    logger.debug({ err, wallet }, "No pending deposit or error fetching");
   }
 
-  // Fetch share price and redeem notice period
-  try {
-    const stateModel = await glamClient.fetchStateModel();
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const mintModel = stateModel.mintModel as any;
-    if (mintModel?.notifyAndSettle?.redeemNoticePeriod) {
-      redeemNoticePeriod = Number(mintModel.notifyAndSettle.redeemNoticePeriod);
+  // Check for pending withdraw PDA (only if no deposit found)
+  if (!pendingRequest) {
+    try {
+      const [pendingWithdrawPda] = findPendingWithdrawPda(statePda, walletPubkey);
+      const withdrawAccount = await connection.getAccountInfo(pendingWithdrawPda);
+      if (withdrawAccount) {
+        const withdraw = deserializePendingWithdraw(Buffer.from(withdrawAccount.data));
+        pendingRequest = {
+          type: "REDEMPTION",
+          amount: Number(withdraw.shares) / SHARE_TOKEN_MULTIPLIER,
+          createdAt: 0,
+        };
+      }
+    } catch (err) {
+      logger.debug({ err, wallet }, "No pending withdraw or error fetching");
     }
+  }
 
-    sharePrice = await getSharePrice(statePda);
+  // Compute share price
+  try {
+    const result = await computeSharePrice(statePda);
+    sharePrice = result.computedPriceUsd;
   } catch {
     logger.debug("Could not compute share price");
   }
 
-  return { sharePrice, pendingRequest, redeemNoticePeriod };
+  return { sharePrice, pendingRequest };
 }

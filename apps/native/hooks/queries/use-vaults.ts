@@ -43,8 +43,8 @@ interface VaultData {
   description: string;
   quantUsername: string;
   quantId: string;
-  glamStatePda: string;
-  glamVaultPda: string | null;
+  statePda: string;
+  shareMint: string | null;
   mintAddress: string | null;
   isActive: boolean;
   about: string;

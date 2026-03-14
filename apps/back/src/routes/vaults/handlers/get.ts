@@ -15,7 +15,6 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
 
   const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
 
-  // Enrich allocations with token logo URIs
   let enrichedAllocations: unknown[] = [];
   if (portfolio) {
     const rawAllocations = portfolio.allocations as { mint?: string }[];
@@ -35,8 +34,8 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     description: vault.about,
     quantUsername: vault.quant?.user?.twitterUsername,
     quantId: vault.quantId,
-    glamStatePda: vault.statePda,
-    glamVaultPda: vault.glamVaultPda,
+    statePda: vault.statePda,
+    shareMint: vault.shareMint,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
     about: vault.about,

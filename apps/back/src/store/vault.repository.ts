@@ -37,13 +37,6 @@ export async function updateLastRebalanced(id: string): Promise<Vault> {
   });
 }
 
-export async function markJupiterEnabled(id: string): Promise<Vault> {
-  return prisma.vault.update({
-    where: { id },
-    data: { jupiterEnabled: true },
-  });
-}
-
 export async function setDryRun(id: string, dryRun: boolean): Promise<Vault> {
   return prisma.vault.update({ where: { id }, data: { dryRun } });
 }

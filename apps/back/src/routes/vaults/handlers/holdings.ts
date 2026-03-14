@@ -50,7 +50,7 @@ export async function getVaultHoldingsHandler(
     return snapshotToResponse(cached);
   }
 
-  // Dry-run vaults have no real on-chain PDA — skip GLAM fetch
+  // Dry-run vaults have no real on-chain PDA — skip on-chain fetch
   if (vault.dryRun) {
     if (cached) {
       return snapshotToResponse(cached);
@@ -60,7 +60,7 @@ export async function getVaultHoldingsHandler(
       .send({ error: "No holdings snapshot available for dry-run vault" });
   }
 
-  // Fetch live from GLAM
+  // Fetch live on-chain holdings
   try {
     const statePda = new PublicKey(vault.statePda);
     const { holdings, totalEquityUsd } = await getVaultHoldings(statePda);
@@ -87,7 +87,7 @@ export async function getVaultHoldingsHandler(
   } catch (err) {
     logger.error(
       { error: err instanceof Error ? err.message : err, vaultId: vault.id },
-      "Failed to fetch live holdings from GLAM",
+      "Failed to fetch live holdings",
     );
 
     // Fall back to stale cached snapshot

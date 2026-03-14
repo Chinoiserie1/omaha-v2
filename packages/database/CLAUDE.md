@@ -93,21 +93,21 @@ model Quant {
 
 ### Vault (formerly KolVault)
 
-A tokenized vault on Solana (GLAM Protocol) owned by a Quant.
+A tokenized vault on Solana (Omaha Vault program) owned by a Quant.
 
 ```prisma
 model Vault {
   id                 String    @id @default(cuid())
   quantId            String    @unique
   quant              Quant     @relation(...)
-  glamVaultPda       String?   @unique
   statePda           String    @unique
   mintAddress        String?   @unique
+  shareMint          String?   @unique
+  baseTokenAta       String?
   vaultName          String
   vaultSymbol        String
   dryRun             Boolean   @default(true)
   isActive           Boolean   @default(true)
-  jupiterEnabled     Boolean   @default(false)
   ...
 }
 ```

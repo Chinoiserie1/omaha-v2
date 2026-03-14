@@ -31,9 +31,11 @@ const envSchema = z.object({
   KEEPER_PRIVATE_KEY: z.string().optional(),
   FEE_PAYER_PRIVATE_KEY: z.string().optional(),
   FUND_SOL_FEE_PCT: z.coerce.number().default(2),
-  GLAM_PROGRAM_ID: z
-    .string()
-    .default("GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz"),
+  PROGRAM_AUTHORITY_PRIVATE_KEY: z.string().optional(),
+
+  // Price Worker — multi-instance config
+  PRICE_INSTANCE_ID: z.coerce.number().default(0),
+  PRICE_TOTAL_INSTANCES: z.coerce.number().default(1),
 
   // Quant Pipeline — Rebalancing
   REBALANCE_DRY_RUN: z

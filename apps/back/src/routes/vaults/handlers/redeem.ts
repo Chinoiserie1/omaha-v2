@@ -1,8 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { PublicKey, Transaction } from "@solana/web3.js";
-import BN from "bn.js";
-import { getGlamClient } from "../../../solana/client.js";
-import { getConnection, getKeeper, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
+import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
+import {
+  createRequestWithdrawInstruction,
+  findPendingWithdrawPda,
+  findShareMintPda,
+} from "@repo/omaha-programs-sdk";
+import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -20,12 +24,10 @@ export async function redeemFromVault(
   const { id } = request.params;
   const { amount, signerPublicKey } = request.body;
 
-  // Validate amount
   if (typeof amount !== "number" || amount <= 0 || !isFinite(amount)) {
     return reply.status(400).send({ error: "Amount must be a positive number" });
   }
 
-  // Validate signer public key
   let signerPubkey: PublicKey;
   try {
     signerPubkey = new PublicKey(signerPublicKey);
@@ -33,42 +35,51 @@ export async function redeemFromVault(
     return reply.status(400).send({ error: "Invalid signer public key" });
   }
 
-  // Find vault
   const vault = await vaultRepo.findVaultById(id);
   if (!vault) {
     return reply.status(404).send({ error: "Vault not found" });
   }
-
   if (!vault.statePda) {
     return reply.status(400).send({ error: "Vault has no state PDA" });
   }
 
   const statePda = new PublicKey(vault.statePda);
-  const glamClient = getGlamClient(statePda);
-
-  // Convert human-readable share amount to raw units (share tokens use 6 decimals)
-  const amountBN = new BN(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
+  const shares = BigInt(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
 
   try {
-    // Price all vault tokens first (required by GLAM before redeem)
-    const priceIxs = await glamClient.price.priceVaultIxs();
+    // Derive share mint from vault or PDA
+    const shareMint = vault.shareMint
+      ? new PublicKey(vault.shareMint)
+      : findShareMintPda(statePda)[0];
 
-    const redeemIx = await glamClient.invest.txBuilder.queuedRedeemIx(
-      amountBN,
+    const withdrawerShareAta = await getAssociatedTokenAddress(
+      shareMint,
       signerPubkey,
+      false,
+      new PublicKey("TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb"), // Token 2022
     );
+    const [pendingWithdraw] = findPendingWithdrawPda(statePda, signerPubkey);
+
+    const redeemIx = createRequestWithdrawInstruction({
+      withdrawer: signerPubkey,
+      withdrawerShareAta,
+      shareMint,
+      vaultState: statePda,
+      pendingWithdraw,
+      shares,
+    });
 
     const connection = getConnection();
     const { blockhash } = await connection.getLatestBlockhash("confirmed");
 
     const transaction = new Transaction();
-    transaction.add(...priceIxs, redeemIx);
+    transaction.add(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+      redeemIx,
+    );
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = signerPubkey;
-
-    // Partially sign with the keeper (required for pricing instructions)
-    const keeper = getKeeper();
-    transaction.partialSign(keeper);
 
     const serialized = transaction
       .serialize({ requireAllSignatures: false })

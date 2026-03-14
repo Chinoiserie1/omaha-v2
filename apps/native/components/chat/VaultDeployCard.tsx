@@ -54,7 +54,7 @@ export function VaultDeployCard({
       </View>
 
       <Text style={styles.description}>
-        Create your tokenized vault on Solana via GLAM Protocol. This will
+        Create your tokenized vault on Solana. This will
         deploy your strategy on-chain so investors can subscribe.
       </Text>
 
@@ -65,7 +65,7 @@ export function VaultDeployCard({
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Protocol</Text>
-          <Text style={styles.detailValue}>GLAM</Text>
+          <Text style={styles.detailValue}>Omaha</Text>
         </View>
         <View style={styles.detailRow}>
           <Text style={styles.detailLabel}>Base Asset</Text>

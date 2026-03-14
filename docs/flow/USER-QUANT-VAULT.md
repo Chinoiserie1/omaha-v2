@@ -8,7 +8,7 @@ The platform has three core identity layers:
 
 1. **User** — The identity anchor (real or placeholder)
 2. **Quant** — A strategy profile linked to a User
-3. **Vault** — A tokenized on-chain vault (GLAM Protocol) owned by a Quant
+3. **Vault** — A tokenized on-chain vault (Omaha Vault program) owned by a Quant
 
 ## Entity Relationship
 
@@ -46,7 +46,7 @@ The platform has three core identity layers:
 │                        VAULT                                 │
 │                                                              │
 │  id, quantId (unique)                                        │
-│  glamVaultPda?, statePda, mintAddress?                        │
+│  vaultPda?, statePda, mintAddress?                            │
 │  vaultName, vaultSymbol                                      │
 │  dryRun, isActive, jupiterEnabled                            │
 │                                                              │

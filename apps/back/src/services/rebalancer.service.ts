@@ -3,7 +3,7 @@ import { logger } from "../utils/logger.js";
 import { env } from "../utils/env.js";
 import { USDC_MINT } from "../solana/config.js";
 import { getVaultHoldings } from "../solana/vault-holdings.js";
-import { allowlistTokensOnVault } from "../solana/vault-setup.js";
+// allowlistTokensOnVault removed — custom vault has no asset allowlist
 import { executeJupiterSwap } from "./jupiter-swap.service.js";
 import { getTradeableAssetsMap } from "./jupiter.service.js";
 import * as vaultRepo from "../store/vault.repository.js";
@@ -130,11 +130,6 @@ export async function rebalanceVault(
     logger.debug({ quantId }, "No active vault for Quant, skipping");
     return null;
   }
-  if (!vault.jupiterEnabled) {
-    logger.warn({ quantId }, "Jupiter not enabled on vault, skipping");
-    return null;
-  }
-
   const statePda = new PublicKey(vault.statePda);
 
   // 2. Get latest PortfolioSnapshot
@@ -254,16 +249,7 @@ export async function rebalanceVault(
     return event.id;
   }
 
-  // 10. Allowlist all target mints on vault
-  const targetMints = allocations
-    .map((a) => a.mint)
-    .filter((m): m is string => !!m && m !== USDC_MINT_STR);
-  if (targetMints.length > 0) {
-    await allowlistTokensOnVault(
-      statePda,
-      targetMints.map((m) => new PublicKey(m))
-    );
-  }
+  // Custom vault has no asset allowlist — Execute CPI works for any program
 
   const swapResults: SwapDelta[] = [];
   let failedCount = 0;

@@ -2,7 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import { logger } from "../utils/logger.js";
 import * as vaultRepo from "../store/vault.repository.js";
 import * as tokenPriceRepo from "../store/token-price.repository.js";
-import { getSharePrice } from "../solana/vault-holdings.js";
+import { computeSharePrice } from "./share-price.service.js";
 
 export async function fetchAndStoreVaultPrices(): Promise<void> {
   const vaults = await vaultRepo.findAllActiveVaults();
@@ -17,13 +17,13 @@ export async function fetchAndStoreVaultPrices(): Promise<void> {
         mint: vault.mintAddress!,
       });
 
-      const sharePrice = await getSharePrice(new PublicKey(vault.statePda));
-      if (sharePrice === null) {
+      const result = await computeSharePrice(new PublicKey(vault.statePda));
+      if (result.computedPriceUsd === null) {
         logger.warn({ vaultId: vault.id }, "Share price unavailable, skipping");
         return;
       }
 
-      await tokenPriceRepo.insertPrice(token.id, sharePrice);
+      await tokenPriceRepo.insertPrice(token.id, result.computedPriceUsd);
     }),
   );
 

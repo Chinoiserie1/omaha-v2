@@ -643,7 +643,7 @@ function ScreenVaultCreated() {
         </View>
         <View className="flex-row justify-between py-2">
           <Text className="text-sm text-slate-400">Protocol</Text>
-          <Text className="text-sm font-semibold text-white">GLAM</Text>
+          <Text className="text-sm font-semibold text-white">Omaha</Text>
         </View>
         <View className="flex-row justify-between py-2">
           <Text className="text-sm text-slate-400">Status</Text>

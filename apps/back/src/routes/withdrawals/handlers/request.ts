@@ -1,9 +1,14 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import BN from "bn.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { prisma } from "@repo/database";
 import { createWithdrawalSchema, type ApiResponse } from "@repo/shared";
-import { getGlamClient } from "../../../solana/client.js";
+import {
+  createRequestWithdrawInstruction,
+  findPendingWithdrawPda,
+  findShareMintPda,
+  TOKEN_2022_PROGRAM_ID,
+} from "@repo/omaha-programs-sdk";
 import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
@@ -19,11 +24,6 @@ type RequestBody = FastifyRequest<{
   Body: { amount: number; signerPublicKey: string };
 }>;
 
-/**
- * Build an unsigned queuedRedeem transaction for the user to sign.
- * Creates the DB record, builds queuedRedeemIx(amount, userPubkey),
- * returns the unsigned serialized tx to the client for signing.
- */
 export async function requestWithdrawal(
   request: RequestBody,
   reply: FastifyReply,
@@ -44,7 +44,6 @@ export async function requestWithdrawal(
 
   const { amount, signerPublicKey } = bodyResult.data;
 
-  // Validate signer public key
   let signerPubkey: PublicKey;
   try {
     signerPubkey = new PublicKey(signerPublicKey);
@@ -55,22 +54,16 @@ export async function requestWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Resolve user
   const user = await prisma.user.findUnique({
     where: { privyId: request.privyUserId },
   });
   if (!user) {
-    logger.error(
-      { privyId: request.privyUserId, vaultId },
-      "User not found for withdrawal request",
-    );
     return reply.status(404).send({
       success: false,
       error: "User not found",
     } satisfies ApiResponse<never>);
   }
 
-  // Lookup vault
   const vault = await vaultRepo.findVaultById(vaultId);
   if (!vault?.statePda) {
     return reply.status(404).send({
@@ -79,34 +72,20 @@ export async function requestWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Compute batch + idempotency
   const now = Date.now();
   const batchId = computeBatchId(vaultId, now);
   const idempotencyKey = computeIdempotencyKey(user.id, vaultId, batchId);
 
-  // Check for existing request in this batch window
   const existing = await withdrawalRepo.findByIdempotencyKey(idempotencyKey);
-
   if (existing) {
-    const updated = await withdrawalRepo.addAmountToExisting(
-      existing.id,
-      amount,
-    );
+    const updated = await withdrawalRepo.addAmountToExisting(existing.id, amount);
     logger.info(
       { withdrawalId: updated.id, newAmount: updated.amount },
       "Merged withdrawal request into existing",
     );
-    // Rebuild the transaction with the updated amount
-    return buildAndReturnTx(
-      reply,
-      vault.statePda,
-      updated.amount,
-      signerPubkey,
-      updated,
-    );
+    return buildAndReturnTx(reply, vault.statePda, vault.shareMint, updated.amount, signerPubkey, updated);
   }
 
-  // Persist wallet address on user (set once, idempotent)
   if (!user.walletAddress) {
     await prisma.user.update({
       where: { id: user.id },
@@ -114,17 +93,15 @@ export async function requestWithdrawal(
     });
   }
 
-  // Create new request
   const withdrawal = await withdrawalRepo.createRequest({
     userId: user.id,
-    vaultId: vaultId,
+    vaultId,
     amount,
     idempotencyKey,
     batchId,
   });
 
   const windowSec = env.WITHDRAWAL_BATCH_WINDOW_MS / 1000;
-  const windowMin = windowSec / 60;
   logger.info(
     {
       withdrawalId: withdrawal.id,
@@ -133,46 +110,48 @@ export async function requestWithdrawal(
       vaultId,
       amount,
       status: withdrawal.status,
-      idempotencyKey,
-      requestedAt: withdrawal.requestedAt,
-      batchWindowMs: env.WITHDRAWAL_BATCH_WINDOW_MS,
       batchWindowSec: windowSec,
-      batchWindowMin: windowMin,
-      signerPublicKey,
     },
-    `[DEBUG] Withdrawal created — batch window: ${windowMin}min (${windowSec}s)`,
+    `Withdrawal created — batch window: ${windowSec / 60}min`,
   );
 
-  return buildAndReturnTx(
-    reply,
-    vault.statePda,
-    amount,
-    signerPubkey,
-    withdrawal,
-  );
+  return buildAndReturnTx(reply, vault.statePda, vault.shareMint, amount, signerPubkey, withdrawal);
 }
 
 async function buildAndReturnTx(
   reply: FastifyReply,
   statePdaStr: string,
+  shareMintStr: string | null,
   amount: number,
   signerPubkey: PublicKey,
   withdrawal: { id: string },
 ) {
   try {
     const statePda = new PublicKey(statePdaStr);
-    const glamClient = getGlamClient(statePda);
     const connection = getConnection();
 
-    const amountBN = new BN(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
+    const shares = BigInt(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
 
-    logger.info(`signer ${signerPubkey}`);
+    const shareMint = shareMintStr
+      ? new PublicKey(shareMintStr)
+      : findShareMintPda(statePda)[0];
 
-    // Build queued redeem for the user's pubkey (no pricing needed)
-    const redeemIx = await glamClient.invest.txBuilder.queuedRedeemIx(
-      amountBN,
+    const withdrawerShareAta = await getAssociatedTokenAddress(
+      shareMint,
       signerPubkey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
     );
+    const [pendingWithdraw] = findPendingWithdrawPda(statePda, signerPubkey);
+
+    const redeemIx = createRequestWithdrawInstruction({
+      withdrawer: signerPubkey,
+      withdrawerShareAta,
+      shareMint,
+      vaultState: statePda,
+      pendingWithdraw,
+      shares,
+    });
 
     const { blockhash } = await connection.getLatestBlockhash("confirmed");
 

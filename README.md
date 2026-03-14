@@ -1,6 +1,6 @@
 # Autopilot
 
-AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them with Claude AI, generates portfolio allocations, and rebalances on-chain vaults via GLAM SDK.
+AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them with Claude AI, generates portfolio allocations, and rebalances on-chain vaults via Execute CPI on Solana.
 
 ## Tech Stack
 
@@ -15,7 +15,7 @@ AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them wit
 | Validation      | Zod                      | 3.x      |
 | AI              | Anthropic Claude         | Latest   |
 | Blockchain      | Solana (@solana/web3.js) | 1.98.x   |
-| Vault Mgmt      | GLAM SDK                 | ^1.0.x   |
+| Vault Mgmt      | omaha-programs-sdk       | ^1.0.x   |
 | On-chain Program| Pinocchio (Rust)         | 0.9.x    |
 | Auth            | Privy                    | Latest   |
 | Language        | TypeScript (ESM only)    | 5.7.x    |
@@ -177,7 +177,7 @@ The backend runs an automated pipeline via cron jobs:
 1. Fetch Tweets       →  Twitter RapidAPI fetches KOL tweets
 2. AI Classification  →  Claude AI classifies tweets (sentiment, assets, category)
 3. Portfolio Gen      →  Algorithm generates portfolio snapshots from signals
-4. Vault Rebalance    →  Jupiter swaps execute via GLAM SDK on Solana
+4. Vault Rebalance    →  Jupiter swaps execute via Execute CPI on Solana
 ```
 
 **Cron schedules** (configurable via `.env`):
@@ -204,7 +204,7 @@ See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentati
 - **Tweet** — Raw tweets with engagement metrics
 - **ClassifiedTweet** — AI-classified tweets (sentiment, assets, category)
 - **PortfolioSnapshot** — Generated portfolio allocations
-- **KolVault** — Solana vaults (GLAM) linked to KOLs
+- **Vault** — Solana vaults (Omaha Vault program) linked to Quants
 - **RebalanceEvent** — Vault rebalancing history
 - **TradeableAsset** — Supported tokens (symbol, mint, decimals)
 - **Follow** — User-to-user follow relationships
@@ -276,7 +276,7 @@ ANTHROPIC_API_KEY=
 # Solana (optional)
 SOLANA_RPC_URL=
 KEEPER_PRIVATE_KEY=
-GLAM_PROGRAM_ID=GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz
+PROGRAM_AUTHORITY_PRIVATE_KEY=<base58_keypair>
 
 # Jupiter
 JUPITER_API_KEY=

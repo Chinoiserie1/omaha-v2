@@ -1,6 +1,11 @@
-import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import { getGlamClient } from "../solana/client.js";
-import { getConnection, getKeeper } from "../solana/config.js";
+import { PublicKey, Transaction, ComputeBudgetProgram } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
+import {
+  createFulfillWithdrawInstruction,
+  findPendingWithdrawPda,
+} from "@repo/omaha-programs-sdk";
+import { getConnection, getKeeper, USDC_MINT } from "../solana/config.js";
+import { computeSharePrice } from "./share-price.service.js";
 import * as withdrawalRepo from "../store/withdrawal.repository.js";
 import * as vaultRepo from "../store/vault.repository.js";
 import { notifyUser } from "../infra/websocket.js";
@@ -10,8 +15,8 @@ import type { FulfillJobResult } from "../queue/withdrawal-queue.js";
 /**
  * Process the fulfill step for a vault:
  * 1. Find all PROCESSING records for the vault
- * 2. Call fulfillIx (keeper signs as vault manager)
- * 3. On success: transition to CLAIMABLE, notify users
+ * 2. For each: build FulfillWithdraw instruction
+ * 3. On success: transition directly to CLAIMED (no separate claim step)
  * 4. On failure: transition to FAILED
  */
 export async function processFulfillBatch(
@@ -46,24 +51,35 @@ export async function processFulfillBatch(
     return { processedCount: 0, failedCount: requests.length };
   }
 
+  const statePda = new PublicKey(vault.statePda);
+
   try {
-    const txSig = await executeFulfill(vault.statePda);
+    // Compute current share price for all fulfills
+    const { onChainPrice } = await computeSharePrice(statePda);
 
-    // Transition all to CLAIMABLE in a single query
-    const claimableAt = new Date();
+    const txSig = await executeFulfillBatch(
+      statePda,
+      vault.baseTokenAta ? new PublicKey(vault.baseTokenAta) : null,
+      requests,
+      onChainPrice,
+    );
+
+    // Custom vault FulfillWithdraw transfers base tokens directly
+    // → transition straight to CLAIMED (no CLAIMABLE step)
+    const claimedAt = new Date();
     const ids = requests.map((r) => r.id);
-    await withdrawalRepo.updateManyStatus(ids, "CLAIMABLE", { claimableAt });
+    await withdrawalRepo.updateManyStatus(ids, "CLAIMED", { claimedAt });
 
-    // Notify each user individually
+    // Notify each user
     for (const req of requests) {
       notifyUser(req.userId, "withdrawal:status", {
         withdrawalId: req.id,
-        status: "CLAIMABLE",
-        timestamp: claimableAt.toISOString(),
+        status: "CLAIMED",
+        timestamp: claimedAt.toISOString(),
       });
     }
 
-    logger.info({ vaultId, txSig }, "Fulfill confirmed, requests now CLAIMABLE");
+    logger.info({ vaultId, txSig }, "Fulfill confirmed, requests now CLAIMED");
     return { processedCount: requests.length, failedCount: 0 };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -72,20 +88,59 @@ export async function processFulfillBatch(
   }
 }
 
-async function executeFulfill(statePdaStr: string): Promise<string> {
-  const statePda = new PublicKey(statePdaStr);
-  const glamClient = getGlamClient(statePda);
+async function executeFulfillBatch(
+  statePda: PublicKey,
+  vaultBaseAta: PublicKey | null,
+  requests: Array<{ id: string; userId: string; amount: number }>,
+  newSharePrice: bigint,
+): Promise<string> {
   const keeper = getKeeper();
   const connection = getConnection();
 
-  logger.info({ statePda: statePdaStr }, "Building fulfill transaction");
+  // Derive vault's base token ATA if not provided
+  const actualVaultBaseAta = vaultBaseAta ?? await getAssociatedTokenAddress(
+    USDC_MINT,
+    statePda,
+    true,
+  );
 
-  // Price the vault first (required by GLAM before fulfill)
-  const priceIxs = await glamClient.price.priceVaultIxs();
+  // Build FulfillWithdraw instruction for each request
+  const fulfillIxs = await Promise.all(
+    requests.map(async (req) => {
+      // Look up user wallet address
+      const { prisma } = await import("@repo/database");
+      const user = await prisma.user.findUnique({
+        where: { id: req.userId },
+        select: { walletAddress: true },
+      });
 
-  const fulfillIx = await glamClient.invest.txBuilder.fulfillIx(
-    null,
-    keeper.publicKey,
+      if (!user?.walletAddress) {
+        throw new Error(`User ${req.userId} has no wallet address`);
+      }
+
+      const withdrawer = new PublicKey(user.walletAddress);
+      const [pendingWithdraw] = findPendingWithdrawPda(statePda, withdrawer);
+
+      const withdrawerBaseAta = await getAssociatedTokenAddress(
+        USDC_MINT,
+        withdrawer,
+      );
+
+      return createFulfillWithdrawInstruction({
+        admin: keeper.publicKey,
+        vaultState: statePda,
+        pendingWithdraw,
+        vaultBaseAta: actualVaultBaseAta,
+        withdrawerBaseAta,
+        withdrawer,
+        newSharePrice,
+      });
+    }),
+  );
+
+  logger.info(
+    { statePda: statePda.toBase58(), fulfillCount: fulfillIxs.length },
+    "Building fulfill transaction",
   );
 
   const { blockhash } = await connection.getLatestBlockhash("confirmed");
@@ -94,8 +149,7 @@ async function executeFulfill(statePdaStr: string): Promise<string> {
   transaction.add(
     ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
     ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
-    ...priceIxs,
-    fulfillIx,
+    ...fulfillIxs,
   );
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = keeper.publicKey;
@@ -126,7 +180,6 @@ async function executeFulfill(statePdaStr: string): Promise<string> {
   }
 
   logger.info({ txSig }, "Fulfill tx confirmed on-chain");
-
   return txSig;
 }
 
@@ -141,7 +194,6 @@ async function failRequests(
     failedAt,
   });
 
-  // Increment error counts individually (each may differ) and notify
   for (const req of requests) {
     await withdrawalRepo.incrementErrorCount(req.id);
     notifyUser(req.userId, "withdrawal:status", {

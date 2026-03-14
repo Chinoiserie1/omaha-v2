@@ -7,7 +7,7 @@ interface VaultStatsProps {
   jupiterEnabled: boolean;
   lastRebalancedAt: string | null;
   vaultSymbol: string;
-  glamVaultPda: string | null;
+  shareMint: string | null;
 }
 
 function formatDate(date: string | null): string {
@@ -49,7 +49,7 @@ export const VaultStats = memo(function VaultStats({
   jupiterEnabled,
   lastRebalancedAt,
   vaultSymbol,
-  glamVaultPda,
+  shareMint,
 }: VaultStatsProps) {
   return (
     <View className="mb-2 gap-3 px-5">
@@ -67,8 +67,8 @@ export const VaultStats = memo(function VaultStats({
           value={formatDate(lastRebalancedAt)}
         />
         <StatCard
-          label="Vault PDA"
-          value={glamVaultPda ? `${glamVaultPda.slice(0, 6)}...` : "Pending"}
+          label="Share Mint"
+          value={shareMint ? `${shareMint.slice(0, 6)}...` : "Pending"}
         />
       </View>
     </View>

@@ -1,11 +1,44 @@
 import axios from "axios";
-import type { PublicKey } from "@solana/web3.js";
-import type { QuoteResponse } from "@glamsystems/glam-sdk";
+import {
+  PublicKey,
+  TransactionInstruction as TxInstruction,
+  type TransactionInstruction,
+  type AccountMeta,
+} from "@solana/web3.js";
+import { createExecuteInstruction } from "@repo/omaha-programs-sdk";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
-import { getGlamClient } from "../solana/client.js";
+import { getKeeper } from "../solana/config.js";
+import { buildAndSendVersionedTx } from "../solana/tx.js";
 
 const JUPITER_API_BASE = "https://api.jup.ag/swap/v1";
+
+export interface QuoteResponse {
+  inputMint: string;
+  inAmount: string;
+  outputMint: string;
+  outAmount: string;
+  otherAmountThreshold: string;
+  swapMode: string;
+  slippageBps: number;
+  priceImpactPct: string;
+  routePlan: unknown[];
+  contextSlot?: number;
+  timeTaken?: number;
+}
+
+interface SwapInstructionsResponse {
+  setupInstructions: SerializedInstruction[];
+  swapInstruction: SerializedInstruction;
+  cleanupInstruction: SerializedInstruction | null;
+  addressLookupTableAddresses: string[];
+}
+
+interface SerializedInstruction {
+  programId: string;
+  accounts: { pubkey: string; isSigner: boolean; isWritable: boolean }[];
+  data: string; // base64
+}
 
 // ── Quote ──────────────────────────────────────────────────────
 
@@ -60,6 +93,66 @@ export function validatePriceImpact(
   return true;
 }
 
+// ── Deserialize Jupiter instruction ────────────────────────────
+
+function deserializeInstruction(
+  ix: SerializedInstruction,
+): TransactionInstruction {
+  return new TxInstruction({
+    programId: new PublicKey(ix.programId),
+    keys: ix.accounts.map((a) => ({
+      pubkey: new PublicKey(a.pubkey),
+      isSigner: a.isSigner,
+      isWritable: a.isWritable,
+    })),
+    data: Buffer.from(ix.data, "base64"),
+  });
+}
+
+// ── Get Jupiter swap instructions ──────────────────────────────
+
+async function getJupiterSwapInstructions(
+  quote: QuoteResponse,
+  vaultStatePda: PublicKey,
+): Promise<SwapInstructionsResponse> {
+  const { data } = await axios.post<SwapInstructionsResponse>(
+    `${JUPITER_API_BASE}/swap-instructions`,
+    {
+      quoteResponse: quote,
+      userPublicKey: vaultStatePda.toBase58(),
+    },
+    {
+      headers: { "x-api-key": env.JUPITER_API_KEY },
+    },
+  );
+
+  return data;
+}
+
+// ── Wrap instruction in Execute CPI ────────────────────────────
+
+function wrapInExecuteCpi(
+  jupIx: TransactionInstruction,
+  vaultStatePda: PublicKey,
+  operator: PublicKey,
+): TransactionInstruction {
+  // Convert Jupiter ix accounts to remaining accounts for Execute CPI
+  // The vault PDA will sign on behalf of itself during CPI
+  const remainingAccounts: AccountMeta[] = jupIx.keys.map((key) => ({
+    pubkey: key.pubkey,
+    isSigner: false, // vault PDA signs via CPI, not directly
+    isWritable: key.isWritable,
+  }));
+
+  return createExecuteInstruction({
+    operator,
+    vaultState: vaultStatePda,
+    targetProgram: jupIx.programId,
+    remainingAccounts,
+    targetInstructionData: jupIx.data as Buffer,
+  });
+}
+
 // ── Execute Swap ───────────────────────────────────────────────
 
 export async function executeJupiterSwap(
@@ -69,6 +162,8 @@ export async function executeJupiterSwap(
   amountLamports: string,
   slippageBps = 50
 ): Promise<string> {
+  const keeper = getKeeper();
+
   // 1. Get quote
   const quote = await getJupiterQuote(
     inputMint,
@@ -84,15 +179,38 @@ export async function executeJupiterSwap(
     );
   }
 
-  // 3. Use GLAM SDK's jupiterSwap — handles CPI wrapping internally
-  const client = getGlamClient(vaultStatePda);
-  const txSig = await client.jupiterSwap.swap({
-    quoteResponse: quote,
-  });
+  // 3. Get Jupiter swap instructions (individual instructions, not a transaction)
+  const swapIxs = await getJupiterSwapInstructions(quote, vaultStatePda);
+
+  // 4. Wrap each instruction in Execute CPI
+  const executeIxs: TransactionInstruction[] = [];
+
+  // Setup instructions (e.g., create ATAs)
+  for (const setupIx of swapIxs.setupInstructions) {
+    const ix = deserializeInstruction(setupIx);
+    executeIxs.push(wrapInExecuteCpi(ix, vaultStatePda, keeper.publicKey));
+  }
+
+  // Main swap instruction
+  const mainIx = deserializeInstruction(swapIxs.swapInstruction);
+  executeIxs.push(wrapInExecuteCpi(mainIx, vaultStatePda, keeper.publicKey));
+
+  // Cleanup instruction (if any)
+  if (swapIxs.cleanupInstruction) {
+    const cleanupIx = deserializeInstruction(swapIxs.cleanupInstruction);
+    executeIxs.push(wrapInExecuteCpi(cleanupIx, vaultStatePda, keeper.publicKey));
+  }
+
+  // 5. Build, sign, and send via versioned tx with ALTs
+  const txSig = await buildAndSendVersionedTx(
+    executeIxs,
+    `Jupiter swap ${inputMint.slice(0, 8)} → ${outputMint.slice(0, 8)}`,
+    swapIxs.addressLookupTableAddresses,
+  );
 
   logger.info(
     { txSig, inputMint, outputMint, amount: amountLamports },
-    "Jupiter swap executed via GLAM SDK"
+    "Jupiter swap executed via Execute CPI",
   );
 
   return txSig;

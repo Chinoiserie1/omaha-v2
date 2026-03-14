@@ -17,8 +17,6 @@ export const SOL_MINT = new PublicKey(
 );
 export const SOL_DECIMALS = 9;
 
-export const GLAM_PROGRAM_ID = new PublicKey(env.GLAM_PROGRAM_ID);
-
 // ── Connection (singleton) ─────────────────────────────────────
 let _connection: Connection | null = null;
 
@@ -96,11 +94,26 @@ export function getFeePayer(): Keypair {
   return _feePayerKeypair;
 }
 
-// ── Vault PDA derivation ───────────────────────────────────────
-export function deriveVaultPda(statePda: PublicKey): PublicKey {
-  const [vaultPda] = PublicKey.findProgramAddressSync(
-    [Buffer.from("vault"), statePda.toBuffer()],
-    GLAM_PROGRAM_ID,
-  );
-  return vaultPda;
+// ── Program Authority Keypair ──────────────────────────────────
+function loadProgramAuthorityKeypair(): Keypair | null {
+  const envKey = env.PROGRAM_AUTHORITY_PRIVATE_KEY;
+  if (!envKey) return null;
+  try {
+    return keypairFromEnv(envKey);
+  } catch (err) {
+    logger.error(
+      { err },
+      "PROGRAM_AUTHORITY_PRIVATE_KEY is set but could not be parsed",
+    );
+    return null;
+  }
+}
+
+const _programAuthorityKeypair = loadProgramAuthorityKeypair();
+
+export function getProgramAuthority(): Keypair {
+  if (!_programAuthorityKeypair) {
+    throw new Error("PROGRAM_AUTHORITY_PRIVATE_KEY is not set");
+  }
+  return _programAuthorityKeypair;
 }

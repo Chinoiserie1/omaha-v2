@@ -1,37 +1,29 @@
-import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { prisma } from "@repo/database";
-import { getGlamClient } from "../solana/client.js";
+import { findPendingWithdrawPda } from "@repo/omaha-programs-sdk";
 import { getConnection } from "../solana/config.js";
 import * as vaultRepo from "../store/vault.repository.js";
 import * as withdrawalRepo from "../store/withdrawal.repository.js";
 import { logger } from "../utils/logger.js";
 
 /**
- * Check if a claim was already consumed on-chain by verifying
- * there is no pending redemption request for this wallet.
+ * Check if a withdrawal was already consumed on-chain by verifying
+ * the pending withdraw PDA no longer exists (closed by FulfillWithdraw).
  */
 export async function checkClaimConsumedOnChain(
   statePda: string,
   walletAddress: string,
 ): Promise<boolean> {
-  const glamClient = getGlamClient(new PublicKey(statePda));
-  const walletPubkey = new PublicKey(walletAddress);
+  const connection = getConnection();
+  const vaultStatePda = new PublicKey(statePda);
+  const withdrawer = new PublicKey(walletAddress);
 
-  try {
-    const pending = await glamClient.invest.fetchPendingRequest(walletPubkey);
+  const [pendingWithdrawPda] = findPendingWithdrawPda(vaultStatePda, withdrawer);
 
-    if (!pending) return true;
+  const accountInfo = await connection.getAccountInfo(pendingWithdrawPda);
 
-    const reqType = pending.requestType;
-    if (typeof reqType === "object" && reqType !== null) {
-      return !("redemption" in reqType);
-    }
-
-    return true;
-  } catch {
-    // fetchPendingRequest throws when no account exists → claim consumed
-    return true;
-  }
+  // If account doesn't exist, the withdrawal was fulfilled (PDA closed)
+  return accountInfo === null;
 }
 
 export type ClaimResult =
@@ -39,11 +31,11 @@ export type ClaimResult =
   | { kind: "already_claimed"; withdrawalId: string };
 
 /**
- * Build an unsigned claim transaction for the user to sign.
- * Only works for CLAIMABLE withdrawal requests.
+ * In the custom vault, FulfillWithdraw transfers base tokens directly
+ * and closes the pending PDA — there is no separate claim step.
  *
- * If the on-chain claim was already consumed (e.g. previous tx landed
- * but backend didn't record it), auto-transitions DB to CLAIMED.
+ * This function checks if the withdrawal was already fulfilled on-chain
+ * and auto-transitions to CLAIMED if so.
  */
 export async function buildClaimTransaction(
   withdrawalId: string,
@@ -51,19 +43,21 @@ export async function buildClaimTransaction(
 ): Promise<ClaimResult> {
   logger.info(
     { withdrawalId, signer: signerPublicKey },
-    "Building claim transaction",
+    "Checking claim status (custom vault — no separate claim tx)",
   );
 
   const withdrawal = await withdrawalRepo.findById(withdrawalId);
   if (!withdrawal) {
-    logger.error({ withdrawalId }, "Withdrawal request not found");
     throw new Error("Withdrawal request not found");
   }
-  if (withdrawal.status !== "CLAIMABLE") {
-    logger.error(
-      { withdrawalId, status: withdrawal.status },
-      "Cannot claim withdrawal in current status",
-    );
+
+  // Already claimed
+  if (withdrawal.status === "CLAIMED") {
+    return { kind: "already_claimed", withdrawalId };
+  }
+
+  // For custom vault, CLAIMABLE should not exist, but handle gracefully
+  if (withdrawal.status !== "CLAIMABLE" && withdrawal.status !== "PROCESSING") {
     throw new Error(
       `Cannot claim withdrawal in status "${withdrawal.status}"`,
     );
@@ -71,80 +65,35 @@ export async function buildClaimTransaction(
 
   const vault = await vaultRepo.findVaultById(withdrawal.vaultId);
   if (!vault?.statePda) {
-    logger.error(
-      { withdrawalId, vaultId: withdrawal.vaultId },
-      "Vault not found or missing state PDA",
-    );
     throw new Error("Vault not found or missing state PDA");
   }
 
-  const signerPubkey = new PublicKey(signerPublicKey);
-  const statePda = new PublicKey(vault.statePda);
-  const glamClient = getGlamClient(statePda);
-  const connection = getConnection();
+  // Check on-chain: if pending PDA is gone, the fulfill already transferred tokens
+  const user = await prisma.user.findUnique({
+    where: { id: withdrawal.userId },
+  });
+  const walletAddress = user?.walletAddress ?? signerPublicKey;
 
-  let claimIx;
-  try {
-    claimIx = await glamClient.invest.txBuilder.claimIx(
-      null,
-      signerPubkey,
+  const consumed = await checkClaimConsumedOnChain(
+    vault.statePda,
+    walletAddress,
+  );
+
+  if (consumed) {
+    logger.info(
+      { withdrawalId },
+      "Withdrawal already fulfilled on-chain — auto-transitioning to CLAIMED",
     );
-  } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-
-    if (msg.includes("No eligible request")) {
-      logger.warn(
-        { withdrawalId, signer: signerPublicKey },
-        "claimIx failed with 'No eligible request' — checking on-chain state",
-      );
-
-      const user = await prisma.user.findUnique({
-        where: { id: withdrawal.userId },
-      });
-      const walletAddress = user?.walletAddress ?? signerPublicKey;
-
-      const consumed = await checkClaimConsumedOnChain(
-        vault.statePda,
-        walletAddress,
-      );
-
-      if (consumed) {
-        logger.info(
-          { withdrawalId },
-          "On-chain claim already consumed — auto-transitioning to CLAIMED",
-        );
-        await withdrawalRepo.updateStatus(withdrawalId, "CLAIMED", {
-          claimedAt: new Date(),
-        });
-        return { kind: "already_claimed", withdrawalId };
-      }
-    }
-
-    throw err;
+    await withdrawalRepo.updateStatus(withdrawalId, "CLAIMED", {
+      claimedAt: new Date(),
+    });
+    return { kind: "already_claimed", withdrawalId };
   }
 
-  const { blockhash } = await connection.getLatestBlockhash("confirmed");
-
-  const transaction = new Transaction();
-  transaction.add(
-    ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
-    ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
-    claimIx,
+  // Pending PDA still exists — fulfillment hasn't happened yet
+  throw new Error(
+    "Withdrawal has not been fulfilled yet. Please wait for the admin to process your withdrawal.",
   );
-  transaction.recentBlockhash = blockhash;
-  transaction.feePayer = signerPubkey;
-
-  // No keeper signature needed — user signs this tx
-  const serialized = transaction
-    .serialize({ requireAllSignatures: false })
-    .toString("base64");
-
-  logger.info(
-    { withdrawalId, signer: signerPublicKey },
-    "Claim transaction built successfully",
-  );
-
-  return { kind: "transaction", transaction: serialized, withdrawalId };
 }
 
 /**
@@ -162,20 +111,16 @@ export async function confirmClaim(
 
   const withdrawal = await withdrawalRepo.findById(withdrawalId);
   if (!withdrawal) {
-    logger.error({ withdrawalId }, "Withdrawal request not found for claim confirmation");
     throw new Error("Withdrawal request not found");
   }
-  if (withdrawal.status !== "CLAIMABLE") {
-    logger.error(
-      { withdrawalId, status: withdrawal.status },
-      "Cannot confirm claim for current status",
-    );
+
+  // Accept both CLAIMABLE and PROCESSING (custom vault skips CLAIMABLE)
+  if (withdrawal.status !== "CLAIMABLE" && withdrawal.status !== "PROCESSING") {
     throw new Error(
       `Cannot confirm claim for status "${withdrawal.status}"`,
     );
   }
 
-  // Wait for tx to land on-chain (same pattern as confirm-redeem)
   const connection = getConnection();
   const { blockhash, lastValidBlockHeight } =
     await connection.getLatestBlockhash("confirmed");
@@ -185,10 +130,6 @@ export async function confirmClaim(
   );
 
   if (confirmation.value.err) {
-    logger.error(
-      { withdrawalId, txSignature, onChainError: confirmation.value.err },
-      "Claim transaction failed on-chain",
-    );
     throw new Error(
       `Claim transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`,
     );

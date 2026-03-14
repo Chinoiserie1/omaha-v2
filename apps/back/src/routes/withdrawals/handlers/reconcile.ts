@@ -2,8 +2,11 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { PublicKey } from "@solana/web3.js";
 import { prisma } from "@repo/database";
 import { reconcileWithdrawalSchema, type ApiResponse } from "@repo/shared";
-import { getGlamClient } from "../../../solana/client.js";
-import { SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
+import {
+  findPendingWithdrawPda,
+  deserializePendingWithdraw,
+} from "@repo/omaha-programs-sdk";
+import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import { enqueueFulfillJob } from "../../../queue/withdrawal-queue.js";
@@ -14,13 +17,6 @@ type ReconcileRequest = FastifyRequest<{
   Body: { walletAddress: string };
 }>;
 
-/**
- * Detect on-chain/DB divergence and auto-reconcile.
- *
- * When a queuedRedeem tx lands on-chain but the DB has no matching
- * withdrawal record, this endpoint creates the missing PROCESSING
- * record and enqueues a fulfill job so the regular pipeline takes over.
- */
 export async function reconcileWithdrawal(
   request: ReconcileRequest,
   reply: FastifyReply,
@@ -37,7 +33,6 @@ export async function reconcileWithdrawal(
 
   const { walletAddress } = bodyResult.data;
 
-  // Resolve user
   const user = await prisma.user.findUnique({
     where: { privyId: request.privyUserId },
   });
@@ -48,7 +43,6 @@ export async function reconcileWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Verify wallet belongs to authenticated user
   if (user.walletAddress && user.walletAddress !== walletAddress) {
     return reply.status(403).send({
       success: false,
@@ -56,7 +50,6 @@ export async function reconcileWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Lookup vault
   const vault = await vaultRepo.findVaultById(vaultId);
   if (!vault?.statePda) {
     return reply.status(404).send({
@@ -65,7 +58,6 @@ export async function reconcileWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Check on-chain state
   let walletPubkey: PublicKey;
   try {
     walletPubkey = new PublicKey(walletAddress);
@@ -77,40 +69,22 @@ export async function reconcileWithdrawal(
   }
 
   const statePda = new PublicKey(vault.statePda);
-  const glamClient = getGlamClient(statePda);
+  const connection = getConnection();
 
-  let pending: Awaited<
-    ReturnType<typeof glamClient.invest.fetchPendingRequest>
-  > | null = null;
+  const [pendingWithdrawPda] = findPendingWithdrawPda(statePda, walletPubkey);
+  const pendingAccount = await connection.getAccountInfo(pendingWithdrawPda);
 
-  try {
-    pending = await glamClient.invest.fetchPendingRequest(walletPubkey);
-  } catch (err) {
-    logger.debug({ err, walletAddress, vaultId }, "Error fetching pending request");
-  }
-
-  // Check if on-chain pending is a REDEMPTION
-  let isRedemption = false;
-  if (pending) {
-    const reqType = pending.requestType;
-    if (typeof reqType === "object" && reqType !== null) {
-      isRedemption = "redemption" in reqType;
-    }
-  }
-
-  if (!pending || !isRedemption) {
+  if (!pendingAccount) {
     logger.debug(
-      { vaultId, userId: user.id, hasPending: !!pending, isRedemption },
-      "Reconcile: no on-chain REDEMPTION pending — no divergence",
+      { vaultId, userId: user.id },
+      "Reconcile: no on-chain pending withdraw — no divergence",
     );
     return { success: true, data: null };
   }
 
-  // Check if an active withdrawal already exists (already reconciled)
-  const existing = await withdrawalRepo.findActiveByUserAndVault(
-    user.id,
-    vaultId,
-  );
+  const pendingWithdraw = deserializePendingWithdraw(Buffer.from(pendingAccount.data));
+
+  const existing = await withdrawalRepo.findActiveByUserAndVault(user.id, vaultId);
   if (existing) {
     logger.info(
       { withdrawalId: existing.id, vaultId, userId: user.id },
@@ -119,39 +93,28 @@ export async function reconcileWithdrawal(
     return { success: true, data: existing };
   }
 
-  // Divergence confirmed — create the missing DB record
-  const onChainAmount = pending.outgoing.toNumber() / SHARE_TOKEN_MULTIPLIER;
-  const onChainCreatedAt = pending.createdAt.toNumber();
+  const onChainAmount = Number(pendingWithdraw.shares) / SHARE_TOKEN_MULTIPLIER;
   const now = new Date();
+  const idempotencyKey = `reconciled_${user.id}_${vaultId}_${Date.now()}`;
+  const batchId = `reconciled_${vaultId}_${Date.now()}`;
 
-  // Deterministic key based on on-chain createdAt to prevent duplicates
-  const idempotencyKey = `reconciled_${user.id}_${vaultId}_${onChainCreatedAt}`;
-  const batchId = `reconciled_${vaultId}_${onChainCreatedAt}`;
-
-  // Check idempotency — prevents race condition with concurrent requests
   const existingByKey = await withdrawalRepo.findByIdempotencyKey(idempotencyKey);
   if (existingByKey) {
-    logger.info(
-      { withdrawalId: existingByKey.id, idempotencyKey },
-      "Reconcile: duplicate request caught by idempotency key",
-    );
     return { success: true, data: existingByKey };
   }
 
   const withdrawal = await withdrawalRepo.createRequest({
     userId: user.id,
-    vaultId: vaultId,
+    vaultId,
     amount: onChainAmount,
     idempotencyKey,
     batchId,
   });
 
-  // Transition directly to PROCESSING since the on-chain redeem already landed
   const updated = await withdrawalRepo.updateStatus(withdrawal.id, "PROCESSING", {
     processingAt: now,
   });
 
-  // Enqueue fulfill job to transition PROCESSING → CLAIMABLE
   await enqueueFulfillJob(vaultId);
 
   logger.info(
@@ -160,7 +123,6 @@ export async function reconcileWithdrawal(
       vaultId,
       userId: user.id,
       amount: onChainAmount,
-      idempotencyKey,
     },
     "Reconcile: created PROCESSING record for on-chain divergence",
   );

@@ -12,7 +12,7 @@ function formatVaultSummary(
     vaultName: string;
     quantId: string;
     statePda: string;
-    glamVaultPda: string | null;
+    shareMint: string | null;
     mintAddress: string | null;
     isActive: boolean;
     about: string;
@@ -27,8 +27,8 @@ function formatVaultSummary(
     description: vault.about,
     quantUsername: vault.quant?.user?.twitterUsername,
     quantId: vault.quantId,
-    glamStatePda: vault.statePda,
-    glamVaultPda: vault.glamVaultPda,
+    statePda: vault.statePda,
+    shareMint: vault.shareMint,
     mintAddress: vault.mintAddress,
     isActive: vault.isActive,
     quantAvatarUrl: vault.quant?.user?.profileImageUrl,

@@ -161,14 +161,14 @@ model Vault {
   id                 String              @id @default(cuid())
   quantId            String              @unique
   quant              Quant               @relation(fields: [quantId], references: [id], onDelete: Cascade)
-  glamVaultPda       String?             @unique
   statePda           String              @unique
+  shareMint          String?             @unique
+  baseTokenAta       String?
   mintAddress        String?             @unique
   vaultName          String
   vaultSymbol        String
   dryRun             Boolean             @default(true)
   isActive           Boolean             @default(true)
-  jupiterEnabled     Boolean             @default(false)
   about              String              @default("")
   dataSource         String              @default("")
   performanceCalc    String              @default("")

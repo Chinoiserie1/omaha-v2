@@ -2,8 +2,8 @@ import { View, Text } from "react-native";
 import { memo } from "react";
 
 interface VaultInfoProps {
-  glamStatePda: string;
-  glamVaultPda: string | null;
+  statePda: string;
+  shareMint: string | null;
   vaultSymbol: string;
   quantBio: string | null;
 }
@@ -23,8 +23,8 @@ function InfoRow({ label, value }: { label: string; value: string }) {
 }
 
 export const VaultInfo = memo(function VaultInfo({
-  glamStatePda,
-  glamVaultPda,
+  statePda,
+  shareMint,
   vaultSymbol,
   quantBio,
 }: VaultInfoProps) {
@@ -34,8 +34,8 @@ export const VaultInfo = memo(function VaultInfo({
         Technical Details
       </Text>
       <InfoRow label="Symbol" value={vaultSymbol} />
-      <InfoRow label="State PDA" value={glamStatePda} />
-      <InfoRow label="Vault PDA" value={glamVaultPda ?? "Not yet created"} />
+      <InfoRow label="State PDA" value={statePda} />
+      <InfoRow label="Share Mint" value={shareMint ?? "Not yet created"} />
       {quantBio ? <InfoRow label="Quant Bio" value={quantBio} /> : null}
     </View>
   );

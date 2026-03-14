@@ -1,6 +1,7 @@
 import {
   type AddressLookupTableAccount,
   ComputeBudgetProgram,
+  type Keypair,
   PublicKey,
   type TransactionInstruction,
   TransactionMessage,
@@ -40,7 +41,8 @@ async function resolveAltAccounts(
 export async function buildAndSendVersionedTx(
   instructions: TransactionInstruction[],
   description: string,
-  altAddresses: string[] = []
+  altAddresses: string[] = [],
+  additionalSigners: Keypair[] = [],
 ): Promise<string> {
   const connection = getConnection();
   const keeper = getKeeper();
@@ -61,7 +63,7 @@ export async function buildAndSendVersionedTx(
   }).compileToV0Message(altAccounts.length > 0 ? altAccounts : undefined);
 
   const tx = new VersionedTransaction(messageV0);
-  tx.sign([keeper]);
+  tx.sign([keeper, ...additionalSigners]);
 
   logger.info({ description }, "Sending transaction...");
   const sig = await connection.sendTransaction(tx, { skipPreflight: false });

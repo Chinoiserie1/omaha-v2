@@ -1,12 +1,7 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { PublicKey } from "@solana/web3.js";
 import type { ApiResponse } from "@repo/shared";
 import { prisma } from "@repo/database";
-import {
-  createQuantVault,
-  enableJupiterIntegration,
-} from "../../../solana/vault-setup.js";
-import { deriveVaultPda } from "../../../solana/config.js";
+import { createQuantVault } from "../../../solana/vault-setup.js";
 import { logger } from "../../../utils/logger.js";
 
 type CreateVaultRequest = FastifyRequest<{
@@ -26,7 +21,6 @@ export async function createVault(
     } satisfies ApiResponse<never>);
   }
 
-  // 1. Look up Quant
   const quant = await prisma.quant.findUnique({
     where: { id: quantId },
     include: { user: true },
@@ -38,7 +32,6 @@ export async function createVault(
     } satisfies ApiResponse<never>);
   }
 
-  // 2. Check if vault already exists
   const existing = await prisma.vault.findUnique({
     where: { quantId: quant.id },
   });
@@ -52,18 +45,10 @@ export async function createVault(
   const username = quant.user.twitterUsername ?? quantId;
 
   try {
-    // 3. Create GLAM vault on-chain
     logger.info({ quantId, username }, "Creating vault via API");
-    const { txSig, statePda } = await createQuantVault(username);
+    const { txSig, statePda, shareMint, baseTokenAta } =
+      await createQuantVault(username);
 
-    // 4. Enable Jupiter integration
-    const jupTx = await enableJupiterIntegration(new PublicKey(statePda));
-    logger.info({ jupTx }, "Jupiter enabled on new vault");
-
-    // 5. Derive glamVaultPda
-    const glamVaultPda = deriveVaultPda(new PublicKey(statePda)).toBase58();
-
-    // 6. Insert Vault row in DB
     const vaultName = `quant-${username}`;
     const vaultSymbol = `Q-${username.slice(0, 6).toUpperCase()}`;
 
@@ -71,11 +56,11 @@ export async function createVault(
       data: {
         quantId: quant.id,
         statePda,
-        glamVaultPda,
+        shareMint,
+        baseTokenAta,
         vaultName,
         vaultSymbol,
         dryRun,
-        jupiterEnabled: true,
       },
     });
 
@@ -86,7 +71,7 @@ export async function createVault(
       data: {
         id: vault.id,
         statePda,
-        glamVaultPda,
+        shareMint,
         vaultName,
         vaultSymbol,
         dryRun,

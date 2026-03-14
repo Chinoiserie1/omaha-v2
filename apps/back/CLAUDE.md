@@ -11,7 +11,7 @@
 4. **One-time fixes must be removed after use.** No temporary workarounds in the codebase.
 5. **Always include `prisma migrate deploy`** in the build script of `package.json`.
 6. **Use cron jobs, not infinite loops.** 1-service architecture with embedded node-cron.
-7. **Never assume zero fees for vaults.** Always explicitly set fee params.
+7. **Never assume zero fees for custom vaults.** Always explicitly set fee params.
 8. **Crypto markets are 24/7/365.** Every calendar date should have a price. Never assume weekend/holiday gaps in price data. If a date is missing, it's genuinely missing data that needs fetching — not a market closure.
 
 ## Architecture Overview
@@ -23,7 +23,7 @@ Quick summary: Tweets → Classify → Thesis → Rebalance → Swap
 ```
 CRON_FETCH_TWEETS  →  Twitter API  →  Tweet table (per Quant)
 CRON_RUN_ALGO      →  Classify (LLM) + Thesis (LLM)  →  PortfolioSnapshot (per Quant)
-CRON_REBALANCE     →  Delta computation  →  Jupiter swaps via GLAM vault (per Vault)
+CRON_REBALANCE     →  Delta computation  →  Jupiter swaps via Execute CPI (per Vault)
 CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 ```
 
@@ -47,7 +47,7 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 - **DB**: PostgreSQL via Prisma ORM
 - **Scheduling**: node-cron (embedded, not separate Railway services)
 - **LLM**: Claude Haiku via Anthropic API
-- **Blockchain**: Solana (web3.js, GLAM SDK, Jupiter API)
+- **Blockchain**: Solana (web3.js, omaha-programs-sdk, Jupiter API)
 - **Deploy**: Railway (single service)
 
 ## File Layout
@@ -70,7 +70,7 @@ src/
 │   ├── fund-sol-tx.builder.ts  # Transaction builder with fee payer partial sign
 │   └── jupiter-instruction.util.ts  # Shared Jupiter instruction deserializer
 ├── store/          # Prisma repository layer
-├── solana/         # On-chain interaction (GLAM, Jupiter swaps)
+├── solana/         # On-chain interaction (vault program, Jupiter swaps)
 └── utils/          # Shared utilities (logger, LLM client, env)
 ```
 
@@ -104,7 +104,7 @@ Note: Some pre-existing errors (ioredis, @fastify/websocket, bullmq types) are k
 - Update `README.md` when changes affect architecture, data sources, or constraints.
 - Nadar deploys on Railway. Use env vars from `.env`.
 - M2 MacBook with x86 Homebrew at `/usr/local` — use `arch -x86_64` for build issues.
-- When creating GLAM vaults, always confirm token name/symbol with Nadar first.
+- When creating vaults, always confirm token name/symbol with Nadar first.
 
 ## Configuration
 

@@ -1,15 +1,15 @@
 # Withdraw from Vault Flow
 
-> Redeem vault shares → fulfill batch → claim USDC back to wallet.
+> Redeem vault shares → fulfill batch → tokens returned to wallet.
 
-Users invest USDC into Quant vaults (GLAM Protocol tokenized vaults on Solana). When they want to exit a position, this multi-step withdrawal flow redeems their vault shares and returns USDC to their Privy embedded wallet. The process uses GLAM's queued redemption model with asynchronous batch fulfillment.
+Users invest USDC into Quant vaults (Omaha Vault program tokenized vaults on Solana). When they want to exit a position, this two-step withdrawal flow redeems their vault shares and returns USDC to their Privy embedded wallet. The process uses asynchronous batch fulfillment where the keeper fulfills and transfers base tokens directly in a single step.
 
 ## Status Lifecycle
 
 ```
-REQUESTED → PROCESSING → CLAIMABLE → CLAIMED
-                │              │
-              FAILED         FAILED
+REQUESTED → PROCESSING → CLAIMED
+                │
+              FAILED
                 │
               REMOVED (soft-delete for retry)
 ```
@@ -18,8 +18,7 @@ REQUESTED → PROCESSING → CLAIMABLE → CLAIMED
 | --- | --- |
 | `REQUESTED` | User submitted unsigned redeem tx, DB record created |
 | `PROCESSING` | User signed & submitted redeem tx on-chain, backend confirmed |
-| `CLAIMABLE` | Backend fulfilled the batch (vault manager signed), ready to claim |
-| `CLAIMED` | User claimed tokens, withdrawal complete |
+| `CLAIMED` | Backend fulfilled the batch (keeper signed), base tokens transferred directly to user wallet |
 | `FAILED` | Error during processing or fulfillment, user can retry |
 | `REMOVED` | Soft-deleted (idempotency key reassigned), allows immediate retry |
 
@@ -53,7 +52,7 @@ REQUESTED → PROCESSING → CLAIMABLE → CLAIMED
 │  4. Build unsigned redeem transaction:                        │
 │     ├── ComputeBudgetProgram.setComputeUnitLimit(400k)       │
 │     ├── ComputeBudgetProgram.setComputeUnitPrice(50k µL)     │
-│     └── glamClient.invest.txBuilder.queuedRedeemIx()         │
+│     └── createRequestWithdrawInstruction()                   │
 │  5. Return { transaction (base64), withdrawalId }            │
 └──────────────┬───────────────────────────────────────────────┘
                │
@@ -117,64 +116,30 @@ REQUESTED → PROCESSING → CLAIMABLE → CLAIMED
 │                                                              │
 │  processFulfillBatch(vaultId):                                │
 │  1. Get ALL PROCESSING withdrawals for this vault            │
-│  2. glamClient.price.priceVaultIxs() (required before fill)  │
-│  3. glamClient.invest.txBuilder.fulfillIx()                  │
-│  4. Sign with keeper keypair (vault manager)                 │
-│  5. Send tx to Solana, confirm on-chain                      │
-│  6. Update ALL statuses: PROCESSING → CLAIMABLE             │
-│  7. Broadcast WS event per user: withdrawal:status → CLAIMABLE│
+│  2. createFulfillWithdrawInstruction()                       │
+│  3. Sign with keeper keypair (vault manager)                 │
+│  4. Send tx to Solana, confirm on-chain                      │
+│  5. Base tokens transferred directly to each user wallet     │
+│  6. Update ALL statuses: PROCESSING → CLAIMED               │
+│  7. Broadcast WS event per user: withdrawal:status → CLAIMED │
 │                                                              │
 │  Retries: 3 attempts, exponential backoff (5s base)          │
 │  Concurrency: 1 per vault (sequential processing)            │
 └──────────────┬───────────────────────────────────────────────┘
                │
-               │  WS notification → user sees "Claim" card
+               │  WS notification → user sees "Claimed" status
                ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  MOBILE APP                                                  │
 │                                                              │
-│  WithdrawalClaimCard appears                                 │
-│  ├── "Claim Funds" button                                    │
-│  └── useClaimWithdrawal() mutation fires                     │
-│       ↓                                                      │
-│  STEP 4a: GET unsigned claim tx                              │
-│  GET /api/withdrawals/{withdrawalId}/claim                   │
-│  { signerPublicKey }                                         │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               ▼
-┌──────────────────────────────────────────────────────────────┐
-│  BACKEND                                                     │
-│                                                              │
-│  buildClaimTransaction():                                    │
-│  1. Verify status = CLAIMABLE and user owns withdrawal       │
-│  2. Build unsigned claim transaction:                        │
-│     ├── ComputeBudgetProgram.setComputeUnitLimit(400k)       │
-│     ├── ComputeBudgetProgram.setComputeUnitPrice(50k µL)     │
-│     └── glamClient.invest.txBuilder.claimIx()                │
-│  3. Return { transaction (base64), withdrawalId }            │
-└──────────────┬───────────────────────────────────────────────┘
-               │
-               │  Unsigned transaction (base64)
-               ▼
-┌──────────────────────────────────────────────────────────────┐
-│  MOBILE APP                                                  │
-│                                                              │
-│  STEP 4b: SIGN & CONFIRM CLAIM                              │
-│  1. Deserialize transaction from base64                      │
-│  2. Privy wallet signs (user signature)                      │
-│  3. Send to Solana RPC (skipPreflight: true)                 │
-│  4. Wait for on-chain confirmation                           │
-│  5. POST /api/withdrawals/{withdrawalId}/confirm-claim       │
-│     { txSignature }                                          │
-│  6. Show success toast                                       │
-│  7. Invalidate portfolio query (refresh balances)            │
+│  Withdrawal complete — tokens in user wallet                 │
+│  Invalidate portfolio query (refresh balances)               │
 └──────────────────────────────────────────────────────────────┘
 ```
 
 ## Transaction Structure
 
-Three separate Solana transactions across the flow:
+Two separate Solana transactions across the flow:
 
 ### 1. Redeem Transaction (user signs)
 
@@ -182,7 +147,7 @@ Three separate Solana transactions across the flow:
 | --- | --- | --- |
 | 1 | `setComputeUnitLimit(400k)` | Reserve compute units |
 | 2 | `setComputeUnitPrice(50k µLamports)` | Priority fee for inclusion |
-| 3 | `glamClient.invest.queuedRedeemIx()` | Queue share redemption in GLAM vault |
+| 3 | `createRequestWithdrawInstruction()` | Queue share redemption in Omaha Vault |
 
 **Signers:** User wallet only (signs on device via Privy)
 **Fee payer:** User's wallet
@@ -191,22 +156,10 @@ Three separate Solana transactions across the flow:
 
 | # | Instruction | Purpose |
 | --- | --- | --- |
-| 1 | `glamClient.price.priceVaultIxs()` | Update vault NAV before fulfillment |
-| 2 | `glamClient.invest.fulfillIx()` | Process batch redemption |
+| 1 | `createFulfillWithdrawInstruction()` | Process batch redemption and transfer base tokens directly to user wallets |
 
 **Signers:** Keeper keypair only (vault manager, signs on backend)
 **Fee payer:** Keeper (platform pays)
-
-### 3. Claim Transaction (user signs)
-
-| # | Instruction | Purpose |
-| --- | --- | --- |
-| 1 | `setComputeUnitLimit(400k)` | Reserve compute units |
-| 2 | `setComputeUnitPrice(50k µLamports)` | Priority fee for inclusion |
-| 3 | `glamClient.invest.claimIx()` | Claim redeemed USDC to user wallet |
-
-**Signers:** User wallet only (signs on device via Privy)
-**Fee payer:** User's wallet
 
 ## Batch Window & Delayed Fulfillment (Deep Dive)
 
@@ -260,8 +213,8 @@ Result: **one delayed job** waiting in Redis, scheduled to fire at 10:00.
 The fulfill job payload contains only `{ vaultId }` — it does NOT carry individual withdrawal IDs. When the delayed job fires, the worker calls `processFulfillBatch(vaultId)`, which:
 
 1. **Queries the DB** for ALL records with `status = "PROCESSING"` and `vaultId = vaultId`
-2. Calls GLAM's `fulfillIx()` — a single on-chain instruction that processes the vault's entire redemption queue
-3. Updates ALL matched records to `CLAIMABLE` in one batch DB update
+2. Calls `createFulfillWithdrawInstruction()` — a single on-chain instruction that processes the vault's entire redemption queue and transfers base tokens directly to each user's wallet
+3. Updates ALL matched records to `CLAIMED` in one batch DB update
 4. Sends a WebSocket notification to each user individually
 
 ```
@@ -278,14 +231,14 @@ Worker picks up job
   → processFulfillBatch("vaultX")
   → SELECT * FROM withdrawal WHERE vault = "vaultX" AND status = "PROCESSING"
   → finds rows A, B, C
-  → ONE fulfillIx() on-chain tx
-  → UPDATE rows A, B, C → CLAIMABLE
+  → ONE createFulfillWithdrawInstruction() on-chain tx
+  → UPDATE rows A, B, C → CLAIMED
   → WS notify User A, User B, User C
 ```
 
 ### Why this works
 
-- **GLAM's `fulfillIx()`** operates on the vault level, not per-user. It processes all queued redemptions for the vault in a single instruction. The batching doesn't require passing individual amounts — the on-chain program knows the full queue.
+- **`createFulfillWithdrawInstruction()`** operates on the vault level, not per-user. It processes all queued redemptions for the vault in a single instruction and transfers base tokens directly. The batching doesn't require passing individual amounts — the on-chain program knows the full queue.
 - **The DB is the source of truth** for which requests to transition. The BullMQ job is just a trigger — it says "go process vault X now" and the worker collects everything at execution time.
 - **Late arrivals still get caught.** If User D confirms a redeem at 09:59 (just before the window closes), their DB row is `PROCESSING` when the job fires at 10:00, so they're included in the same batch.
 
@@ -304,7 +257,7 @@ await enqueueFulfillJob(req.vaultId, { delayMs: 0 });
 | `queue/batch-utils.ts` | `computeBatchId()` — deterministic slot ID; `remainingBatchWindowMs()` — delay calc |
 | `queue/withdrawal-queue.ts` | `enqueueFulfillJob()` — enqueue with delay + dedup via jobId |
 | `queue/withdrawal-worker.ts` | Picks up delayed job, calls `processFulfillBatch()` |
-| `services/withdrawal.service.ts` | `processFulfillBatch()` — queries ALL PROCESSING rows, one `fulfillIx`, batch update |
+| `services/withdrawal.service.ts` | `processFulfillBatch()` — queries ALL PROCESSING rows, one `createFulfillWithdrawInstruction`, batch update |
 | `store/withdrawal.repository.ts` | `findPendingFulfill()` — `WHERE vault = X AND status = PROCESSING` |
 | `cron/recovery-withdrawals.ts` | Re-enqueues stuck records with `delayMs: 0` |
 
@@ -314,8 +267,6 @@ await enqueueFulfillJob(req.vaultId, { delayMs: 0 });
 | --- | --- | --- | --- | --- |
 | POST | `/api/withdrawals/{vaultId}/request` | Start withdrawal | `{ amount, signerPublicKey }` | `{ transaction, withdrawalId }` |
 | POST | `/api/withdrawals/{id}/confirm-redeem` | Confirm redeem tx | `{ txSignature }` | `{ withdrawalId, status }` |
-| GET | `/api/withdrawals/{id}/claim` | Get claim tx | `{ signerPublicKey }` | `{ transaction, withdrawalId }` |
-| POST | `/api/withdrawals/{id}/confirm-claim` | Confirm claim tx | `{ txSignature }` | `{ withdrawalId, status }` |
 | GET | `/api/withdrawals/{id}/status` | Poll status | — | `WithdrawalRequest` |
 | GET | `/api/withdrawals` | List user withdrawals | — | `WithdrawalRequest[]` |
 | POST | `/api/withdrawals/{vaultId}/reconcile` | Fix DB/chain drift | `{ walletAddress }` | `WithdrawalRequest` |
@@ -330,7 +281,7 @@ await enqueueFulfillJob(req.vaultId, { delayMs: 0 });
 | Payload | `{ withdrawalId, status, ...fields }` |
 | Heartbeat | Server pings every 30s |
 
-Events fire on transitions: `PROCESSING`, `CLAIMABLE`, `CLAIMED`, `FAILED`.
+Events fire on transitions: `PROCESSING`, `CLAIMED`, `FAILED`.
 
 ## Recovery Mechanisms
 
@@ -365,8 +316,8 @@ For `FAILED` withdrawals:
 | Constraint | Value | Rationale |
 | --- | --- | --- |
 | Batch window | 10 minutes (default) | Delay fulfill to batch multiple redeems into one tx |
-| Share token decimals | 6 (×1,000,000) | GLAM vault share token precision |
-| Compute budget | 400,000 CU | Sufficient for GLAM instructions |
+| Share token decimals | 6 (×1,000,000) | Omaha Vault share token precision |
+| Compute budget | 400,000 CU | Sufficient for vault instructions |
 | Priority fee | 50,000 µLamports | Configurable, ensures inclusion |
 | Fulfill concurrency | 1 per vault | Prevents race conditions |
 | Fulfill retries | 3 attempts | Exponential backoff (5s base) |
@@ -393,14 +344,11 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 | `apps/back/src/routes/withdrawals/index.ts` | Route registration (auth middleware) |
 | `apps/back/src/routes/withdrawals/handlers/request.ts` | Build unsigned redeem tx, create DB record |
 | `apps/back/src/routes/withdrawals/handlers/confirm-redeem.ts` | Verify redeem on-chain, enqueue fulfill |
-| `apps/back/src/routes/withdrawals/handlers/claim.ts` | Build unsigned claim tx |
-| `apps/back/src/routes/withdrawals/handlers/confirm-claim.ts` | Verify claim on-chain, finalize |
 | `apps/back/src/routes/withdrawals/handlers/reconcile.ts` | Fix DB/chain divergence |
 | `apps/back/src/routes/withdrawals/handlers/retry.ts` | Retry failed withdrawals |
 | `apps/back/src/routes/withdrawals/handlers/status.ts` | Fetch withdrawal status |
 | `apps/back/src/routes/withdrawals/handlers/list.ts` | List user withdrawals |
-| `apps/back/src/services/withdrawal.service.ts` | Batch fulfillment logic (GLAM fulfill) |
-| `apps/back/src/services/withdrawal-claim.service.ts` | Claim tx builder + confirm |
+| `apps/back/src/services/withdrawal.service.ts` | Batch fulfillment logic (FulfillWithdraw) |
 | `apps/back/src/store/withdrawal.repository.ts` | Data access layer (Prisma queries) |
 | `apps/back/src/queue/withdrawal-queue.ts` | BullMQ job queue + delayed enqueue with dedup |
 | `apps/back/src/queue/withdrawal-worker.ts` | Worker: process fulfill batch |
@@ -421,10 +369,8 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 | File | Responsibility |
 | --- | --- |
 | `apps/native/components/vault/WithdrawScreen.tsx` | Withdrawal form, timeline, status cards |
-| `apps/native/components/vault/WithdrawalClaimCard.tsx` | "Claim Funds" action card |
 | `apps/native/components/vault/WithdrawalFailedCard.tsx` | Error display + retry button |
 | `apps/native/hooks/mutations/use-request-withdrawal.ts` | Request + sign + confirm-redeem mutation |
-| `apps/native/hooks/mutations/use-claim-withdrawal.ts` | Claim + sign + confirm-claim mutation |
 | `apps/native/hooks/mutations/use-retry-withdrawal.ts` | Retry failed withdrawal mutation |
 | `apps/native/hooks/mutations/use-reconcile-withdrawal.ts` | Reconcile DB/chain mutation |
 | `apps/native/hooks/queries/use-withdrawals.ts` | List + status polling queries |
@@ -432,13 +378,13 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 
 ## Key Design Decisions
 
-1. **Three separate transactions** — Unlike Fund SOL (single tx with partial signing), withdrawals use three independent transactions because GLAM's queued redemption model requires the vault manager (keeper) to fulfill between the user's redeem and claim. This makes the flow asynchronous but safer — no single tx holds all authority.
+1. **Two separate transactions** — The Omaha Vault program merges fulfill and claim into a single `FulfillWithdraw` step. The keeper fulfills all queued redemptions and transfers base tokens directly to each user's wallet in one transaction, eliminating the separate claim step and making the flow simpler.
 
 2. **Batch window with idempotency** — Within a 10-minute window (configurable via `WITHDRAWAL_BATCH_WINDOW_MS`), duplicate requests from the same user for the same vault are merged via `sha256(userId, vaultId, batchId)`. This prevents accidental double-redemptions from network retries or UI re-taps.
 
 3. **Delayed fulfillment via Redis/BullMQ** — The fulfill step runs as a delayed background job. When a redeem is confirmed, `enqueueFulfillJob()` schedules a job with `delay = remainingBatchWindowMs(now)` — the time left until the current batch window closes. The job ID is deterministic (`fulfill-{vaultId}-{windowSlot}`), so BullMQ auto-deduplicates: if a second user confirms a redeem for the same vault within the same window, no new job is created. When the window closes, the single delayed job fires, the worker calls `processFulfillBatch(vaultId)` which collects ALL `PROCESSING` records for that vault and fulfills them in one on-chain transaction. This saves gas and reduces vault rebalance operations. Recovery jobs (stuck `PROCESSING` records) bypass the delay with `delayMs: 0` since they're already past the window.
 
-4. **WebSocket + polling hybrid** — The mobile app listens to WebSocket events for instant status transitions (PROCESSING → CLAIMABLE) but also polls every 10-30s as a fallback. This handles cases where WS connections drop on mobile networks.
+4. **WebSocket + polling hybrid** — The mobile app listens to WebSocket events for instant status transitions (PROCESSING → CLAIMED) but also polls every 10-30s as a fallback. This handles cases where WS connections drop on mobile networks.
 
 5. **Soft-delete for retry-ability** — Failed withdrawals are marked `REMOVED` (not hard-deleted) with the idempotency key reassigned. This lets users retry immediately within the same batch window without hitting uniqueness constraints.
 

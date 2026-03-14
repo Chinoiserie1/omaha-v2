@@ -1,10 +1,15 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { PublicKey, Transaction } from "@solana/web3.js";
-import BN from "bn.js";
+import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
+import { getAssociatedTokenAddress } from "@solana/spl-token";
 import { prisma } from "@repo/database";
 import { type ApiResponse } from "@repo/shared";
-import { getGlamClient } from "../../../solana/client.js";
-import { getConnection, getKeeper, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
+import {
+  createRequestWithdrawInstruction,
+  findPendingWithdrawPda,
+  findShareMintPda,
+  TOKEN_2022_PROGRAM_ID,
+} from "@repo/omaha-programs-sdk";
+import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { env } from "../../../utils/env.js";
@@ -14,10 +19,6 @@ type RetryRequest = FastifyRequest<{
   Params: { withdrawalId: string };
 }>;
 
-/**
- * Retry a FAILED withdrawal: reset to REQUESTED, build a new unsigned
- * queuedRedeem tx for the user to sign.
- */
 export async function retryWithdrawal(
   request: RetryRequest,
   reply: FastifyReply,
@@ -26,14 +27,12 @@ export async function retryWithdrawal(
 
   const withdrawal = await withdrawalRepo.findById(withdrawalId);
   if (!withdrawal) {
-    logger.error({ withdrawalId }, "Withdrawal not found for retry");
     return reply.status(404).send({
       success: false,
       error: "Withdrawal not found",
     } satisfies ApiResponse<never>);
   }
 
-  // Verify ownership and fetch wallet address
   const user = await prisma.user.findUnique({
     where: { privyId: request.privyUserId },
     select: { id: true, walletAddress: true },
@@ -74,36 +73,50 @@ export async function retryWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  // Reset to REQUESTED
   await withdrawalRepo.updateStatus(withdrawalId, "REQUESTED", {
     failedAt: null,
     errorMessage: null,
     redeemTxSignature: null,
   });
 
-  // Build unsigned queuedRedeem tx
   try {
     const signerPubkey = new PublicKey(user.walletAddress);
     const statePda = new PublicKey(vault.statePda);
-    const glamClient = getGlamClient(statePda);
-    const keeper = getKeeper();
     const connection = getConnection();
 
-    const amountBN = new BN(Math.round(withdrawal.amount * SHARE_TOKEN_MULTIPLIER));
+    const shares = BigInt(Math.round(withdrawal.amount * SHARE_TOKEN_MULTIPLIER));
 
-    const priceIxs = await glamClient.price.priceVaultIxs();
-    const redeemIx = await glamClient.invest.txBuilder.queuedRedeemIx(
-      amountBN,
+    const shareMint = vault.shareMint
+      ? new PublicKey(vault.shareMint)
+      : findShareMintPda(statePda)[0];
+
+    const withdrawerShareAta = await getAssociatedTokenAddress(
+      shareMint,
       signerPubkey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
     );
+    const [pendingWithdraw] = findPendingWithdrawPda(statePda, signerPubkey);
+
+    const redeemIx = createRequestWithdrawInstruction({
+      withdrawer: signerPubkey,
+      withdrawerShareAta,
+      shareMint,
+      vaultState: statePda,
+      pendingWithdraw,
+      shares,
+    });
 
     const { blockhash } = await connection.getLatestBlockhash("confirmed");
 
     const transaction = new Transaction();
-    transaction.add(...priceIxs, redeemIx);
+    transaction.add(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+      redeemIx,
+    );
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = signerPubkey;
-    transaction.partialSign(keeper);
 
     const serialized = transaction
       .serialize({ requireAllSignatures: false })

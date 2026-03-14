@@ -34,7 +34,6 @@ async function run(): Promise<void> {
   console.info(`Vault: ${vault.vaultName} (${vault.statePda})`);
   console.info(`  dryRun: ${vault.dryRun}`);
   console.info(`  isActive: ${vault.isActive}`);
-  console.info(`  jupiterEnabled: ${vault.jupiterEnabled}`);
   console.info(`  REBALANCE_DRY_RUN env: ${process.env["REBALANCE_DRY_RUN"] ?? "(not set)"}`);
 
   // 3. Pre-flight: fetch and display current on-chain holdings

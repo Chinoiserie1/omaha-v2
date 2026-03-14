@@ -17,9 +17,7 @@ interface VaultSeed {
   performanceCalc: string;
   disclosure: string;
   statePda: string;
-  glamVaultPda: string;
   mintAddress: string | null;
-  jupiterEnabled: boolean;
   dryRun: boolean;
   holdings?: HoldingsSeed;
 }
@@ -39,9 +37,7 @@ const VAULTS: VaultSeed[] = [
     disclosure:
       "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
     statePda: "3A3wmPRdEnMUQ8Za5nVL9KNqJhSFiAUghnqrWp2HTi83",
-    glamVaultPda: "D8gNHPbPvsgTfqh3Rwjc9cEevPTz8MzESekszZN23QGP",
     mintAddress: null,
-    jupiterEnabled: false,
     dryRun: true,
     holdings: {
       holdings: [
@@ -79,9 +75,7 @@ const VAULTS: VaultSeed[] = [
     disclosure:
       "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
     statePda: "5jdMWiou4AVzev5HZgsuzpcU8jGW9wztenko5sDVpULX",
-    glamVaultPda: "ABhUh47ATwrrgD7gUA1AK9g9jGkXp47BcB6Uhs2bF8hQ",
     mintAddress: null,
-    jupiterEnabled: true,
     dryRun: true,
     holdings: {
       holdings: [
@@ -163,9 +157,7 @@ async function seedVaults(): Promise<void> {
         dataSource: v.dataSource,
         performanceCalc: v.performanceCalc,
         disclosure: v.disclosure,
-        glamVaultPda: v.glamVaultPda,
         mintAddress: v.mintAddress,
-        jupiterEnabled: v.jupiterEnabled,
         dryRun: v.dryRun,
       },
       create: {
@@ -175,11 +167,9 @@ async function seedVaults(): Promise<void> {
         performanceCalc: v.performanceCalc,
         disclosure: v.disclosure,
         statePda: v.statePda,
-        glamVaultPda: v.glamVaultPda,
         mintAddress: v.mintAddress,
         vaultName: v.vaultName,
         vaultSymbol: v.vaultSymbol,
-        jupiterEnabled: v.jupiterEnabled,
         dryRun: v.dryRun,
       },
     });

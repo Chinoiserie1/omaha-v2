@@ -63,7 +63,7 @@ export async function snapshotHoldingsHandler(
   } catch (err) {
     logger.error(
       { error: err instanceof Error ? err.message : err, vaultId: vault.id },
-      "Failed to fetch live holdings from GLAM for snapshot",
+      "Failed to fetch live holdings for snapshot",
     );
 
     return reply.status(502).send({ error: "Unable to fetch vault holdings" });

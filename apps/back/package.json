@@ -17,14 +17,13 @@
     "sync-aliases": "tsx --env-file=../../.env src/scripts/sync-asset-aliases.ts",
     "seed-stocks": "tsx --env-file=../../.env src/scripts/seed-stock-tokens.ts",
     "backfill-algo-all": "tsx --env-file=../../.env src/scripts/backfill-and-run-algo-all.ts",
-    "sync-icons": "tsx --env-file=../../.env src/scripts/sync-token-icons.ts"
+    "sync-icons": "tsx --env-file=../../.env src/scripts/sync-token-icons.ts",
+    "start:price-worker": "tsx --env-file=../../.env src/workers/price-worker.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",
-    "@coral-xyz/anchor": "^0.30.1",
     "@fastify/cors": "^10.0.1",
     "@fastify/websocket": "^11.2.0",
-    "@glamsystems/glam-sdk": "^1.0.11",
     "@privy-io/server-auth": "^1.32.5",
     "@repo/database": "workspace:*",
     "@repo/omaha-programs-sdk": "workspace:*",
@@ -33,7 +32,6 @@
     "@solana/spl-token": "^0.4.14",
     "@solana/web3.js": "^1.98.0",
     "axios": "^1.13.2",
-    "bn.js": "^5.2.1",
     "bs58": "5",
     "bullmq": "^5.70.1",
     "fastify": "^5.1.0",
@@ -47,7 +45,6 @@
   "devDependencies": {
     "@repo/config-eslint": "workspace:*",
     "@repo/config-typescript": "workspace:*",
-    "@types/bn.js": "^5.1.6",
     "@types/node": "^22.10.2",
     "@types/node-cron": "^3.0.11",
     "tsx": "^4.19.2",

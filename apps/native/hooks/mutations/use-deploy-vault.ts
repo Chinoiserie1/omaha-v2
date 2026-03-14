@@ -5,7 +5,7 @@ import { queryKeys } from "../../lib/query-keys";
 interface DeployVaultResponse {
   id: string;
   statePda: string;
-  glamVaultPda: string;
+  shareMint: string;
   vaultName: string;
   vaultSymbol: string;
   dryRun: boolean;

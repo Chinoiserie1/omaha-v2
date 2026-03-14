@@ -1,13 +1,13 @@
 export interface Vault {
   id: string;
   quantId: string;
-  glamVaultPda: string | null;
   statePda: string;
+  shareMint: string | null;
+  baseTokenAta: string | null;
   mintAddress: string | null;
   vaultName: string;
   vaultSymbol: string;
   isActive: boolean;
-  jupiterEnabled: boolean;
   about: string;
   dataSource: string;
   performanceCalc: string;
