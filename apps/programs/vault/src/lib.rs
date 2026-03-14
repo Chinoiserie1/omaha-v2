@@ -11,6 +11,16 @@ use pinocchio_pubkey::declare_id;
 // TODO: Replace with actual deployed program address
 declare_id!("5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR");
 
+// TODO: Replace with actual program authority keypair before mainnet deploy
+/// Program-level authority that must co-sign Initialize instructions.
+/// Only this pubkey can authorize new vault creation.
+pub const PROGRAM_AUTHORITY: [u8; 32] = [
+    0x81, 0x32, 0xa0, 0xfa, 0xd9, 0xdd, 0x12, 0xed,
+    0x58, 0x50, 0xf2, 0xc2, 0x29, 0x0b, 0x7d, 0x5f,
+    0xd8, 0x10, 0x99, 0xd7, 0x81, 0x1d, 0x44, 0xd7,
+    0x0b, 0x67, 0x32, 0xc5, 0xce, 0x52, 0xf7, 0x16,
+]; // 9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf
+
 // For no_std: use program_entrypoint + nostd_panic_handler (not entrypoint! which needs std)
 #[cfg(feature = "bpf-entrypoint")]
 pinocchio::program_entrypoint!(process_instruction);

@@ -24,6 +24,13 @@ pub fn program_id() -> Pubkey {
         .unwrap()
 }
 
+/// The program authority matching `PROGRAM_AUTHORITY` in lib.rs.
+pub fn program_authority() -> Pubkey {
+    "9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf"
+        .parse()
+        .unwrap()
+}
+
 /// Create a Mollusk instance with the vault program loaded.
 pub fn setup() -> Mollusk {
     let pid = program_id();

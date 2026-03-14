@@ -6,6 +6,13 @@ export const VAULT_PROGRAM_ID = new PublicKey(
   "5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR",
 );
 
+// ── Program Authority ───────────────────────────────────────────────────────
+// TODO: Replace with actual program authority keypair before mainnet deploy
+// Only this pubkey can co-sign Initialize instructions to create new vaults.
+export const PROGRAM_AUTHORITY = new PublicKey(
+  "9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf",
+);
+
 // ── Instruction Discriminators (0x00–0x0C) ──────────────────────────────────
 export const DISC_INITIALIZE = 0x00 as const;
 export const DISC_ADD_OWNER = 0x01 as const;

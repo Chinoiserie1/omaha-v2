@@ -3,6 +3,7 @@ import { TransactionInstruction as TxInstruction } from "@solana/web3.js";
 
 import {
   DISC_INITIALIZE,
+  PROGRAM_AUTHORITY,
   SYSTEM_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   VAULT_PROGRAM_ID,
@@ -10,6 +11,7 @@ import {
 import { writeU8, writeU16LE, writeU64LE } from "../utils.js";
 
 export interface InitializeParams {
+  readonly programAuthority?: PublicKey;
   readonly admin: PublicKey;
   readonly vaultState: PublicKey;
   readonly shareMint: PublicKey;
@@ -28,12 +30,13 @@ export interface InitializeParams {
  * Data: [disc(1), share_decimals(1), share_price(8), name_len(2), name, symbol_len(2), symbol, uri_len(2), uri]
  *
  * Accounts:
- *   0. [signer, writable] admin
- *   1. [writable]         vault_state  — PDA: ["vault", admin, base_mint]
- *   2. [writable]         share_mint   — PDA: ["share_mint", vault_state]
- *   3. []                 base_mint
- *   4. []                 system_program
- *   5. []                 token_program — Token 2022
+ *   0. [signer]           program_authority — must match PROGRAM_AUTHORITY constant
+ *   1. [signer, writable] admin
+ *   2. [writable]         vault_state  — PDA: ["vault", admin, base_mint]
+ *   3. [writable]         share_mint   — PDA: ["share_mint", vault_state]
+ *   4. []                 base_mint
+ *   5. []                 system_program
+ *   6. []                 token_program — Token 2022
  */
 export function createInitializeInstruction(
   params: InitializeParams,
@@ -59,6 +62,7 @@ export function createInitializeInstruction(
   uriBytes.copy(data, offset);
 
   const keys: AccountMeta[] = [
+    { pubkey: params.programAuthority ?? PROGRAM_AUTHORITY, isSigner: true, isWritable: false },
     { pubkey: params.admin, isSigner: true, isWritable: true },
     { pubkey: params.vaultState, isSigner: false, isWritable: true },
     { pubkey: params.shareMint, isSigner: false, isWritable: true },

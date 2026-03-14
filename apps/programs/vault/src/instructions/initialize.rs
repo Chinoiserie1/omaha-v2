@@ -16,12 +16,13 @@ use crate::token2022;
 /// All fee fields default to 0 (no fees). Use UpdateFees to configure fees.
 ///
 /// Accounts:
-///   0. `[signer, writable]` admin — pays for account creation, becomes vault admin
-///   1. `[writable]`         vault_state — PDA: ["vault", admin, base_mint]
-///   2. `[writable]`         share_mint — PDA: ["share_mint", vault_state]
-///   3. `[]`                 base_mint — the deposit token (e.g. USDC)
-///   4. `[]`                 system_program
-///   5. `[]`                 token_program — must be Token 2022
+///   0. `[signer]`           program_authority — must match PROGRAM_AUTHORITY constant
+///   1. `[signer, writable]` admin — pays for account creation, becomes vault admin
+///   2. `[writable]`         vault_state — PDA: ["vault", admin, base_mint]
+///   3. `[writable]`         share_mint — PDA: ["share_mint", vault_state]
+///   4. `[]`                 base_mint — the deposit token (e.g. USDC)
+///   5. `[]`                 system_program
+///   6. `[]`                 token_program — must be Token 2022
 ///
 /// Data:
 ///   [0]       discriminator (0x00)
@@ -34,6 +35,7 @@ use crate::token2022;
 ///   [..+2]    uri_len (u16 LE)
 ///   [..+U]    uri bytes (UTF-8)
 pub struct Initialize<'a> {
+    _program_authority: &'a AccountInfo,
     admin: &'a AccountInfo,
     vault_state: &'a AccountInfo,
     share_mint: &'a AccountInfo,
@@ -189,11 +191,19 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Initialize<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [admin, vault_state, share_mint, base_mint, system_program, token_program, ..] =
+        let [program_authority, admin, vault_state, share_mint, base_mint, system_program, token_program, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
+
+        // Verify program authority is a signer and matches the hardcoded constant
+        if !program_authority.is_signer() {
+            return Err(ProgramError::MissingRequiredSignature);
+        }
+        if program_authority.key().as_ref() != &crate::PROGRAM_AUTHORITY {
+            return Err(VaultError::UnauthorizedInitializer.into());
+        }
 
         if !admin.is_signer() {
             return Err(ProgramError::MissingRequiredSignature);
@@ -273,6 +283,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Initialize<'a> {
         let uri = &data[offset..offset + uri_len];
 
         Ok(Self {
+            _program_authority: program_authority,
             admin,
             vault_state,
             share_mint,

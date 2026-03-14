@@ -52,6 +52,7 @@ packages/database/generated
 
 # Rust / Solana
 target
+*-keypair.json
 
 # Misc
 .cache

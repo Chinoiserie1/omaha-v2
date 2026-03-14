@@ -15,6 +15,7 @@ import {
   DISC_SET_SHARE_PRICE,
   DISC_UPDATE_FEES,
   DISC_WITHDRAW_WITH_PRICE,
+  PROGRAM_AUTHORITY,
   SPL_TOKEN_PROGRAM_ID,
   SYSTEM_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
@@ -41,7 +42,7 @@ function key(n: number): PublicKey {
 }
 
 describe("Initialize", () => {
-  it("builds correct instruction", () => {
+  it("builds correct instruction with default program authority", () => {
     const ix = createInitializeInstruction({
       admin: key(1),
       vaultState: key(2),
@@ -58,13 +59,38 @@ describe("Initialize", () => {
     expect(ix.data[0]).toBe(DISC_INITIALIZE);
     expect(ix.data[1]).toBe(6); // share_decimals
     expect(ix.data.readBigUInt64LE(2)).toBe(1_000_000n); // share_price
-    expect(ix.keys).toHaveLength(6);
+    expect(ix.keys).toHaveLength(7);
+    // Account 0: program_authority (signer, not writable)
+    expect(ix.keys[0]!.pubkey.toBase58()).toBe(PROGRAM_AUTHORITY.toBase58());
     expect(ix.keys[0]!.isSigner).toBe(true);
-    expect(ix.keys[0]!.isWritable).toBe(true);
-    expect(ix.keys[4]!.pubkey.toBase58()).toBe(SYSTEM_PROGRAM_ID.toBase58());
-    expect(ix.keys[5]!.pubkey.toBase58()).toBe(
+    expect(ix.keys[0]!.isWritable).toBe(false);
+    // Account 1: admin (signer, writable)
+    expect(ix.keys[1]!.isSigner).toBe(true);
+    expect(ix.keys[1]!.isWritable).toBe(true);
+    expect(ix.keys[5]!.pubkey.toBase58()).toBe(SYSTEM_PROGRAM_ID.toBase58());
+    expect(ix.keys[6]!.pubkey.toBase58()).toBe(
       TOKEN_2022_PROGRAM_ID.toBase58(),
     );
+  });
+
+  it("accepts custom program authority", () => {
+    const customAuthority = key(99);
+    const ix = createInitializeInstruction({
+      programAuthority: customAuthority,
+      admin: key(1),
+      vaultState: key(2),
+      shareMint: key(3),
+      baseMint: key(4),
+      shareDecimals: 6,
+      sharePrice: 1_000_000n,
+      name: "Test",
+      symbol: "TST",
+      uri: "",
+    });
+
+    expect(ix.keys[0]!.pubkey.toBase58()).toBe(customAuthority.toBase58());
+    expect(ix.keys[0]!.isSigner).toBe(true);
+    expect(ix.keys[0]!.isWritable).toBe(false);
   });
 });
 

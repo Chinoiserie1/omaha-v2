@@ -14,6 +14,7 @@ export enum VaultErrorCode {
   FeeExceedsMaximum = 0x10b,
   NoFeesToCollect = 0x10c,
   InvalidMetadata = 0x10d,
+  UnauthorizedInitializer = 0x10e,
 }
 
 const ERROR_MESSAGES: Record<number, string> = {
@@ -38,6 +39,8 @@ const ERROR_MESSAGES: Record<number, string> = {
     "Fee basis points exceed the allowed maximum",
   [VaultErrorCode.NoFeesToCollect]: "No accrued fees to collect",
   [VaultErrorCode.InvalidMetadata]: "Metadata string exceeds max length",
+  [VaultErrorCode.UnauthorizedInitializer]:
+    "Signer is not the program authority (cannot initialize vaults)",
 };
 
 /**

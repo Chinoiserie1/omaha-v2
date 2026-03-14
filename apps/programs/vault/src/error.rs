@@ -32,6 +32,8 @@ pub enum VaultError {
     NoFeesToCollect = 0x10C,
     /// Metadata string exceeds max length.
     InvalidMetadata = 0x10D,
+    /// Signer is not the program authority (cannot initialize vaults).
+    UnauthorizedInitializer = 0x10E,
 }
 
 impl From<VaultError> for ProgramError {
@@ -102,6 +104,10 @@ mod tests {
             ProgramError::Custom(0x10D),
             ProgramError::from(VaultError::InvalidMetadata)
         );
+        assert_eq!(
+            ProgramError::Custom(0x10E),
+            ProgramError::from(VaultError::UnauthorizedInitializer)
+        );
     }
 
     #[test]
@@ -121,6 +127,7 @@ mod tests {
             VaultError::FeeExceedsMaximum as u32,
             VaultError::NoFeesToCollect as u32,
             VaultError::InvalidMetadata as u32,
+            VaultError::UnauthorizedInitializer as u32,
         ];
         for i in 0..codes.len() {
             for j in (i + 1)..codes.len() {

@@ -32,6 +32,7 @@ fn test_initialize_hits_realloc_limit_in_mollusk() {
     let instruction = build_instruction(
         initialize_data(6, 1_000_000, b"Vault Share", b"vSHR", b"https://example.com/metadata.json"),
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
@@ -42,6 +43,7 @@ fn test_initialize_hits_realloc_limit_in_mollusk() {
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
         (vault_key, system_account(0)),
         (share_mint_key, system_account(0)),
@@ -68,6 +70,7 @@ fn test_initialize_zero_share_price() {
     let instruction = build_instruction(
         initialize_data(6, 0, b"Test", b"TST", b""), // zero price
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
@@ -78,6 +81,7 @@ fn test_initialize_zero_share_price() {
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
         (vault_key, system_account(0)),
         (share_mint_key, system_account(0)),
@@ -94,7 +98,7 @@ fn test_initialize_zero_share_price() {
 }
 
 #[test]
-fn test_initialize_missing_signer() {
+fn test_initialize_missing_admin_signer() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
@@ -104,6 +108,7 @@ fn test_initialize_missing_signer() {
     let instruction = build_instruction(
         initialize_data(6, 1_000_000, b"Test", b"TST", b""),
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, false), // NOT a signer
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
@@ -114,6 +119,7 @@ fn test_initialize_missing_signer() {
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
         (vault_key, system_account(0)),
         (share_mint_key, system_account(0)),
@@ -140,6 +146,7 @@ fn test_initialize_wrong_vault_pda() {
     let instruction = build_instruction(
         initialize_data(6, 1_000_000, b"Test", b"TST", b""),
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, true),
             AccountMeta::new(wrong_vault, false),
             AccountMeta::new(share_mint_key, false),
@@ -150,6 +157,7 @@ fn test_initialize_wrong_vault_pda() {
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
         (wrong_vault, system_account(0)),
         (share_mint_key, system_account(0)),
@@ -177,6 +185,7 @@ fn test_initialize_insufficient_data() {
     let instruction = build_instruction(
         vec![0x00, 0x06, 0x01, 0x02],
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
@@ -187,6 +196,7 @@ fn test_initialize_insufficient_data() {
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
         (vault_key, system_account(0)),
         (share_mint_key, system_account(0)),
@@ -210,11 +220,13 @@ fn test_initialize_not_enough_accounts() {
     let instruction = build_instruction(
         initialize_data(6, 1_000_000, b"Test", b"TST", b""),
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, true),
         ],
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
     ];
 
@@ -237,6 +249,7 @@ fn test_initialize_wrong_token_program() {
     let instruction = build_instruction(
         initialize_data(6, 1_000_000, b"Test", b"TST", b""),
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
             AccountMeta::new(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
@@ -247,6 +260,7 @@ fn test_initialize_wrong_token_program() {
     );
 
     let accounts = vec![
+        (program_authority(), system_account(0)),
         (admin, system_account(10_000_000_000)),
         (vault_key, system_account(0)),
         (share_mint_key, system_account(0)),
@@ -275,6 +289,124 @@ fn test_initialize_metadata_name_too_long() {
     let instruction = build_instruction(
         initialize_data(6, 1_000_000, &long_name, b"TST", b""),
         vec![
+            AccountMeta::new_readonly(program_authority(), true),
+            AccountMeta::new(admin, true),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new_readonly(base_mint, false),
+            AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (program_authority(), system_account(0)),
+        (admin, system_account(10_000_000_000)),
+        (vault_key, system_account(0)),
+        (share_mint_key, system_account(0)),
+        (base_mint, system_account(0)),
+        keyed_account_for_system_program(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &accounts,
+        &[Check::err(ProgramError::Custom(0x10D))], // InvalidMetadata
+    );
+}
+
+// ── Program Authority Negative Tests ────────────────────────────────────────
+
+#[test]
+fn test_initialize_wrong_program_authority() {
+    let mollusk = setup_with_token2022();
+    let admin = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (share_mint_key, _) = share_mint_pda(&vault_key);
+    let wrong_authority = Pubkey::new_unique();
+
+    let instruction = build_instruction(
+        initialize_data(6, 1_000_000, b"Test", b"TST", b""),
+        vec![
+            AccountMeta::new_readonly(wrong_authority, true), // wrong pubkey
+            AccountMeta::new(admin, true),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new_readonly(base_mint, false),
+            AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (wrong_authority, system_account(0)),
+        (admin, system_account(10_000_000_000)),
+        (vault_key, system_account(0)),
+        (share_mint_key, system_account(0)),
+        (base_mint, system_account(0)),
+        keyed_account_for_system_program(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &accounts,
+        &[Check::err(ProgramError::Custom(0x10E))], // UnauthorizedInitializer
+    );
+}
+
+#[test]
+fn test_initialize_program_authority_not_signer() {
+    let mollusk = setup_with_token2022();
+    let admin = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (share_mint_key, _) = share_mint_pda(&vault_key);
+
+    let instruction = build_instruction(
+        initialize_data(6, 1_000_000, b"Test", b"TST", b""),
+        vec![
+            AccountMeta::new_readonly(program_authority(), false), // NOT a signer
+            AccountMeta::new(admin, true),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new_readonly(base_mint, false),
+            AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (program_authority(), system_account(0)),
+        (admin, system_account(10_000_000_000)),
+        (vault_key, system_account(0)),
+        (share_mint_key, system_account(0)),
+        (base_mint, system_account(0)),
+        keyed_account_for_system_program(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &accounts,
+        &[Check::err(ProgramError::MissingRequiredSignature)],
+    );
+}
+
+#[test]
+fn test_initialize_missing_program_authority() {
+    let mollusk = setup_with_token2022();
+    let admin = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (share_mint_key, _) = share_mint_pda(&vault_key);
+
+    // Only 6 accounts (old layout without program_authority)
+    let instruction = build_instruction(
+        initialize_data(6, 1_000_000, b"Test", b"TST", b""),
+        vec![
             AccountMeta::new(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
@@ -293,9 +425,10 @@ fn test_initialize_metadata_name_too_long() {
         mollusk_svm_programs_token::token2022::keyed_account(),
     ];
 
+    // With only 6 accounts, the 7-account destructuring fails
     mollusk.process_and_validate_instruction(
         &instruction,
         &accounts,
-        &[Check::err(ProgramError::Custom(0x10D))], // InvalidMetadata
+        &[Check::err(ProgramError::NotEnoughAccountKeys)],
     );
 }
