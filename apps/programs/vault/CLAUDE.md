@@ -12,13 +12,16 @@ A minimal Solana program that manages a tokenized vault. Users deposit base toke
 | Layer | Technology | Version |
 |-------|-----------|---------|
 | Framework | Pinocchio | 0.9.x |
-| Token CPI | pinocchio-token | 0.4.x |
+| Base token CPI | pinocchio-token | 0.4.x |
+| Share token CPI | Raw CPI to Token 2022 | via `src/token2022.rs` |
 | System CPI | pinocchio-system | 0.4.x |
 | PDA utils | pinocchio-pubkey | 0.2.x |
 | Logging | pinocchio-log | 0.4.x |
 | Zero-copy | bytemuck | 1.x |
 
 **Runtime**: `no_std`, no heap allocator beyond Solana's default. Binary ~37KB.
+
+**Dual token model**: Base token operations (Transfer) use legacy SPL Token (`TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA`). Share mint operations (MintTo, Burn, Initialize) use SPL Token 2022 (`TokenzQdBNbLqP5VEhdkAS6EPFLC1PHnBqCXEpPxuEb`) with MetadataPointer, TokenMetadata, and MintCloseAuthority extensions. `pinocchio-token` hardcodes the legacy program ID, so share token CPI uses raw wrappers in `src/token2022.rs`.
 
 ## Critical Rules
 
@@ -38,12 +41,13 @@ apps/programs/vault/
 ├── src/
 │   ├── lib.rs              # Entrypoint + instruction routing (13 discriminators)
 │   ├── state.rs            # VaultState (488B) + PendingDeposit (80B) + PendingWithdraw (80B, bytemuck Pod)
-│   ├── error.rs            # 13 custom errors (0x100-0x10C)
+│   ├── error.rs            # 14 custom errors (0x100-0x10D)
 │   ├── fees.rs             # Pure fee math (entry/exit/management/performance)
 │   ├── rent.rs             # Const fn rent exemption calculation
+│   ├── token2022.rs        # Raw CPI wrappers for SPL Token 2022 (mint_to, burn, extensions, metadata)
 │   └── instructions/
 │       ├── mod.rs          # Re-exports all instruction structs
-│       ├── initialize.rs   # Create vault PDA + share mint PDA
+│       ├── initialize.rs   # Create vault PDA + Token 2022 share mint PDA (with metadata extensions)
 │       ├── set_share_price.rs  # Admin-only price update
 │       ├── execute.rs      # Generic CPI passthrough (key feature)
 │       ├── add_owner.rs    # Admin-only: add operator
@@ -81,7 +85,7 @@ Instruction discriminators use the `0x00–0x0C` range. Account discriminators u
 
 | Disc | Instruction | Group | Access | Description |
 |------|------------|-------|--------|-------------|
-| 0x00 | Initialize | Setup | Admin (signer) | Creates vault PDA, share mint PDA, writes initial state |
+| 0x00 | Initialize | Setup | Admin (signer) | Creates vault PDA, Token 2022 share mint PDA with metadata extensions |
 | 0x01 | AddOwner | Setup | Admin only | Adds an operator pubkey (max 10) |
 | 0x02 | RemoveOwner | Setup | Admin only | Removes an operator pubkey (swap-remove) |
 | 0x03 | SetSharePrice | Admin Ops | Admin only | Updates `share_price` in vault state |
@@ -144,7 +148,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 10 | 2 | performance_fee_bps | Performance fee in basis points |
 | 12 | 4 | _padding | Alignment padding |
 | 16 | 32 | admin | Admin pubkey |
-| 48 | 32 | share_mint | Share SPL token mint |
+| 48 | 32 | share_mint | Share Token 2022 mint (with metadata extensions) |
 | 80 | 32 | base_mint | Deposit token mint |
 | 112 | 32 | fee_receiver | Fee receiver pubkey (all zeros = none) |
 | 144 | 8 | share_price | Price per share (base token smallest units) |
@@ -199,6 +203,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 0x10A | InvalidPendingWithdraw | Pending withdraw account invalid |
 | 0x10B | FeeExceedsMaximum | Fee BPS exceeds allowed maximum |
 | 0x10C | NoFeesToCollect | No fee receiver set or no fees to collect |
+| 0x10D | InvalidMetadata | Metadata string exceeds max length (128 bytes) |
 
 ## Build & Test
 
@@ -217,7 +222,7 @@ Integration tests load the compiled BPF binary from `target/deploy/`. Always run
 | Crate | Version | Purpose |
 |-------|---------|---------|
 | mollusk-svm | 0.7 | Lightweight SVM test harness (no validator) |
-| mollusk-svm-programs-token | 0.7 | Preloaded SPL Token program for mollusk |
+| mollusk-svm-programs-token | 0.7 | Preloaded SPL Token + Token 2022 programs for mollusk |
 | solana-pubkey | 3.0 | Pubkey type for test account construction |
 | solana-account | 3.4 | Account data builder |
 | solana-instruction | 3.2 | Instruction construction |
@@ -225,6 +230,44 @@ Integration tests load the compiled BPF binary from `target/deploy/`. Always run
 | solana-program-pack | 3.1 | Pack/Unpack trait for SPL state |
 | spl-token-interface | 2.0 | SPL Token account / mint state |
 | solana-program-option | 3.0 | COption used in SPL mint state |
+
+## Token 2022 Share Mint
+
+The share mint is an SPL Token 2022 mint with three extensions initialized during `Initialize`:
+
+1. **MintCloseAuthority** — vault_state PDA can reclaim rent when vault is wound down
+2. **MetadataPointer** — self-referential (metadata stored on the mint account itself)
+3. **TokenMetadata** — on-mint name, symbol, and URI (max 128 bytes each)
+
+### token2022.rs Module
+
+Raw CPI wrappers (no `pinocchio-token-2022` crate exists):
+
+| Function | Disc | Purpose |
+|----------|------|---------|
+| `mint_to()` | 7 | Mint share tokens (deposit flows, fee collection) |
+| `burn()` | 8 | Burn share tokens (withdraw flows) |
+| `initialize_mint2()` | 20 | Initialize Token 2022 mint |
+| `initialize_mint_close_authority()` | 25 | Set close authority extension |
+| `initialize_metadata_pointer()` | 39/0 | Set metadata pointer extension |
+| `initialize_token_metadata()` | 8-byte SHA256 | Initialize on-mint metadata |
+| `calculate_mint_space()` | — | Calculate final mint account size for rent |
+
+Constants: `TOKEN_2022_PROGRAM_ID`, `INITIAL_MINT_SPACE` (270 bytes), `MAX_METADATA_STRING_LEN` (128).
+
+### Dual Token Program Instructions
+
+Instructions that touch both base tokens and share tokens require two token programs:
+
+| Instruction | Legacy SPL Token (base) | Token 2022 (share) | Account Count |
+|-------------|------------------------|-------------------|---------------|
+| DepositWithPrice | Transfer base tokens | MintTo shares | 10 (+ optional fee_receiver) |
+| WithdrawWithPrice | Transfer base tokens | Burn shares | 9 |
+| FulfillDeposit | — | MintTo shares | 9 (+ optional fee_receiver) |
+| RequestWithdraw | — | Burn shares | 8 |
+| CollectFees | — | MintTo fee shares | 5 |
+
+Instructions that only touch base tokens (RequestDeposit, FulfillWithdraw) use legacy SPL Token only — no changes.
 
 ## Execute Instruction (CPI Passthrough)
 
