@@ -203,6 +203,21 @@ pnpm program:build
 pnpm program:test
 ```
 
+### Vault Admin Scripts
+
+```bash
+# Create vault on-chain (all params, defaults to devnet)
+pnpm create-vault-onchain --name "my-vault" [--dry-run]
+
+# Factory management
+pnpm manage-factory-admin add --admin <pubkey>
+pnpm transfer-factory-ownership --new-owner <pubkey>
+
+# Vault management
+pnpm transfer-vault-admin --vault-name <name> --new-admin <pubkey>
+pnpm manage-vault-operator add --vault-name <name> --operator <pubkey>
+```
+
 ## Environment Variables
 
 Create a `.env` file in the root directory (see `.env.example`):

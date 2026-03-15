@@ -60,7 +60,13 @@ src/
 │   └── asset-aliases.json   # ~500 aliases for classifier normalization
 ├── infra/          # Infrastructure (WebSocket, queues)
 │   └── websocket.ts         # WebSocket server + notifyUser broadcast
-├── scripts/        # One-off scripts (seed, sync, debug)
+├── scripts/        # One-off & admin scripts (seed, sync, vault management)
+│   ├── script-args.ts               # Shared CLI argument parsing utilities
+│   ├── create-vault-onchain.ts      # Create vault on-chain (all params exposed)
+│   ├── manage-factory-admin.ts      # Add/remove factory admins
+│   ├── transfer-factory-ownership.ts # Transfer factory ownership
+│   ├── transfer-vault-admin.ts      # Transfer vault admin
+│   └── manage-vault-operator.ts     # Add/remove vault operators
 ├── services/       # Business logic
 │   ├── classifier.service.ts   # Tweet classification (uses aliases)
 │   ├── thesis.service.ts       # Portfolio synthesis (uses curated assets)

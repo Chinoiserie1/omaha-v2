@@ -404,24 +404,35 @@ solana program show 5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR --url devnet | 
 
 ### Smoke Test (Initialize a Vault)
 
-To verify the program processes instructions correctly, send an `Initialize` transaction on devnet using the SDK:
+Use the `create-vault-onchain` CLI script to verify the program processes instructions correctly:
 
-```typescript
-import { createInitializeInstruction, deriveVaultStatePda, deriveShareMintPda } from "@repo/omaha-programs-sdk";
+```bash
+# Dry run (preview PDAs and parameters without sending)
+pnpm create-vault-onchain --name "test-vault" --dry-run
 
-const ix = createInitializeInstruction({
-  admin: adminPublicKey,
-  vaultState: deriveVaultStatePda(adminPublicKey).pda,
-  shareMint: deriveShareMintPda(adminPublicKey).pda,
-  baseMint: usdcDevnetMint,
-  shareDecimals: 6,
-  sharePrice: 1_000_000n,
-  name: "Test Vault",
-  symbol: "TVLT",
-  uri: "https://example.com/metadata.json",
-});
-// Sign with both programAuthority and admin keypairs, send to devnet
+# Create a vault with defaults (USDC base, $1.00 share price, 6 decimals)
+pnpm create-vault-onchain --name "test-vault"
+
+# Full example with all optional parameters
+pnpm create-vault-onchain \
+  --name "alpha-fund" \
+  --symbol "ALPHA" \
+  --uri "https://arweave.net/metadata.json" \
+  --base-mint 4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU \
+  --share-decimals 6 \
+  --share-price 1000000 \
+  --entry-fee-bps 100 \
+  --exit-fee-bps 50 \
+  --management-fee-bps 200 \
+  --performance-fee-bps 2000 \
+  --fee-receiver <pubkey> \
+  --operator <pubkey1> \
+  --operator <pubkey2>
 ```
+
+The script defaults to devnet RPC. It performs pre-flight checks (factory exists, not paused, vault name not taken) and bundles Initialize + UpdateFees + AddOperator into a single atomic transaction.
+
+See `apps/back/src/scripts/create-vault-onchain.ts` for the full parameter reference.
 
 ---
 
