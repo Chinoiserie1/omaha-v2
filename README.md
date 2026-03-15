@@ -26,7 +26,7 @@ AI-powered quant trading pipeline on Solana. Fetches tweets, classifies them wit
 autopilot/
 ├── apps/
 │   ├── web/              # Next.js 15 web app (port 3000)
-│   ├── back/             # Fastify 5 REST API (port 3001)
+│   ├── back/             # Fastify 5 REST API (port 4001)
 │   ├── native/           # Expo SDK 54 mobile app
 │   └── programs/vault/   # Solana vault program (Rust/Pinocchio)
 ├── packages/
@@ -36,7 +36,7 @@ autopilot/
 │   ├── config-eslint/    # Shared ESLint 9 flat configs
 │   └── config-typescript/ # Shared TypeScript configs
 ├── turbo.json         # Turborepo pipeline config
-├── docker-compose.yml # PostgreSQL container
+├── docker-compose.yml # PostgreSQL + Redis containers
 └── package.json       # Root scripts (single source of truth)
 ```
 
@@ -44,7 +44,7 @@ autopilot/
 
 - **Node.js 20+** — use `nvm use` (reads `.nvmrc`)
 - **pnpm 9.15.0** — `corepack enable && corepack prepare pnpm@9.15.0 --activate`
-- **Docker** — for local PostgreSQL database
+- **Docker** — for local PostgreSQL + Redis
 
 ### API Keys (required for full functionality)
 
@@ -71,15 +71,12 @@ pnpm install
 cp .env.example .env
 # Edit .env with your API keys
 
-# 3. Start database
-Run the docker deaemon
+# 3. Start database (requires Docker daemon running)
 pnpm db:up
 
 # 4. Run migrations and generate Prisma client
-Make sure you have a .env in packages/database
 pnpm db:generate
-#pnpm db:migrate dev
-pnpm db:migrate deploy
+pnpm db:migrate
 pnpm build
 
 # 5. Start all apps in development
@@ -93,7 +90,7 @@ pnpm dev:android
 After startup:
 
 - Web app: http://localhost:3000
-- Backend API: http://localhost:3001
+- Backend API: http://localhost:4001
 - Prisma Studio: `pnpm db:studio` (port 5555)
 
 ## Development Commands
@@ -115,7 +112,7 @@ pnpm clean          # Clean all build artifacts
 
 ```bash
 pnpm dev:web        # Web app only (port 3000)
-pnpm dev:back       # Backend API only (port 3001)
+pnpm dev:back       # Backend API only (port 4001)
 pnpm dev:ios        # Expo native app (iOS)
 pnpm dev:android    # Expo native app (Android)
 ```
@@ -135,18 +132,34 @@ pnpm db:studio      # Open Prisma Studio GUI
 
 ```bash
 pnpm program:build   # Build vault program (BPF target)
-pnpm program:test    # Run program unit tests (148 tests)
+pnpm program:test    # Run program unit tests
 pnpm program:deploy  # Deploy to devnet
 ```
 
-### KOL Pipeline
+### Data & Seed Scripts
 
 ```bash
-pnpm seed:kols      # Seed KOL data into database
-pnpm sync-tokens    # Sync tradeable tokens from Jupiter
-pnpm create-vault   # Create Solana vaults for KOLs
-pnpm seed-vaults    # Seed vault data
-pnpm sync-aliases   # Sync asset aliases from Birdeye/Jupiter
+pnpm seed:kols           # Seed Quant (KOL) data into database
+pnpm sync-tokens         # Sync tradeable tokens from Jupiter
+pnpm create-vault        # Create vaults in database
+pnpm seed-vaults         # Seed vault data
+pnpm sync-aliases        # Sync asset aliases (crypto + stock mappings)
+pnpm seed-stocks         # Seed xStock + Ondo GM tokenized stock tokens
+pnpm sync-icons          # Sync token icon URLs from Jupiter
+pnpm backfill-algo-all   # Backfill algo results for all Quants
+```
+
+### On-Chain Admin Scripts
+
+```bash
+pnpm initialize-factory                    # Initialize factory PDA on-chain
+pnpm create-vault-onchain --name "my-vault" [--dry-run]  # Create vault on-chain
+
+# Factory/vault management (via backend filter)
+pnpm --filter @repo/back manage-factory-admin add --admin <pubkey>
+pnpm --filter @repo/back transfer-factory-ownership --new-owner <pubkey>
+pnpm --filter @repo/back transfer-vault-admin --vault-name <name> --new-admin <pubkey>
+pnpm --filter @repo/back manage-vault-operator add --vault-name <name> --operator <pubkey>
 ```
 
 ### Worktree Management
@@ -169,12 +182,12 @@ pnpm wt:clean ../my-feature   # Removes worktree + deletes branch
 
 ## Architecture
 
-### KOL Trading Pipeline
+### Quant Trading Pipeline
 
 The backend runs an automated pipeline via cron jobs:
 
 ```
-1. Fetch Tweets       →  Twitter RapidAPI fetches KOL tweets
+1. Fetch Tweets       →  Twitter RapidAPI fetches Quant tweets
 2. AI Classification  →  Claude AI classifies tweets (sentiment, assets, category)
 3. Portfolio Gen      →  Algorithm generates portfolio snapshots from signals
 4. Vault Rebalance    →  Jupiter swaps execute via Execute CPI on Solana
@@ -199,12 +212,12 @@ See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentati
 
 ### Database Models
 
-- **User** — Privy-authenticated users
-- **Kol** — Key Opinion Leaders (twitter accounts). `algoEnabled` flag controls whether the automated pipeline (tweet fetch, classification, portfolio generation) runs for this KOL
+- **User** — Identity anchor (REAL via Privy auth, or PLACEHOLDER for Quants not yet signed up)
+- **Quant** — Strategy profile linked 1:1 to User. `algoEnabled` flag controls whether the automated pipeline (tweet fetch, classification, portfolio generation) runs for this Quant
 - **Tweet** — Raw tweets with engagement metrics
 - **ClassifiedTweet** — AI-classified tweets (sentiment, assets, category)
 - **PortfolioSnapshot** — Generated portfolio allocations
-- **Vault** — Solana vaults (Omaha Vault program) linked to Quants
+- **Vault** — Tokenized on-chain vault (Omaha Vault program) owned by a Quant
 - **RebalanceEvent** — Vault rebalancing history
 - **TradeableAsset** — Supported tokens (symbol, mint, decimals)
 - **Follow** — User-to-user follow relationships
@@ -261,7 +274,7 @@ PRIVY_APP_SECRET="your-privy-app-secret"
 EXPO_PUBLIC_POSTHOG_API_KEY="your-posthog-api-key"
 
 # Native App
-EXPO_PUBLIC_API_URL_PROD="https://prod"
+EXPO_PUBLIC_API_URL_PRD="https://prod"
 EXPO_PUBLIC_API_URL="http://localhost:4001"
 EXPO_PUBLIC_SOLANA_RPC_URL=
 
@@ -276,7 +289,7 @@ ANTHROPIC_API_KEY=
 # Solana (optional)
 SOLANA_RPC_URL=
 KEEPER_PRIVATE_KEY=
-PROGRAM_AUTHORITY_PRIVATE_KEY=<base58_keypair>
+PROGRAM_AUTHORITY_KEYPAIR=<base58_keypair>
 
 # Jupiter
 JUPITER_API_KEY=
@@ -315,6 +328,12 @@ CRON_SNAPSHOT_PORTFOLIOS="0 0 * * 0"
 # Telegram Alerts (optional)
 TELEGRAM_BOT_TOKEN=
 TELEGRAM_CHAT_ID=
+
+# Make.com Webhook (waitlist form)
+NEXT_PUBLIC_MAKE_WEBHOOK_URL=
+
+# GLAM Protocol
+GLAM_PROGRAM_ID=GLAMpaME8wdTEzxtiYEAa5yD8fZbxZiz2hNtV58RZiEz
 ```
 
 ## Contributing

@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
 ## API Calls
 
 ```typescript
-const response = await fetch("http://localhost:3001/api/users");
+const response = await fetch("http://localhost:4001/api/users");
 const data = await response.json();
 ```
 

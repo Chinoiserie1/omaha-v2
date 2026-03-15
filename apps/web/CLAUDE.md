@@ -9,7 +9,7 @@ This is the **Next.js 15** web application using the App Router with React 19. I
 - **Framework**: Next.js 15.x with App Router
 - **React**: 19.x
 - **TypeScript**: 5.7.x (strict mode)
-- **Styling**: Plain CSS (globals.css)
+- **Styling**: Tailwind CSS v4 (via @tailwindcss/postcss)
 - **Validation**: Zod via `@repo/shared`
 
 ## Directory Structure
@@ -18,13 +18,35 @@ This is the **Next.js 15** web application using the App Router with React 19. I
 apps/web/
 ├── app/                    # Next.js App Router
 │   ├── layout.tsx          # Root layout
-│   ├── page.tsx            # Home page
-│   ├── globals.css         # Global styles
-│   └── components/         # Components used only by root page
-├── components/             # Shared components (used across multiple pages)
+│   ├── page.tsx            # Landing page (waitlist form)
+│   ├── globals.css         # Global styles (Tailwind v4)
+│   ├── not-found.tsx       # Custom 404 page
+│   ├── components/         # Root page components
+│   │   ├── OmahaLogo.tsx   # SVG logo component
+│   │   └── WaitlistForm.tsx # Waitlist signup form
+│   └── (dashboard)/        # Dashboard route group
+│       ├── layout.tsx      # Dashboard layout
+│       └── quants/         # Quant list & detail
+│           ├── page.tsx    # Quant list page
+│           ├── [id]/
+│           │   └── page.tsx # Quant detail page
+│           └── components/ # Dashboard components
+│               ├── ApiTryPanel.tsx
+│               ├── BacktestSummary.tsx
+│               ├── PortfolioSection.tsx
+│               ├── QuantCard.tsx
+│               ├── QuantHeader.tsx
+│               ├── SignificantTweets.tsx
+│               └── TweetCard.tsx
+├── lib/                    # Utility modules
+│   ├── api.ts              # API client (types + fetch helpers)
+│   └── format.ts           # formatNumber, formatPercent, formatDate
+├── pages/                  # Pages Router (error page workaround)
+│   └── _error.tsx          # Custom error page (React 18/19 conflict fix)
+├── postcss.config.mjs      # PostCSS config (Tailwind v4 plugin)
 ├── next.config.ts          # Next.js configuration
-├── tsconfig.json           # TypeScript config (extends @repo/config-typescript/nextjs.json)
-├── eslint.config.js        # ESLint config (uses @repo/config-eslint/next)
+├── tsconfig.json           # TypeScript config
+├── eslint.config.js        # ESLint config
 └── package.json
 ```
 
@@ -120,6 +142,10 @@ Uses `@repo/config-eslint/next` which includes:
 }
 ```
 
+### PostCSS (Tailwind v4)
+
+`postcss.config.mjs` uses `@tailwindcss/postcss` plugin. Both `tailwindcss` and `@tailwindcss/postcss` must be in the app's own `package.json` (don't rely on hoisting — breaks Vercel builds).
+
 ## Using Shared Packages
 
 Import from `@repo/shared` for types and validation:
@@ -179,7 +205,11 @@ function Form() {
 ### API Calls to Backend
 
 ```typescript
-const response = await fetch("http://localhost:3001/api/users", {
+// lib/api.ts provides the base URL
+const API_BASE =
+  process.env["NEXT_PUBLIC_API_URL"] ?? "http://localhost:4001";
+
+const response = await fetch(`${API_BASE}/api/users`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
   body: JSON.stringify(data),
@@ -188,9 +218,10 @@ const response = await fetch("http://localhost:3001/api/users", {
 
 ## Environment Variables
 
-Next.js environment variables:
-- `NEXT_PUBLIC_*` - Exposed to browser
-- Others - Server-side only
+- `NEXT_PUBLIC_API_URL` - Backend API base URL (default: `http://localhost:4001`)
+- `NEXT_PUBLIC_MAKE_WEBHOOK_URL` - Make.com webhook URL for waitlist form
+- Other `NEXT_PUBLIC_*` variables are exposed to the browser
+- Server-side variables are not bundled into the client
 
 ## Build Output
 
@@ -207,3 +238,6 @@ Production build generates:
 - Uses Turbopack in development (`next dev --turbo` is default)
 - Transpiles `@repo/shared` for compatibility
 - All imports from workspace packages work at runtime
+- `pages/_error.tsx` exists as a workaround for React 18/19 version conflict during Next.js prerendering
+- All pages use `export const dynamic = "force-dynamic"` to avoid prerender issues in the monorepo
+- `lib/api.ts` contains shared TypeScript interfaces (KolItem, TweetData, PortfolioResponse, BacktestResult, etc.)

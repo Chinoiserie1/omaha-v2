@@ -339,7 +339,7 @@ return reply.status(400).send({
 
 ### Core
 
-- `PORT` - Server port (default: 3001)
+- `PORT` - Server port (default: 4001)
 - `HOST` - Server host (default: 0.0.0.0)
 - `DATABASE_URL` - PostgreSQL connection string
 - `NODE_ENV` - Environment (development/production)

@@ -24,7 +24,7 @@ Each app has its own detailed CLAUDE.md file:
 
   - See [apps/web/CLAUDE.md](./apps/web/CLAUDE.md)
 
-- **`apps/back/`** - Fastify 5 REST API server (port 3001)
+- **`apps/back/`** - Fastify 5 REST API server (port 4001)
 
   - See [apps/back/CLAUDE.md](./apps/back/CLAUDE.md)
 
@@ -146,89 +146,142 @@ cd packages/shared && pnpm build  # DON'T cd into packages
 
 ## Development Commands
 
+<!-- AUTO-GENERATED from root package.json — do not edit manually -->
+
 ### Starting Development
 
 ```bash
 # Start all apps in development mode
 pnpm dev
 
-# Start specific app only
-pnpm --filter @repo/web dev    # Web app on port 3000
-pnpm --filter @repo/back dev   # Backend API on port 3001
-pnpm --filter @repo/native dev # Expo native app
-```
+# Start specific app only (convenience shortcuts)
+pnpm dev:web                   # Web app on port 3000
+pnpm dev:back                  # Backend API on port 4001
+pnpm dev:ios                   # Expo iOS simulator
+pnpm dev:android               # Expo Android emulator
+pnpm dev:ios:release            # iOS release build
+pnpm dev:android:release        # Android release build
 
-### Database Commands
-
-```bash
-# Generate Prisma client (must run after schema changes)
-pnpm db:generate
-
-# Run migrations in development
-pnpm db:migrate
-
-# Push schema changes without migration (dev only)
-pnpm db:push
-
-# Open Prisma Studio
-pnpm db:studio
+# Or use filters directly
+pnpm --filter @repo/web dev
+pnpm --filter @repo/back dev
+pnpm --filter @repo/native dev
 ```
 
 ### Building and Testing
 
 ```bash
-# Build all apps and packages
-pnpm build
+pnpm build                     # Build all apps and packages
+pnpm build:web                 # Build web app only
+pnpm build:back                # Build backend only
+pnpm lint                      # Lint all packages
+pnpm lint:web                  # Lint web only
+pnpm lint:back                 # Lint backend only
+pnpm lint:native               # Lint native only
+pnpm typecheck                 # Type check all packages
+pnpm typecheck:web             # Type check web only
+pnpm typecheck:back            # Type check backend only
+pnpm typecheck:native          # Type check native only
+pnpm test                      # Run tests
+pnpm clean                     # Clean all build artifacts + node_modules
+```
 
-# Lint all packages
-pnpm lint
+### Database Commands
 
-# Type check all packages
-pnpm typecheck
-
-# Run tests
-pnpm test
-
-# Clean all build artifacts
-pnpm clean
+```bash
+pnpm db:generate               # Generate Prisma client (after schema changes)
+pnpm db:migrate                # Run migrations in development
+pnpm db:push                   # Push schema changes without migration (dev only)
+pnpm db:studio                 # Open Prisma Studio
+pnpm db:up                     # Start PostgreSQL + Redis via docker compose
+pnpm db:down                   # Stop docker compose services
 ```
 
 ### Solana Program Commands
 
 ```bash
-# Build the vault program (BPF target)
-pnpm program:build
-
-# Run vault program unit tests
-pnpm program:test
+pnpm program:build             # Build the vault program (BPF target)
+pnpm program:test              # Run vault program unit tests
+pnpm program:deploy            # Deploy vault program to devnet
 ```
 
-### Vault Admin Scripts
+### Data & Seed Scripts
 
 ```bash
-# Create vault on-chain (all params, defaults to devnet)
+pnpm seed:kols                 # Seed Quant (KOL) data
+pnpm create-vault              # Create vault in database
+pnpm seed-vaults               # Seed vault data
+pnpm sync-tokens               # Sync Jupiter verified tokens to TradeableAsset
+pnpm sync-aliases              # Sync asset aliases (crypto + stock mappings)
+pnpm seed-stocks               # Seed xStock + Ondo GM tokenized stock tokens
+pnpm sync-icons                # Sync token icon URLs from Jupiter
+pnpm backfill-algo-all         # Backfill algo results for all Quants
+```
+
+### On-Chain Admin Scripts
+
+```bash
+# Factory initialization (root-level, runs via turbo)
+pnpm initialize-factory        # Initialize factory PDA on-chain
+
+# Vault creation (root-level, runs via turbo)
 pnpm create-vault-onchain --name "my-vault" [--dry-run]
 
-# Factory management
-pnpm manage-factory-admin add --admin <pubkey>
-pnpm transfer-factory-ownership --new-owner <pubkey>
-
-# Vault management
-pnpm transfer-vault-admin --vault-name <name> --new-admin <pubkey>
-pnpm manage-vault-operator add --vault-name <name> --operator <pubkey>
+# Factory/vault management (run via backend filter — NOT registered at root)
+pnpm --filter @repo/back manage-factory-admin add --admin <pubkey>
+pnpm --filter @repo/back transfer-factory-ownership --new-owner <pubkey>
+pnpm --filter @repo/back transfer-vault-admin --vault-name <name> --new-admin <pubkey>
+pnpm --filter @repo/back manage-vault-operator add --vault-name <name> --operator <pubkey>
 ```
+
+### Production & Worktree
+
+```bash
+pnpm start:back                # Start backend in production mode
+pnpm native:clean              # Clean native app build artifacts
+
+# Git worktree helpers (parallel branch development)
+pnpm wt:create                 # Create a new worktree
+pnpm wt:start                  # Start dev in worktree
+pnpm wt:ios                    # Start iOS dev in worktree
+pnpm wt:android                # Start Android dev in worktree
+pnpm wt:clean                  # Clean up worktrees
+```
+
+<!-- /AUTO-GENERATED -->
 
 ## Environment Variables
 
-Create a `.env` file in the root directory (see `.env.example`):
+Create a `.env` file in the root directory (see `.env.example`). The native app also has its own `.env.example` in `apps/native/`.
 
-```env
-DATABASE_URL="postgresql://user:password@localhost:5456/autopilot"
-REDIS_URL="redis://localhost:6380"
-NODE_ENV=development
-```
+<!-- AUTO-GENERATED from .env.example — do not edit manually -->
 
-Environment variables are managed in `turbo.json` under `globalEnv`.
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql://user:password@localhost:5456/autopilot`) |
+| `REDIS_URL` | Yes | Redis connection string (`redis://localhost:6380`) |
+| `NODE_ENV` | Yes | Environment (`development` / `production`) |
+| `EXPO_PUBLIC_PRIVY_APP_ID` | Yes | Privy app ID (from dashboard.privy.io) |
+| `EXPO_PUBLIC_PRIVY_CLIENT_ID` | Yes | Privy client ID |
+| `PRIVY_APP_SECRET` | Yes | Privy app secret (backend only) |
+| `EXPO_PUBLIC_POSTHOG_API_KEY` | No | PostHog analytics key (EU cloud) |
+| `RAPIDAPI_KEY` | No | Twitter API via RapidAPI |
+| `ANTHROPIC_API_KEY` | No | Anthropic API for signal analysis |
+| `SOLANA_RPC_URL` | No | Solana RPC endpoint (backend) |
+| `EXPO_PUBLIC_SOLANA_RPC_URL` | No | Solana RPC endpoint (native app) |
+| `KEEPER_PRIVATE_KEY` | No | Keeper wallet for vault operations |
+| `PROGRAM_AUTHORITY_KEYPAIR` | No | Program authority keypair for factory init |
+| `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |
+| `JUPITER_API_KEY` | No | Jupiter swap API key |
+| `BIRDEYE_API_KEY` | No | Birdeye price data for backtesting |
+| `TELEGRAM_BOT_TOKEN` | No | Telegram health check bot |
+| `TELEGRAM_CHAT_ID` | No | Telegram group chat ID |
+| `NEXT_PUBLIC_API_URL` | No | Backend API URL for web app |
+| `NEXT_PUBLIC_MAKE_WEBHOOK_URL` | No | Make.com webhook for waitlist |
+
+<!-- /AUTO-GENERATED -->
+
+Full variable list with defaults and cron schedules: see `.env.example`. Variables are registered in `turbo.json` under `globalEnv`.
 
 ## Architecture Overview
 
@@ -338,7 +391,7 @@ Key tasks:
 ## Port Assignments
 
 - Web: `3000`
-- Backend API: `3001`
+- Backend API: `4001`
 - Prisma Studio: `5555` (default)
 
 ## Common Workflows
