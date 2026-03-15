@@ -79,6 +79,10 @@
       "cache": false,
       "dependsOn": ["^db:generate"]
     },
+    "create-vault-onchain": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
     "program:deploy": {
       "cache": false
     }

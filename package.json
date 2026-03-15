@@ -40,6 +40,7 @@
     "seed-vaults": "turbo run seed-vaults",
     "backfill-algo-all": "turbo run backfill-algo-all",
     "sync-icons": "turbo run sync-icons",
+    "create-vault-onchain": "turbo run create-vault-onchain",
     "start:back": "pnpm --filter @repo/back start",
     "native:clean": "pnpm --filter @repo/native clean",
     "wt:ios": "bash scripts/worktree-dev.sh ios",

@@ -31,6 +31,26 @@ export function parseFlag(args: readonly string[], flag: string): string | undef
   return undefined;
 }
 
+/** Collect ALL values for a repeatable `--flag value` or `--flag=value`. */
+export function parseFlagAll(args: readonly string[], flag: string): string[] {
+  const results: string[] = [];
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]!;
+    if (arg.startsWith(`${flag}=`)) {
+      results.push(arg.slice(flag.length + 1));
+    } else if (arg === flag && i + 1 < args.length) {
+      results.push(args[i + 1]!);
+      i++;
+    }
+  }
+  return results;
+}
+
+/** Check if a boolean flag is present (e.g. --dry-run). */
+export function hasFlag(args: readonly string[], flag: string): boolean {
+  return args.includes(flag);
+}
+
 /** Collect positional args (anything not starting with --). */
 export function positionalArgs(args: readonly string[]): string[] {
   const result: string[] = [];
@@ -86,16 +106,17 @@ export function resolveKeypair(
   return keypairFromRaw(raw);
 }
 
+const DEVNET_RPC_URL = "https://api.devnet.solana.com";
+
 /**
  * Resolve an RPC connection.
- * CLI: --rpc-url <url>  |  Env: SOLANA_RPC_URL
+ * CLI: --rpc-url <url>  |  Env: SOLANA_RPC_URL  |  Default: devnet
  */
 export function resolveConnection(args: readonly string[]): Connection {
-  const url = parseFlag(args, "--rpc-url") ?? process.env["SOLANA_RPC_URL"];
-  if (!url) {
-    console.error("ERROR: Provide --rpc-url <url> or set SOLANA_RPC_URL env var.");
-    process.exit(1);
-  }
+  const url =
+    parseFlag(args, "--rpc-url") ??
+    process.env["SOLANA_RPC_URL"] ??
+    DEVNET_RPC_URL;
   return new Connection(url, "confirmed");
 }
 
