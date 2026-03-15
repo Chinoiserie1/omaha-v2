@@ -25,6 +25,7 @@ use crate::token2022;
 ///   4. `[writable]`         pending_withdraw     — PDA to create
 ///   5. `[]`                 system_program
 ///   6. `[]`                 token_program
+///   7. `[]`                 clock_sysvar
 ///
 /// Data:
 ///   [0]    discriminator (0x0B)
@@ -37,6 +38,7 @@ pub struct RequestWithdraw<'a> {
     pending_withdraw: &'a AccountInfo,
     _system_program: &'a AccountInfo,
     token_program: &'a AccountInfo,
+    clock_sysvar: &'a AccountInfo,
     shares: u64,
 }
 
@@ -44,15 +46,21 @@ impl<'a> RequestWithdraw<'a> {
     pub const DISCRIMINATOR: u8 = 0x0B;
 
     pub fn process(self) -> ProgramResult {
-        // Validate share mint matches vault state
-        {
+        let current_timestamp = crate::sysvar::read_clock_timestamp(self.clock_sysvar)?;
+
+        // Validate share mint matches vault state and read exit_fee_bps + pause check
+        let exit_fee_bps = {
             let vdata = self.vault_state.try_borrow_data()?;
             let state: &VaultState = bytemuck::from_bytes(&vdata[..VaultState::LEN]);
 
+            if state.paused() {
+                return Err(VaultError::VaultPaused.into());
+            }
             if state.share_mint != *self.share_mint.key() {
                 return Err(ProgramError::InvalidAccountData);
             }
-        }
+            state.exit_fee_bps
+        };
 
         let vault_state_key = self.vault_state.key();
         let withdrawer_key = self.withdrawer.key();
@@ -94,9 +102,11 @@ impl<'a> RequestWithdraw<'a> {
 
             state.discriminator = PENDING_WITHDRAW_DISCRIMINATOR;
             state.bump = pending_bump;
+            state.exit_fee_bps = exit_fee_bps;
             state.vault_state = *vault_state_key;
             state.withdrawer = *withdrawer_key;
             state.shares = self.shares;
+            state.created_at = current_timestamp;
         }
 
         // Burn share tokens from withdrawer (no PDA signer needed — withdrawer signs)
@@ -119,7 +129,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestWithdraw<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [withdrawer, withdrawer_share_ata, share_mint, vault_state, pending_withdraw, system_program, token_program, ..] =
+        let [withdrawer, withdrawer_share_ata, share_mint, vault_state, pending_withdraw, system_program, token_program, clock_sysvar, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -163,6 +173,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestWithdraw<'a> {
             pending_withdraw,
             _system_program: system_program,
             token_program,
+            clock_sysvar,
             shares,
         })
     }

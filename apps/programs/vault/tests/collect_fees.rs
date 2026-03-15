@@ -26,13 +26,14 @@ fn test_collect_fees_first_call_initializes_timestamp() {
     let timestamp: i64 = 1_000_000;
 
     let instruction = build_instruction(
-        collect_fees_data(timestamp),
+        collect_fees_data(),
         vec![
             AccountMeta::new_readonly(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -42,6 +43,7 @@ fn test_collect_fees_first_call_initializes_timestamp() {
         (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
         (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(timestamp)),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -53,7 +55,7 @@ fn test_collect_fees_first_call_initializes_timestamp() {
     // Verify timestamp was set (no fees minted on first call)
     let vault_account = result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
-    let stored_ts = i64::from_le_bytes(vault_account.data[160..168].try_into().unwrap());
+    let stored_ts = i64::from_le_bytes(vault_account.data[224..232].try_into().unwrap());
     assert_eq!(stored_ts, timestamp);
 
     // Fee receiver should still have 0 shares
@@ -85,13 +87,14 @@ fn test_collect_fees_management_fee() {
     set_vault_fees(&mut vault_data, 0, 0, mgmt_fee_bps, 0, &fee_receiver, 1_000_000, last_ts);
 
     let instruction = build_instruction(
-        collect_fees_data(current_ts),
+        collect_fees_data(),
         vec![
             AccountMeta::new_readonly(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -101,6 +104,7 @@ fn test_collect_fees_management_fee() {
         (share_mint_key, create_token2022_mint(&vault_key, 6, total_supply, b"Test", b"TST", b"")),
         (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(current_ts)),
     ];
 
     // Expected: 1_000_000_000 * 200 / 10_000 = 20_000_000 shares (2% of supply)
@@ -121,7 +125,7 @@ fn test_collect_fees_management_fee() {
     // Verify timestamp was updated
     let vault_account = result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
-    let stored_ts = i64::from_le_bytes(vault_account.data[160..168].try_into().unwrap());
+    let stored_ts = i64::from_le_bytes(vault_account.data[224..232].try_into().unwrap());
     assert_eq!(stored_ts, current_ts);
 }
 
@@ -149,13 +153,14 @@ fn test_collect_fees_performance_fee() {
     set_vault_fees(&mut vault_data, 0, 0, 0, perf_fee_bps, &fee_receiver, hwm, last_ts);
 
     let instruction = build_instruction(
-        collect_fees_data(current_ts),
+        collect_fees_data(),
         vec![
             AccountMeta::new_readonly(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -165,6 +170,7 @@ fn test_collect_fees_performance_fee() {
         (share_mint_key, create_token2022_mint(&vault_key, 6, total_supply, b"Test", b"TST", b"")),
         (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(current_ts)),
     ];
 
     // Expected perf fee: (2M - 1M) * 100M * 2000 / (2M * 10000) = 10_000_000 shares
@@ -185,7 +191,7 @@ fn test_collect_fees_performance_fee() {
     // Verify HWM was updated to current price
     let vault_account = result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
-    let updated_hwm = u64::from_le_bytes(vault_account.data[152..160].try_into().unwrap());
+    let updated_hwm = u64::from_le_bytes(vault_account.data[216..224].try_into().unwrap());
     assert_eq!(updated_hwm, share_price);
 }
 
@@ -204,13 +210,14 @@ fn test_collect_fees_no_fee_receiver() {
     );
 
     let instruction = build_instruction(
-        collect_fees_data(1_000_000),
+        collect_fees_data(),
         vec![
             AccountMeta::new_readonly(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -220,6 +227,7 @@ fn test_collect_fees_no_fee_receiver() {
         (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
         (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &admin, 0)),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1_000_000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -246,13 +254,14 @@ fn test_collect_fees_unauthorized() {
     set_vault_fees(&mut vault_data, 0, 0, 200, 0, &fee_receiver, 1_000_000, 0);
 
     let instruction = build_instruction(
-        collect_fees_data(1_000_000),
+        collect_fees_data(),
         vec![
             AccountMeta::new_readonly(not_admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -262,6 +271,7 @@ fn test_collect_fees_unauthorized() {
         (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
         (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1_000_000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -293,13 +303,14 @@ fn test_collect_fees_price_below_hwm_no_perf_fee() {
     set_vault_fees(&mut vault_data, 0, 0, 0, 2000, &fee_receiver, hwm, last_ts);
 
     let instruction = build_instruction(
-        collect_fees_data(current_ts),
+        collect_fees_data(),
         vec![
             AccountMeta::new_readonly(admin, true),
             AccountMeta::new(vault_key, false),
             AccountMeta::new(share_mint_key, false),
             AccountMeta::new(fee_receiver_ata, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -309,6 +320,7 @@ fn test_collect_fees_price_below_hwm_no_perf_fee() {
         (share_mint_key, create_token2022_mint(&vault_key, 6, 100_000_000, b"Test", b"TST", b"")),
         (fee_receiver_ata, create_token2022_token_account(&share_mint_key, &fee_receiver, 0)),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(current_ts)),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -326,6 +338,6 @@ fn test_collect_fees_price_below_hwm_no_perf_fee() {
     // HWM should NOT be updated (price is below)
     let vault_account = result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
-    let stored_hwm = u64::from_le_bytes(vault_account.data[152..160].try_into().unwrap());
+    let stored_hwm = u64::from_le_bytes(vault_account.data[216..224].try_into().unwrap());
     assert_eq!(stored_hwm, hwm); // unchanged
 }

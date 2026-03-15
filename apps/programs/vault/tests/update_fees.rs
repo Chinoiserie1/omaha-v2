@@ -47,7 +47,7 @@ fn test_update_fees_success() {
     let exit = u16::from_le_bytes(vault_account.data[6..8].try_into().unwrap());
     let mgmt = u16::from_le_bytes(vault_account.data[8..10].try_into().unwrap());
     let perf = u16::from_le_bytes(vault_account.data[10..12].try_into().unwrap());
-    let receiver = &vault_account.data[112..144];
+    let receiver = &vault_account.data[144..176];
 
     assert_eq!(entry, 100);
     assert_eq!(exit, 50);
@@ -56,7 +56,7 @@ fn test_update_fees_success() {
     assert_eq!(receiver, fee_receiver.as_ref());
 
     // HWM should be initialized to share_price
-    let hwm = u64::from_le_bytes(vault_account.data[152..160].try_into().unwrap());
+    let hwm = u64::from_le_bytes(vault_account.data[216..224].try_into().unwrap());
     assert_eq!(hwm, 1_000_000);
 }
 

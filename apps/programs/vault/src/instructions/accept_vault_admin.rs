@@ -7,52 +7,53 @@ use pinocchio::{
 use crate::error::VaultError;
 use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 
-/// Admin-only: remove an operator from the vault.
+/// Accept a pending vault admin transfer (2-step admin handover).
 ///
 /// Accounts:
-///   0. `[signer]`    admin
+///   0. `[signer]`    new_admin (the pending admin accepting ownership)
 ///   1. `[writable]`  vault_state
 ///
 /// Data:
-///   [0]     discriminator (0x02)
-///   [1..33] owner_to_remove pubkey (32 bytes)
-pub struct RemoveOwner<'a> {
-    admin: &'a AccountInfo,
+///   [0] discriminator (0x15)
+pub struct AcceptVaultAdmin<'a> {
+    new_admin: &'a AccountInfo,
     vault_state: &'a AccountInfo,
-    owner_to_remove: [u8; 32],
 }
 
-impl<'a> RemoveOwner<'a> {
-    pub const DISCRIMINATOR: u8 = 2;
+impl<'a> AcceptVaultAdmin<'a> {
+    pub const DISCRIMINATOR: u8 = 0x15;
 
     pub fn process(self) -> ProgramResult {
         let mut data = self.vault_state.try_borrow_mut_data()?;
         let state: &mut VaultState =
             bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
 
-        if !state.is_admin(self.admin.key()) {
-            return Err(VaultError::Unauthorized.into());
+        if state.pending_admin == [0u8; 32] {
+            return Err(VaultError::NoPendingAdmin.into());
         }
 
-        if !state.remove_owner(&self.owner_to_remove) {
-            return Err(VaultError::OwnerNotFound.into());
+        if state.pending_admin != *self.new_admin.key() {
+            return Err(VaultError::InvalidPendingAdmin.into());
         }
+
+        state.admin = state.pending_admin;
+        state.pending_admin = [0u8; 32];
 
         Ok(())
     }
 }
 
-impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RemoveOwner<'a> {
+impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for AcceptVaultAdmin<'a> {
     type Error = ProgramError;
 
     fn try_from(
-        (data, accounts): (&'a [u8], &'a [AccountInfo]),
+        (_data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [admin, vault_state, ..] = accounts else {
+        let [new_admin, vault_state, ..] = accounts else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        if !admin.is_signer() {
+        if !new_admin.is_signer() {
             return Err(ProgramError::MissingRequiredSignature);
         }
         if !vault_state.is_writable() {
@@ -68,16 +69,9 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RemoveOwner<'a> {
             }
         }
 
-        if data.len() < 32 {
-            return Err(ProgramError::InvalidInstructionData);
-        }
-        let mut owner_to_remove = [0u8; 32];
-        owner_to_remove.copy_from_slice(&data[..32]);
-
         Ok(Self {
-            admin,
+            new_admin,
             vault_state,
-            owner_to_remove,
         })
     }
 }

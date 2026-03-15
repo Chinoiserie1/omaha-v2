@@ -8,7 +8,7 @@ use pinocchio::pubkey::find_program_address;
 use pinocchio_system::instructions::CreateAccount;
 
 use crate::error::VaultError;
-use crate::state::{VaultState, VAULT_DISCRIMINATOR};
+use crate::state::{FactoryState, VaultState, FACTORY_DISCRIMINATOR, VAULT_DISCRIMINATOR};
 use crate::token2022;
 
 /// Initialize a new vault with a Token 2022 share mint (metadata + close authority).
@@ -16,7 +16,7 @@ use crate::token2022;
 /// All fee fields default to 0 (no fees). Use UpdateFees to configure fees.
 ///
 /// Accounts:
-///   0. `[signer]`           program_authority — must match PROGRAM_AUTHORITY constant
+///   0. `[writable]`         factory_state — PDA: ["factory"]; gates vault creation
 ///   1. `[signer, writable]` admin — pays for account creation, becomes vault admin
 ///   2. `[writable]`         vault_state — PDA: ["vault", name]
 ///   3. `[writable]`         share_mint — PDA: ["share_mint", vault_state]
@@ -35,7 +35,7 @@ use crate::token2022;
 ///   [..+2]    uri_len (u16 LE)
 ///   [..+U]    uri bytes (UTF-8)
 pub struct Initialize<'a> {
-    _program_authority: &'a AccountInfo,
+    factory_state: &'a AccountInfo,
     admin: &'a AccountInfo,
     vault_state: &'a AccountInfo,
     share_mint: &'a AccountInfo,
@@ -165,25 +165,37 @@ impl<'a> Initialize<'a> {
         )?;
 
         // Write vault state (fee fields are zeroed by CreateAccount)
-        let mut data = self.vault_state.try_borrow_mut_data()?;
-        let state: &mut VaultState =
-            bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
+        let factory_key = *self.factory_state.key();
+        {
+            let mut data = self.vault_state.try_borrow_mut_data()?;
+            let state: &mut VaultState =
+                bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
 
-        state.discriminator = VAULT_DISCRIMINATOR;
-        state.bump = vault_bump;
-        state.share_decimals = self.share_decimals;
-        state.num_owners = 0;
-        // entry_fee_bps, exit_fee_bps, management_fee_bps, performance_fee_bps = 0
-        state.vault_name_len = self.name.len() as u8;
-        let admin_key = self.admin.key();
-        state.admin = *admin_key;
-        state.share_mint = *self.share_mint.key();
-        state.base_mint = *self.base_mint.key();
-        // fee_receiver = [0; 32] (no fees until UpdateFees is called)
-        state.share_price = self.share_price;
-        state.high_water_mark = self.share_price;
-        // last_fee_timestamp = 0 (initialized on first CollectFees call)
-        state.vault_name[..self.name.len()].copy_from_slice(self.name);
+            state.discriminator = VAULT_DISCRIMINATOR;
+            state.bump = vault_bump;
+            state.share_decimals = self.share_decimals;
+            state.num_operators = 0;
+            // entry_fee_bps, exit_fee_bps, management_fee_bps, performance_fee_bps = 0
+            state.vault_name_len = self.name.len() as u8;
+            let admin_key = self.admin.key();
+            state.admin = *admin_key;
+            state.share_mint = *self.share_mint.key();
+            state.base_mint = *self.base_mint.key();
+            // fee_receiver = [0; 32] (no fees until UpdateFees is called)
+            state.factory = factory_key;
+            state.share_price = self.share_price;
+            state.high_water_mark = self.share_price;
+            // last_fee_timestamp = 0 (initialized on first CollectFees call)
+            state.vault_name[..self.name.len()].copy_from_slice(self.name);
+        }
+
+        // Increment factory vault_count
+        {
+            let mut fdata = self.factory_state.try_borrow_mut_data()?;
+            let factory: &mut FactoryState =
+                bytemuck::from_bytes_mut(&mut fdata[..FactoryState::LEN]);
+            factory.vault_count = factory.vault_count.wrapping_add(1);
+        }
 
         Ok(())
     }
@@ -195,18 +207,36 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Initialize<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [program_authority, admin, vault_state, share_mint, base_mint, system_program, token_program, ..] =
+        let [factory_state, admin, vault_state, share_mint, base_mint, system_program, token_program, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
 
-        // Verify program authority is a signer and matches the hardcoded constant
-        if !program_authority.is_signer() {
-            return Err(ProgramError::MissingRequiredSignature);
+        // Validate factory_state: owned by this program, correct discriminator, sufficient size
+        if factory_state.owner() != &crate::ID {
+            return Err(VaultError::InvalidFactory.into());
         }
-        if program_authority.key().as_ref() != &crate::PROGRAM_AUTHORITY {
-            return Err(VaultError::UnauthorizedInitializer.into());
+        {
+            let fdata = factory_state.try_borrow_data()?;
+            if fdata.len() < FactoryState::LEN {
+                return Err(VaultError::InvalidFactory.into());
+            }
+            if fdata[0] != FACTORY_DISCRIMINATOR {
+                return Err(VaultError::InvalidFactory.into());
+            }
+            let factory: &FactoryState =
+                bytemuck::from_bytes(&fdata[..FactoryState::LEN]);
+            if factory.paused() {
+                return Err(VaultError::FactoryPaused.into());
+            }
+            if !factory.is_authorized(admin.key()) {
+                return Err(VaultError::UnauthorizedVaultCreator.into());
+            }
+        }
+
+        if !factory_state.is_writable() {
+            return Err(ProgramError::InvalidAccountData);
         }
 
         if !admin.is_signer() {
@@ -287,7 +317,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for Initialize<'a> {
         let uri = &data[offset..offset + uri_len];
 
         Ok(Self {
-            _program_authority: program_authority,
+            factory_state,
             admin,
             vault_state,
             share_mint,

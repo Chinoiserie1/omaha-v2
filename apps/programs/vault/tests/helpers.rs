@@ -3,7 +3,9 @@ use solana_account::Account;
 use solana_instruction::{AccountMeta, Instruction};
 use solana_pubkey::Pubkey;
 
-use omaha_vault::state::{VaultState, VAULT_DISCRIMINATOR};
+use omaha_vault::state::{VaultState, FactoryState, PendingDeposit, PendingWithdraw,
+    VAULT_DISCRIMINATOR, FACTORY_DISCRIMINATOR, PENDING_DEPOSIT_DISCRIMINATOR,
+    PENDING_WITHDRAW_DISCRIMINATOR};
 
 /// SPL Token program ID (legacy — for base token operations).
 pub const TOKEN_PROGRAM_ID: Pubkey =
@@ -16,6 +18,10 @@ pub const TOKEN_2022_PROGRAM_ID: Pubkey =
 /// System program ID.
 pub const SYSTEM_PROGRAM_ID: Pubkey =
     solana_pubkey::pubkey!("11111111111111111111111111111111");
+
+/// Clock sysvar ID.
+pub const CLOCK_SYSVAR_ID: Pubkey =
+    solana_pubkey::pubkey!("SysvarC1ock11111111111111111111111111111111");
 
 /// The program ID matching `declare_id!` in lib.rs.
 pub fn program_id() -> Pubkey {
@@ -59,6 +65,13 @@ pub fn setup_with_both_tokens() -> Mollusk {
     mollusk
 }
 
+// ── PDA Derivation ──────────────────────────────────────────────────
+
+/// Derive factory PDA: seeds = ["factory"].
+pub fn factory_pda() -> (Pubkey, u8) {
+    Pubkey::find_program_address(&[b"factory"], &program_id())
+}
+
 /// Derive vault PDA: seeds = ["vault", vault_name].
 pub fn vault_pda(vault_name: &[u8]) -> (Pubkey, u8) {
     Pubkey::find_program_address(
@@ -75,30 +88,84 @@ pub fn share_mint_pda(vault_state: &Pubkey) -> (Pubkey, u8) {
     )
 }
 
+/// Derive pending deposit PDA: seeds = ["pending_deposit", vault_state, depositor].
+pub fn pending_deposit_pda(vault_state: &Pubkey, depositor: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[b"pending_deposit", vault_state.as_ref(), depositor.as_ref()],
+        &program_id(),
+    )
+}
+
+/// Derive pending withdraw PDA: seeds = ["pending_withdraw", vault_state, withdrawer].
+pub fn pending_withdraw_pda(vault_state: &Pubkey, withdrawer: &Pubkey) -> (Pubkey, u8) {
+    Pubkey::find_program_address(
+        &[b"pending_withdraw", vault_state.as_ref(), withdrawer.as_ref()],
+        &program_id(),
+    )
+}
+
+// ── Account Builders ────────────────────────────────────────────────
+
+/// Create raw FactoryState bytes.
+///
+/// Layout (400 bytes):
+///   [0]       discriminator (0xA4)
+///   [1]       bump
+///   [2]       is_paused
+///   [3]       num_admins
+///   [4..8]    _padding
+///   [8..40]   owner
+///   [40..72]  pending_owner
+///   [72..80]  vault_count (u64 LE)
+///   [80..400] admins (10 × 32 bytes)
+pub fn create_factory_state_data(
+    owner: &Pubkey,
+    bump: u8,
+    admins: &[Pubkey],
+) -> Vec<u8> {
+    let mut data = vec![0u8; FactoryState::LEN];
+
+    data[0] = FACTORY_DISCRIMINATOR;
+    data[1] = bump;
+    // is_paused = 0, num_admins set below
+    data[3] = admins.len() as u8;
+    data[8..40].copy_from_slice(owner.as_ref());
+    // pending_owner at [40..72] = 0
+    // vault_count at [72..80] = 0
+
+    for (i, admin) in admins.iter().enumerate() {
+        let offset = 80 + i * 32;
+        data[offset..offset + 32].copy_from_slice(admin.as_ref());
+    }
+
+    data
+}
+
 /// Create raw VaultState bytes with the given parameters.
 ///
-/// Fee fields default to 0 (no fees). Use `set_vault_fees` to configure fees.
-///
-/// Layout (520 bytes):
-///   [0]       discriminator
-///   [1]       bump
-///   [2]       share_decimals
-///   [3]       num_owners
-///   [4..6]    entry_fee_bps (u16 LE)
-///   [6..8]    exit_fee_bps (u16 LE)
-///   [8..10]   management_fee_bps (u16 LE)
-///   [10..12]  performance_fee_bps (u16 LE)
-///   [12]      vault_name_len
-///   [13..16]  _padding
-///   [16..48]  admin
-///   [48..80]  share_mint
-///   [80..112] base_mint
-///   [112..144] fee_receiver
-///   [144..152] share_price (u64 LE)
-///   [152..160] high_water_mark (u64 LE)
-///   [160..168] last_fee_timestamp (i64 LE)
-///   [168..488] owners (10 × 32 bytes)
-///   [488..520] vault_name (32 bytes)
+/// Layout (584 bytes):
+///   [0]         discriminator (0xA1)
+///   [1]         bump
+///   [2]         share_decimals
+///   [3]         num_operators
+///   [4..6]      entry_fee_bps (u16 LE)
+///   [6..8]      exit_fee_bps (u16 LE)
+///   [8..10]     management_fee_bps (u16 LE)
+///   [10..12]    performance_fee_bps (u16 LE)
+///   [12]        vault_name_len
+///   [13]        is_paused
+///   [14..16]    _padding
+///   [16..48]    admin
+///   [48..80]    pending_admin
+///   [80..112]   share_mint
+///   [112..144]  base_mint
+///   [144..176]  fee_receiver
+///   [176..208]  factory
+///   [208..216]  share_price (u64 LE)
+///   [216..224]  high_water_mark (u64 LE)
+///   [224..232]  last_fee_timestamp (i64 LE)
+///   [232..552]  operators (10 × 32 bytes)
+///   [552..584]  vault_name (32 bytes)
 pub fn create_vault_state_data(
     admin: &Pubkey,
     base_mint: &Pubkey,
@@ -106,7 +173,7 @@ pub fn create_vault_state_data(
     bump: u8,
     share_decimals: u8,
     share_price: u64,
-    owners: &[Pubkey],
+    operators: &[Pubkey],
     vault_name: &[u8],
 ) -> Vec<u8> {
     let mut data = vec![0u8; VaultState::LEN];
@@ -114,28 +181,31 @@ pub fn create_vault_state_data(
     data[0] = VAULT_DISCRIMINATOR;
     data[1] = bump;
     data[2] = share_decimals;
-    data[3] = owners.len() as u8;
+    data[3] = operators.len() as u8;
     // fee BPS at [4..12] = 0 (no fees by default)
     data[12] = vault_name.len() as u8;
-    // _padding at [13..16] = 0
+    // is_paused at [13] = 0
+    // _padding at [14..16] = 0
 
     data[16..48].copy_from_slice(admin.as_ref());
-    data[48..80].copy_from_slice(share_mint.as_ref());
-    data[80..112].copy_from_slice(base_mint.as_ref());
-    // fee_receiver at [112..144] = 0 (no fee receiver)
-    data[144..152].copy_from_slice(&share_price.to_le_bytes());
-    // high_water_mark at [152..160] defaults to share_price
-    data[152..160].copy_from_slice(&share_price.to_le_bytes());
-    // last_fee_timestamp at [160..168] = 0
+    // pending_admin at [48..80] = 0
+    data[80..112].copy_from_slice(share_mint.as_ref());
+    data[112..144].copy_from_slice(base_mint.as_ref());
+    // fee_receiver at [144..176] = 0
+    // factory at [176..208] = 0
+    data[208..216].copy_from_slice(&share_price.to_le_bytes());
+    // high_water_mark defaults to share_price
+    data[216..224].copy_from_slice(&share_price.to_le_bytes());
+    // last_fee_timestamp at [224..232] = 0
 
-    for (i, owner) in owners.iter().enumerate() {
-        let offset = 168 + i * 32;
-        data[offset..offset + 32].copy_from_slice(owner.as_ref());
+    for (i, operator) in operators.iter().enumerate() {
+        let offset = 232 + i * 32;
+        data[offset..offset + 32].copy_from_slice(operator.as_ref());
     }
 
-    // vault_name at [488..520]
+    // vault_name at [552..584]
     let vn_len = vault_name.len().min(32);
-    data[488..488 + vn_len].copy_from_slice(&vault_name[..vn_len]);
+    data[552..552 + vn_len].copy_from_slice(&vault_name[..vn_len]);
 
     data
 }
@@ -155,9 +225,14 @@ pub fn set_vault_fees(
     data[6..8].copy_from_slice(&exit_fee_bps.to_le_bytes());
     data[8..10].copy_from_slice(&management_fee_bps.to_le_bytes());
     data[10..12].copy_from_slice(&performance_fee_bps.to_le_bytes());
-    data[112..144].copy_from_slice(fee_receiver.as_ref());
-    data[152..160].copy_from_slice(&high_water_mark.to_le_bytes());
-    data[160..168].copy_from_slice(&last_fee_timestamp.to_le_bytes());
+    data[144..176].copy_from_slice(fee_receiver.as_ref());
+    data[216..224].copy_from_slice(&high_water_mark.to_le_bytes());
+    data[224..232].copy_from_slice(&last_fee_timestamp.to_le_bytes());
+}
+
+/// Set factory reference on raw vault state data.
+pub fn set_vault_factory(data: &mut [u8], factory: &Pubkey) {
+    data[176..208].copy_from_slice(factory.as_ref());
 }
 
 /// Create a vault state account owned by the program with the given data.
@@ -171,6 +246,19 @@ pub fn make_vault_account(data: Vec<u8>) -> Account {
     }
 }
 
+/// Create a factory state account owned by the program with the given data.
+pub fn make_factory_account(data: Vec<u8>) -> Account {
+    Account {
+        lamports: 1_000_000_000,
+        data,
+        owner: program_id(),
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+// ── Instruction Data Builders ───────────────────────────────────────
+
 /// Build an instruction for the vault program.
 pub fn build_instruction(
     data: Vec<u8>,
@@ -179,8 +267,7 @@ pub fn build_instruction(
     Instruction::new_with_bytes(program_id(), &data, account_metas)
 }
 
-/// Build Initialize instruction data:
-/// [disc=0x00] [share_decimals: u8] [share_price: u64 LE] [name_len: u16] [name] [symbol_len: u16] [symbol] [uri_len: u16] [uri]
+/// Build Initialize instruction data.
 pub fn initialize_data(
     share_decimals: u8,
     share_price: u64,
@@ -196,6 +283,78 @@ pub fn initialize_data(
     data.extend_from_slice(symbol);
     data.extend_from_slice(&(uri.len() as u16).to_le_bytes());
     data.extend_from_slice(uri);
+    data
+}
+
+/// Build AddOperator instruction data: [disc=0x01] [operator: 32 bytes].
+pub fn add_operator_data(operator: &Pubkey) -> Vec<u8> {
+    let mut data = vec![0x01];
+    data.extend_from_slice(operator.as_ref());
+    data
+}
+
+/// Build RemoveOperator instruction data: [disc=0x02] [operator: 32 bytes].
+pub fn remove_operator_data(operator: &Pubkey) -> Vec<u8> {
+    let mut data = vec![0x02];
+    data.extend_from_slice(operator.as_ref());
+    data
+}
+
+/// Build SetSharePrice instruction data: [disc=0x03] [price: u64 LE].
+pub fn set_share_price_data(price: u64) -> Vec<u8> {
+    let mut data = vec![0x03];
+    data.extend_from_slice(&price.to_le_bytes());
+    data
+}
+
+/// Build Execute instruction data: [disc=0x04] [target_data...].
+pub fn execute_data(target_data: &[u8]) -> Vec<u8> {
+    let mut data = vec![0x04];
+    data.extend_from_slice(target_data);
+    data
+}
+
+/// Build UpdateFees instruction data.
+pub fn update_fees_data(
+    entry_fee_bps: u16,
+    exit_fee_bps: u16,
+    management_fee_bps: u16,
+    performance_fee_bps: u16,
+    fee_receiver: &Pubkey,
+) -> Vec<u8> {
+    let mut data = vec![0x05];
+    data.extend_from_slice(&entry_fee_bps.to_le_bytes());
+    data.extend_from_slice(&exit_fee_bps.to_le_bytes());
+    data.extend_from_slice(&management_fee_bps.to_le_bytes());
+    data.extend_from_slice(&performance_fee_bps.to_le_bytes());
+    data.extend_from_slice(fee_receiver.as_ref());
+    data
+}
+
+/// Build CollectFees instruction data: [disc=0x06] (no data — uses clock sysvar).
+pub fn collect_fees_data() -> Vec<u8> {
+    vec![0x06]
+}
+
+/// Build DepositWithPrice instruction data: [disc=0x07] [price: u64 LE] [amount: u64 LE].
+pub fn deposit_with_price_data(price: u64, amount: u64) -> Vec<u8> {
+    let mut data = vec![0x07];
+    data.extend_from_slice(&price.to_le_bytes());
+    data.extend_from_slice(&amount.to_le_bytes());
+    data
+}
+
+/// Build RequestDeposit instruction data: [disc=0x08] [amount: u64 LE].
+pub fn request_deposit_data(amount: u64) -> Vec<u8> {
+    let mut data = vec![0x08];
+    data.extend_from_slice(&amount.to_le_bytes());
+    data
+}
+
+/// Build FulfillDeposit instruction data: [disc=0x09] [price: u64 LE].
+pub fn fulfill_deposit_data(price: u64) -> Vec<u8> {
+    let mut data = vec![0x09];
+    data.extend_from_slice(&price.to_le_bytes());
     data
 }
 
@@ -221,111 +380,86 @@ pub fn fulfill_withdraw_data(price: u64) -> Vec<u8> {
     data
 }
 
-/// Build SetSharePrice instruction data: [disc=0x03] [price: u64 LE].
-pub fn set_share_price_data(price: u64) -> Vec<u8> {
-    let mut data = vec![0x03];
-    data.extend_from_slice(&price.to_le_bytes());
+/// Build InitializeFactory instruction data: [disc=0x0D].
+pub fn initialize_factory_data() -> Vec<u8> {
+    vec![0x0D]
+}
+
+/// Build AddFactoryAdmin instruction data: [disc=0x0E] [admin: 32 bytes].
+pub fn add_factory_admin_data(admin: &Pubkey) -> Vec<u8> {
+    let mut data = vec![0x0E];
+    data.extend_from_slice(admin.as_ref());
     data
 }
 
-/// Build Execute instruction data: [disc=0x04] [target_data...].
-pub fn execute_data(target_data: &[u8]) -> Vec<u8> {
-    let mut data = vec![0x04];
-    data.extend_from_slice(target_data);
+/// Build RemoveFactoryAdmin instruction data: [disc=0x0F] [admin: 32 bytes].
+pub fn remove_factory_admin_data(admin: &Pubkey) -> Vec<u8> {
+    let mut data = vec![0x0F];
+    data.extend_from_slice(admin.as_ref());
     data
 }
 
-/// Build AddOwner instruction data: [disc=0x01] [owner: 32 bytes].
-pub fn add_owner_data(owner: &Pubkey) -> Vec<u8> {
-    let mut data = vec![0x01];
-    data.extend_from_slice(owner.as_ref());
+/// Build TransferVaultAdmin instruction data: [disc=0x14] [new_admin: 32 bytes].
+pub fn transfer_vault_admin_data(new_admin: &Pubkey) -> Vec<u8> {
+    let mut data = vec![0x14];
+    data.extend_from_slice(new_admin.as_ref());
     data
 }
 
-/// Build RemoveOwner instruction data: [disc=0x02] [owner: 32 bytes].
-pub fn remove_owner_data(owner: &Pubkey) -> Vec<u8> {
-    let mut data = vec![0x02];
-    data.extend_from_slice(owner.as_ref());
-    data
+/// Build AcceptVaultAdmin instruction data: [disc=0x15].
+pub fn accept_vault_admin_data() -> Vec<u8> {
+    vec![0x15]
 }
 
-/// Build DepositWithPrice instruction data: [disc=0x07] [price: u64 LE] [amount: u64 LE].
-pub fn deposit_with_price_data(price: u64, amount: u64) -> Vec<u8> {
-    let mut data = vec![0x07];
-    data.extend_from_slice(&price.to_le_bytes());
-    data.extend_from_slice(&amount.to_le_bytes());
-    data
-}
+// ── Pending State Builders ──────────────────────────────────────────
 
-/// Build RequestDeposit instruction data: [disc=0x08] [amount: u64 LE].
-pub fn request_deposit_data(amount: u64) -> Vec<u8> {
-    let mut data = vec![0x08];
-    data.extend_from_slice(&amount.to_le_bytes());
-    data
-}
-
-/// Build FulfillDeposit instruction data: [disc=0x09] [price: u64 LE].
-pub fn fulfill_deposit_data(price: u64) -> Vec<u8> {
-    let mut data = vec![0x09];
-    data.extend_from_slice(&price.to_le_bytes());
-    data
-}
-
-/// Build UpdateFees instruction data:
-/// [disc=0x05] [entry: u16] [exit: u16] [mgmt: u16] [perf: u16] [receiver: 32].
-pub fn update_fees_data(
-    entry_fee_bps: u16,
-    exit_fee_bps: u16,
-    management_fee_bps: u16,
-    performance_fee_bps: u16,
-    fee_receiver: &Pubkey,
-) -> Vec<u8> {
-    let mut data = vec![0x05];
-    data.extend_from_slice(&entry_fee_bps.to_le_bytes());
-    data.extend_from_slice(&exit_fee_bps.to_le_bytes());
-    data.extend_from_slice(&management_fee_bps.to_le_bytes());
-    data.extend_from_slice(&performance_fee_bps.to_le_bytes());
-    data.extend_from_slice(fee_receiver.as_ref());
-    data
-}
-
-/// Build CollectFees instruction data: [disc=0x06] [timestamp: i64 LE].
-pub fn collect_fees_data(current_timestamp: i64) -> Vec<u8> {
-    let mut data = vec![0x06];
-    data.extend_from_slice(&current_timestamp.to_le_bytes());
-    data
-}
-
-/// Derive pending deposit PDA: seeds = ["pending_deposit", vault_state, depositor].
-pub fn pending_deposit_pda(vault_state: &Pubkey, depositor: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(
-        &[b"pending_deposit", vault_state.as_ref(), depositor.as_ref()],
-        &program_id(),
-    )
-}
-
-/// Create raw PendingDeposit bytes with the given parameters.
+/// Create raw PendingDeposit bytes (88 bytes).
+///
+/// Layout:
+///   [0]       discriminator (0xA2)
+///   [1]       bump
+///   [2..4]    entry_fee_bps (u16 LE)
+///   [4..8]    _padding
+///   [8..40]   vault_state
+///   [40..72]  depositor
+///   [72..80]  amount (u64 LE)
+///   [80..88]  created_at (i64 LE)
 pub fn create_pending_deposit_data(
     vault_state: &Pubkey,
     depositor: &Pubkey,
     bump: u8,
     amount: u64,
 ) -> Vec<u8> {
-    use omaha_vault::state::PendingDeposit;
-
     let mut data = vec![0u8; PendingDeposit::LEN];
 
-    data[0] = 0xA2; // PENDING_DEPOSIT_DISCRIMINATOR
+    data[0] = PENDING_DEPOSIT_DISCRIMINATOR;
     data[1] = bump;
-    // _padding at [2..8] = zeroed
+    // entry_fee_bps at [2..4] = 0
+    // _padding at [4..8] = 0
     data[8..40].copy_from_slice(vault_state.as_ref());
     data[40..72].copy_from_slice(depositor.as_ref());
     data[72..80].copy_from_slice(&amount.to_le_bytes());
+    // created_at at [80..88] = 0
 
     data
 }
 
-/// Create a pending deposit account owned by the program with the given data.
+/// Create raw PendingDeposit bytes with fee snapshot and timestamp.
+pub fn create_pending_deposit_data_with_fees(
+    vault_state: &Pubkey,
+    depositor: &Pubkey,
+    bump: u8,
+    amount: u64,
+    entry_fee_bps: u16,
+    created_at: i64,
+) -> Vec<u8> {
+    let mut data = create_pending_deposit_data(vault_state, depositor, bump, amount);
+    data[2..4].copy_from_slice(&entry_fee_bps.to_le_bytes());
+    data[80..88].copy_from_slice(&created_at.to_le_bytes());
+    data
+}
+
+/// Create a pending deposit account owned by the program.
 pub fn make_pending_deposit_account(data: Vec<u8>) -> Account {
     Account {
         lamports: 1_000_000_000,
@@ -336,36 +470,53 @@ pub fn make_pending_deposit_account(data: Vec<u8>) -> Account {
     }
 }
 
-/// Derive pending withdraw PDA: seeds = ["pending_withdraw", vault_state, withdrawer].
-pub fn pending_withdraw_pda(vault_state: &Pubkey, withdrawer: &Pubkey) -> (Pubkey, u8) {
-    Pubkey::find_program_address(
-        &[b"pending_withdraw", vault_state.as_ref(), withdrawer.as_ref()],
-        &program_id(),
-    )
-}
-
-/// Create raw PendingWithdraw bytes with the given parameters.
+/// Create raw PendingWithdraw bytes (88 bytes).
+///
+/// Layout:
+///   [0]       discriminator (0xA3)
+///   [1]       bump
+///   [2..4]    exit_fee_bps (u16 LE)
+///   [4..8]    _padding
+///   [8..40]   vault_state
+///   [40..72]  withdrawer
+///   [72..80]  shares (u64 LE)
+///   [80..88]  created_at (i64 LE)
 pub fn create_pending_withdraw_data(
     vault_state: &Pubkey,
     withdrawer: &Pubkey,
     bump: u8,
     shares: u64,
 ) -> Vec<u8> {
-    use omaha_vault::state::PendingWithdraw;
-
     let mut data = vec![0u8; PendingWithdraw::LEN];
 
-    data[0] = 0xA3; // PENDING_WITHDRAW_DISCRIMINATOR
+    data[0] = PENDING_WITHDRAW_DISCRIMINATOR;
     data[1] = bump;
-    // _padding at [2..8] = zeroed
+    // exit_fee_bps at [2..4] = 0
+    // _padding at [4..8] = 0
     data[8..40].copy_from_slice(vault_state.as_ref());
     data[40..72].copy_from_slice(withdrawer.as_ref());
     data[72..80].copy_from_slice(&shares.to_le_bytes());
+    // created_at at [80..88] = 0
 
     data
 }
 
-/// Create a pending withdraw account owned by the program with the given data.
+/// Create raw PendingWithdraw bytes with fee snapshot and timestamp.
+pub fn create_pending_withdraw_data_with_fees(
+    vault_state: &Pubkey,
+    withdrawer: &Pubkey,
+    bump: u8,
+    shares: u64,
+    exit_fee_bps: u16,
+    created_at: i64,
+) -> Vec<u8> {
+    let mut data = create_pending_withdraw_data(vault_state, withdrawer, bump, shares);
+    data[2..4].copy_from_slice(&exit_fee_bps.to_le_bytes());
+    data[80..88].copy_from_slice(&created_at.to_le_bytes());
+    data
+}
+
+/// Create a pending withdraw account owned by the program.
 pub fn make_pending_withdraw_account(data: Vec<u8>) -> Account {
     Account {
         lamports: 1_000_000_000,
@@ -376,10 +527,9 @@ pub fn make_pending_withdraw_account(data: Vec<u8>) -> Account {
     }
 }
 
+// ── Token Account Builders ──────────────────────────────────────────
+
 /// Create a Token 2022 mint account (no extensions, legacy-compatible 82-byte format).
-///
-/// Token 2022 accepts the standard 82-byte mint layout (same as legacy SPL Token)
-/// when the account has no extensions. No AccountType byte needed.
 pub fn create_token2022_mint(
     authority: &Pubkey,
     decimals: u8,
@@ -411,9 +561,6 @@ pub fn create_token2022_mint(
 }
 
 /// Create a Token 2022 token account (ATA) for share tokens.
-///
-/// Token 2022 accepts the standard 165-byte token account layout (same as legacy
-/// SPL Token) when the account has no extensions. No AccountType byte needed.
 pub fn create_token2022_token_account(
     mint: &Pubkey,
     owner: &Pubkey,
@@ -441,6 +588,23 @@ pub fn create_token2022_token_account(
         lamports: 1_000_000_000,
         data,
         owner: TOKEN_2022_PROGRAM_ID,
+        executable: false,
+        rent_epoch: 0,
+    }
+}
+
+/// Create a Clock sysvar account with the given unix_timestamp.
+///
+/// Layout: slot(8) + epoch_start_timestamp(8) + epoch(8) + leader_schedule_epoch(8) + unix_timestamp(8)
+pub fn create_clock_account(unix_timestamp: i64) -> Account {
+    let mut data = vec![0u8; 40];
+    // unix_timestamp at offset 32
+    data[32..40].copy_from_slice(&unix_timestamp.to_le_bytes());
+
+    Account {
+        lamports: 1,
+        data,
+        owner: solana_pubkey::pubkey!("Sysvar1111111111111111111111111111111111111"),
         executable: false,
         rent_epoch: 0,
     }

@@ -47,6 +47,7 @@ impl<'a> FulfillWithdraw<'a> {
         let pending_shares;
         let pending_withdrawer;
         let pending_vault;
+        let pending_exit_fee_bps;
         {
             let pw_data = self.pending_withdraw.try_borrow_data()?;
             let pending: &PendingWithdraw =
@@ -55,6 +56,7 @@ impl<'a> FulfillWithdraw<'a> {
             pending_shares = pending.shares;
             pending_withdrawer = pending.withdrawer;
             pending_vault = pending.vault_state;
+            pending_exit_fee_bps = pending.exit_fee_bps;
         }
 
         // Verify withdrawer account matches pending withdraw
@@ -83,6 +85,11 @@ impl<'a> FulfillWithdraw<'a> {
                 return Err(VaultError::Unauthorized.into());
             }
 
+            // Check pause state
+            if state.paused() {
+                return Err(VaultError::VaultPaused.into());
+            }
+
             // Update share price
             state.share_price = self.new_share_price;
 
@@ -90,7 +97,7 @@ impl<'a> FulfillWithdraw<'a> {
             vault_bump = state.bump;
             vn_len = state.vault_name_len as usize;
             vault_name = state.vault_name;
-            exit_fee_bps = state.exit_fee_bps;
+            exit_fee_bps = pending_exit_fee_bps;
         }
 
         // Calculate base tokens to return: shares * share_price / 10^share_decimals

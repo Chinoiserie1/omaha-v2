@@ -101,7 +101,7 @@ fn test_withdraw_with_price_success() {
     // Verify vault state price was updated
     let vault_account = result.resulting_accounts.iter()
         .find(|(k, _)| *k == vault_key).unwrap().1.clone();
-    let updated_price = u64::from_le_bytes(vault_account.data[144..152].try_into().unwrap());
+    let updated_price = u64::from_le_bytes(vault_account.data[208..216].try_into().unwrap());
     assert_eq!(updated_price, new_price);
 
     // Verify base tokens transferred

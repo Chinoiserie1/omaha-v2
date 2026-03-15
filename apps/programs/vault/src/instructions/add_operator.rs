@@ -5,46 +5,56 @@ use pinocchio::{
 };
 
 use crate::error::VaultError;
-use crate::state::{VaultState, VAULT_DISCRIMINATOR};
+use crate::state::{VaultState, VAULT_DISCRIMINATOR, is_zero_pubkey};
 
-/// Admin-only: update the vault share price.
+/// Admin-only: add an operator to the vault.
 ///
 /// Accounts:
 ///   0. `[signer]`    admin
 ///   1. `[writable]`  vault_state
 ///
 /// Data:
-///   [0]    discriminator (0x03)
-///   [1..9] new_share_price (u64 LE)
-pub struct SetSharePrice<'a> {
+///   [0]     discriminator (0x01)
+///   [1..33] new_operator pubkey (32 bytes)
+pub struct AddOperator<'a> {
     admin: &'a AccountInfo,
     vault_state: &'a AccountInfo,
-    new_share_price: u64,
+    new_operator: [u8; 32],
 }
 
-impl<'a> SetSharePrice<'a> {
-    pub const DISCRIMINATOR: u8 = 3;
+impl<'a> AddOperator<'a> {
+    pub const DISCRIMINATOR: u8 = 1;
 
     pub fn process(self) -> ProgramResult {
         let mut data = self.vault_state.try_borrow_mut_data()?;
         let state: &mut VaultState =
             bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
 
-        if !state.is_admin(self.admin.key()) {
-            return Err(VaultError::Unauthorized.into());
-        }
-
         if state.paused() {
             return Err(VaultError::VaultPaused.into());
         }
 
-        state.share_price = self.new_share_price;
+        if !state.is_admin(self.admin.key()) {
+            return Err(VaultError::Unauthorized.into());
+        }
+
+        if is_zero_pubkey(&self.new_operator) {
+            return Err(VaultError::ZeroPubkey.into());
+        }
+
+        if !state.add_operator(&self.new_operator) {
+            let n = state.num_operators as usize;
+            if n >= crate::state::MAX_OPERATORS {
+                return Err(VaultError::OperatorsFull.into());
+            }
+            return Err(VaultError::DuplicateOperator.into());
+        }
 
         Ok(())
     }
 }
 
-impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for SetSharePrice<'a> {
+impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for AddOperator<'a> {
     type Error = ProgramError;
 
     fn try_from(
@@ -70,22 +80,16 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for SetSharePrice<'a> {
             }
         }
 
-        if data.len() < 8 {
+        if data.len() < 32 {
             return Err(ProgramError::InvalidInstructionData);
         }
-        let new_share_price = u64::from_le_bytes(
-            data[..8]
-                .try_into()
-                .map_err(|_| ProgramError::InvalidInstructionData)?,
-        );
-        if new_share_price == 0 {
-            return Err(VaultError::InvalidSharePrice.into());
-        }
+        let mut new_operator = [0u8; 32];
+        new_operator.copy_from_slice(&data[..32]);
 
         Ok(Self {
             admin,
             vault_state,
-            new_share_price,
+            new_operator,
         })
     }
 }

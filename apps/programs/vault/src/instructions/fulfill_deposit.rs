@@ -48,6 +48,7 @@ impl<'a> FulfillDeposit<'a> {
         let deposit_amount;
         let pending_depositor;
         let pending_vault;
+        let pending_entry_fee_bps;
         {
             let pd_data = self.pending_deposit.try_borrow_data()?;
             let pending: &PendingDeposit =
@@ -56,6 +57,7 @@ impl<'a> FulfillDeposit<'a> {
             deposit_amount = pending.amount;
             pending_depositor = pending.depositor;
             pending_vault = pending.vault_state;
+            pending_entry_fee_bps = pending.entry_fee_bps;
         }
 
         // Verify depositor account matches pending deposit
@@ -85,6 +87,11 @@ impl<'a> FulfillDeposit<'a> {
                 return Err(VaultError::Unauthorized.into());
             }
 
+            // Check pause state
+            if state.paused() {
+                return Err(VaultError::VaultPaused.into());
+            }
+
             // Verify share mint matches
             if state.share_mint != *self.share_mint.key() {
                 return Err(ProgramError::InvalidAccountData);
@@ -97,7 +104,7 @@ impl<'a> FulfillDeposit<'a> {
             vault_bump = state.bump;
             vn_len = state.vault_name_len as usize;
             vn_name = state.vault_name;
-            entry_fee_bps = state.entry_fee_bps;
+            entry_fee_bps = pending_entry_fee_bps;
             has_fee_receiver = state.has_fee_receiver();
         }
 

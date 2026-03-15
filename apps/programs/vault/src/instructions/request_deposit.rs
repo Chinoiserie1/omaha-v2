@@ -25,6 +25,7 @@ use crate::state::{PendingDeposit, VaultState, PENDING_DEPOSIT_DISCRIMINATOR, VA
 ///   4. `[writable]`         pending_deposit    — PDA to create
 ///   5. `[]`                 system_program
 ///   6. `[]`                 token_program
+///   7. `[]`                 clock_sysvar
 ///
 /// Data:
 ///   [0]    discriminator (0x08)
@@ -37,6 +38,7 @@ pub struct RequestDeposit<'a> {
     pending_deposit: &'a AccountInfo,
     _system_program: &'a AccountInfo,
     _token_program: &'a AccountInfo,
+    clock_sysvar: &'a AccountInfo,
     amount: u64,
 }
 
@@ -44,6 +46,17 @@ impl<'a> RequestDeposit<'a> {
     pub const DISCRIMINATOR: u8 = 8;
 
     pub fn process(self) -> ProgramResult {
+        let current_timestamp = crate::sysvar::read_clock_timestamp(self.clock_sysvar)?;
+
+        let entry_fee_bps = {
+            let vdata = self.vault_state.try_borrow_data()?;
+            let vs: &VaultState = bytemuck::from_bytes(&vdata[..VaultState::LEN]);
+            if vs.paused() {
+                return Err(VaultError::VaultPaused.into());
+            }
+            vs.entry_fee_bps
+        };
+
         let vault_state_key = self.vault_state.key();
         let depositor_key = self.depositor.key();
 
@@ -83,9 +96,11 @@ impl<'a> RequestDeposit<'a> {
 
             state.discriminator = PENDING_DEPOSIT_DISCRIMINATOR;
             state.bump = pending_bump;
+            state.entry_fee_bps = entry_fee_bps;
             state.vault_state = *vault_state_key;
             state.depositor = *depositor_key;
             state.amount = self.amount;
+            state.created_at = current_timestamp;
         }
 
         // Transfer base tokens: depositor → vault
@@ -107,7 +122,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestDeposit<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [depositor, depositor_base_ata, vault_base_ata, vault_state, pending_deposit, system_program, token_program, ..] =
+        let [depositor, depositor_base_ata, vault_base_ata, vault_state, pending_deposit, system_program, token_program, clock_sysvar, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -151,6 +166,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestDeposit<'a> {
             pending_deposit,
             _system_program: system_program,
             _token_program: token_program,
+            clock_sysvar,
             amount,
         })
     }

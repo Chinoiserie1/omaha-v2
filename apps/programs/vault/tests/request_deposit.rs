@@ -67,6 +67,7 @@ fn test_request_deposit_success() {
             AccountMeta::new(pending_key, false),                 // pending_deposit PDA
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),  // system_program
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),   // token_program
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),    // clock_sysvar
         ],
     );
 
@@ -78,6 +79,7 @@ fn test_request_deposit_success() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -136,6 +138,7 @@ fn test_request_deposit_zero_amount() {
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -147,6 +150,7 @@ fn test_request_deposit_zero_amount() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -184,6 +188,7 @@ fn test_request_deposit_missing_signer() {
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -195,6 +200,7 @@ fn test_request_deposit_missing_signer() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -232,6 +238,7 @@ fn test_request_deposit_wrong_pending_pda() {
             AccountMeta::new(wrong_pending_key, false),           // wrong PDA
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -243,6 +250,7 @@ fn test_request_deposit_wrong_pending_pda() {
         (wrong_pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(

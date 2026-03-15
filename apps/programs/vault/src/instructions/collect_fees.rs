@@ -17,6 +17,7 @@ const MINT_SUPPLY_OFFSET: usize = 36;
 ///
 /// Calculates time-based management fees and HWM-based performance fees,
 /// then mints the fee shares to the fee_receiver's token account.
+/// Timestamp is read from the Clock sysvar — no caller-supplied data needed.
 ///
 /// Accounts:
 ///   0. `[signer]`    admin              — must be vault admin
@@ -24,23 +25,25 @@ const MINT_SUPPLY_OFFSET: usize = 36;
 ///   2. `[writable]`  share_mint         — read supply + mint fee shares
 ///   3. `[writable]`  fee_receiver_ata   — destination for minted fee shares
 ///   4. `[]`          token_program
+///   5. `[]`          clock_sysvar       — `SysvarC1ock11111111111111111111111111111111`
 ///
 /// Data:
-///   [0]    discriminator (0x06)
-///   [1..9] current_timestamp (i64 LE) — current unix timestamp
+///   [0] discriminator (0x06)
 pub struct CollectFees<'a> {
     admin: &'a AccountInfo,
     vault_state: &'a AccountInfo,
     share_mint: &'a AccountInfo,
     fee_receiver_ata: &'a AccountInfo,
     token_program: &'a AccountInfo,
-    current_timestamp: i64,
+    clock_sysvar: &'a AccountInfo,
 }
 
 impl<'a> CollectFees<'a> {
     pub const DISCRIMINATOR: u8 = 6;
 
     pub fn process(self) -> ProgramResult {
+        let current_timestamp = crate::sysvar::read_clock_timestamp(self.clock_sysvar)?;
+
         // Read total supply from share mint account
         let total_supply = {
             let mint_data = self.share_mint.try_borrow_data()?;
@@ -64,6 +67,10 @@ impl<'a> CollectFees<'a> {
             let state: &mut VaultState =
                 bytemuck::from_bytes_mut(&mut vs_data[..VaultState::LEN]);
 
+            if state.paused() {
+                return Err(VaultError::VaultPaused.into());
+            }
+
             if !state.is_admin(self.admin.key()) {
                 return Err(VaultError::Unauthorized.into());
             }
@@ -78,16 +85,16 @@ impl<'a> CollectFees<'a> {
 
             // First call: just initialize timestamp, no fees
             if state.last_fee_timestamp == 0 {
-                state.last_fee_timestamp = self.current_timestamp;
+                state.last_fee_timestamp = current_timestamp;
                 return Ok(());
             }
 
             // Timestamp must be >= last collection
-            if self.current_timestamp < state.last_fee_timestamp {
+            if current_timestamp < state.last_fee_timestamp {
                 return Err(ProgramError::InvalidInstructionData);
             }
 
-            let elapsed = (self.current_timestamp - state.last_fee_timestamp) as u64;
+            let elapsed = (current_timestamp - state.last_fee_timestamp) as u64;
 
             // Management fee
             let mgmt_shares = fees::management_fee_shares(
@@ -111,7 +118,7 @@ impl<'a> CollectFees<'a> {
                 .ok_or(VaultError::MathOverflow)?;
 
             // Update timestamps and HWM
-            state.last_fee_timestamp = self.current_timestamp;
+            state.last_fee_timestamp = current_timestamp;
             if state.performance_fee_bps > 0 && state.share_price > state.high_water_mark {
                 state.high_water_mark = state.share_price;
             }
@@ -151,11 +158,13 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CollectFees<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [admin, vault_state, share_mint, fee_receiver_ata, token_program, ..] =
+        let [admin, vault_state, share_mint, fee_receiver_ata, token_program, clock_sysvar, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
         };
+
+        let _ = data;
 
         if !admin.is_signer() {
             return Err(ProgramError::MissingRequiredSignature);
@@ -175,26 +184,13 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CollectFees<'a> {
             }
         }
 
-        // Parse: [current_timestamp: i64 LE]
-        if data.len() < 8 {
-            return Err(ProgramError::InvalidInstructionData);
-        }
-        let current_timestamp = i64::from_le_bytes(
-            data[..8]
-                .try_into()
-                .map_err(|_| ProgramError::InvalidInstructionData)?,
-        );
-        if current_timestamp <= 0 {
-            return Err(ProgramError::InvalidInstructionData);
-        }
-
         Ok(Self {
             admin,
             vault_state,
             share_mint,
             fee_receiver_ata,
             token_program,
-            current_timestamp,
+            clock_sysvar,
         })
     }
 }

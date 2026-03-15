@@ -7,47 +7,46 @@ use pinocchio::{
 use crate::error::VaultError;
 use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 
-/// Admin-only: add an operator to the vault.
+/// Admin-only: remove an operator from the vault.
 ///
 /// Accounts:
 ///   0. `[signer]`    admin
 ///   1. `[writable]`  vault_state
 ///
 /// Data:
-///   [0]     discriminator (0x01)
-///   [1..33] new_owner pubkey (32 bytes)
-pub struct AddOwner<'a> {
+///   [0]     discriminator (0x02)
+///   [1..33] operator_to_remove pubkey (32 bytes)
+pub struct RemoveOperator<'a> {
     admin: &'a AccountInfo,
     vault_state: &'a AccountInfo,
-    new_owner: [u8; 32],
+    operator_to_remove: [u8; 32],
 }
 
-impl<'a> AddOwner<'a> {
-    pub const DISCRIMINATOR: u8 = 1;
+impl<'a> RemoveOperator<'a> {
+    pub const DISCRIMINATOR: u8 = 2;
 
     pub fn process(self) -> ProgramResult {
         let mut data = self.vault_state.try_borrow_mut_data()?;
         let state: &mut VaultState =
             bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
 
+        if state.paused() {
+            return Err(VaultError::VaultPaused.into());
+        }
+
         if !state.is_admin(self.admin.key()) {
             return Err(VaultError::Unauthorized.into());
         }
 
-        if !state.add_owner(&self.new_owner) {
-            // add_owner returns false for full list or duplicate
-            let n = state.num_owners as usize;
-            if n >= crate::state::MAX_OWNERS {
-                return Err(VaultError::OwnersFull.into());
-            }
-            return Err(VaultError::DuplicateOwner.into());
+        if !state.remove_operator(&self.operator_to_remove) {
+            return Err(VaultError::OperatorNotFound.into());
         }
 
         Ok(())
     }
 }
 
-impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for AddOwner<'a> {
+impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RemoveOperator<'a> {
     type Error = ProgramError;
 
     fn try_from(
@@ -76,13 +75,13 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for AddOwner<'a> {
         if data.len() < 32 {
             return Err(ProgramError::InvalidInstructionData);
         }
-        let mut new_owner = [0u8; 32];
-        new_owner.copy_from_slice(&data[..32]);
+        let mut operator_to_remove = [0u8; 32];
+        operator_to_remove.copy_from_slice(&data[..32]);
 
         Ok(Self {
             admin,
             vault_state,
-            new_owner,
+            operator_to_remove,
         })
     }
 }

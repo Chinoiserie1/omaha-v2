@@ -38,6 +38,7 @@ fn test_request_withdraw_success() {
             AccountMeta::new(pending_key, false),                  // pending_withdraw PDA
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),   // system_program
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false), // token_program
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),    // clock_sysvar
         ],
     );
 
@@ -49,6 +50,7 @@ fn test_request_withdraw_success() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -106,6 +108,7 @@ fn test_request_withdraw_zero_shares() {
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -117,6 +120,7 @@ fn test_request_withdraw_zero_shares() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -153,6 +157,7 @@ fn test_request_withdraw_missing_signer() {
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -164,6 +169,7 @@ fn test_request_withdraw_missing_signer() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -200,6 +206,7 @@ fn test_request_withdraw_wrong_pending_pda() {
             AccountMeta::new(wrong_pending_key, false),            // wrong PDA
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -211,6 +218,7 @@ fn test_request_withdraw_wrong_pending_pda() {
         (wrong_pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -248,6 +256,7 @@ fn test_request_withdraw_wrong_share_mint() {
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+            AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
         ],
     );
 
@@ -259,6 +268,7 @@ fn test_request_withdraw_wrong_share_mint() {
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
+        (CLOCK_SYSVAR_ID, create_clock_account(1000)),
     ];
 
     mollusk.process_and_validate_instruction(
