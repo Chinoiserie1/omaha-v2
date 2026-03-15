@@ -102,30 +102,30 @@ solana-keygen new -o target/deploy/omaha_vault-keypair.json --no-bip39-passphras
 
 ---
 
-### 3. Program Authority Keypair (Vault Creation Gate)
+### 3. Program Authority Keypair (Factory Creation Gate)
 
 | Property    | Value                                                           |
 | ----------- | --------------------------------------------------------------- |
-| **Purpose** | Must co-sign every `Initialize` instruction. Acts as a gate — only the holder of this keypair can authorize new vault creation. |
+| **Purpose** | Must co-sign `InitializeFactory` (one-time setup). After the factory is created, vault creation is gated by factory admins/owner instead. |
 | **Location**| `apps/programs/vault/program-authority-keypair.json`             |
 | **Public Key** | `9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf`             |
 | **Git tracked** | No (`.gitignore` excludes `*-keypair.json`)                 |
 
 **What it does:**
 - Its public key is hardcoded as a 32-byte constant (`PROGRAM_AUTHORITY`) in the Rust program
-- The `Initialize` instruction checks that account[0] is a signer AND matches this constant
+- The `InitializeFactory` instruction (0x0D) checks that account[0] is a signer AND matches this constant
 - If the signer doesn't match, the program returns `UnauthorizedInitializer` error (0x10E)
-- This prevents unauthorized users from creating vaults — only the backend/admin holding this keypair can initialize new vaults
+- This is used **once** to create the singleton factory PDA. After that, vault creation (`Initialize` 0x00) is gated by the factory's owner/admin list, not this keypair
+- The factory owner and admins are managed on-chain via `AddFactoryAdmin`/`RemoveFactoryAdmin`/`TransferFactoryOwnership`
 
 **Where it's referenced in code:**
 
 | File | Line | Usage |
 |------|------|-------|
-| `apps/programs/vault/src/lib.rs` | 14-22 | `PROGRAM_AUTHORITY` constant (hex bytes) |
-| `apps/programs/vault/src/instructions/initialize.rs` | 204 | Validation check |
-| `packages/omaha-programs-sdk/src/constants.ts` | 9-14 | `PROGRAM_AUTHORITY` export |
-| `packages/omaha-programs-sdk/src/instructions/initialize.ts` | 65 | Default signer in `createInitializeInstruction` |
-| `apps/programs/vault/tests/helpers.rs` | 27-32 | `program_authority()` test helper |
+| `apps/programs/vault/src/lib.rs` | 17-22 | `PROGRAM_AUTHORITY` constant (hex bytes) |
+| `apps/programs/vault/src/instructions/initialize_factory.rs` | — | Validation check in `InitializeFactory` |
+| `packages/omaha-programs-sdk/src/constants.ts` | 9-14 | `PROGRAM_AUTHORITY` export (SDK not yet updated) |
+| `apps/programs/vault/tests/helpers.rs` | 33-37 | `program_authority()` test helper |
 
 **How to check:**
 ```bash
@@ -135,7 +135,8 @@ solana-keygen pubkey apps/programs/vault/program-authority-keypair.json
 **Relationship to Deploy Wallet:**
 - These are completely independent keypairs
 - The deploy wallet controls program upgrades (binary deployment)
-- The program authority controls vault creation (application-level authorization)
+- The program authority controls factory creation (one-time setup)
+- After factory creation, vault creation is controlled by factory admins/owner (on-chain state)
 - Changing the program authority requires modifying the Rust source and redeploying
 
 ---
@@ -201,8 +202,8 @@ KEEPER_PRIVATE_KEY='WpiYf...'
 ├──────────────────────────────────────────────────────┤
 │                    RUNTIME                            │
 │                                                       │
-│  Program Authority ──► co-signs Initialize tx         │
-│  (vault creation gate) (hardcoded in program binary)  │
+│  Program Authority ──► co-signs InitializeFactory tx   │
+│  (factory creation)    (one-time, hardcoded in binary) │
 │                                                       │
 │  Keeper ─────────────► signs vault operations          │
 │  (operator)            (rebalance, fees)              │
@@ -266,7 +267,7 @@ file target/deploy/omaha_vault.so
 pnpm program:test
 ```
 
-All 148 tests should pass. Never deploy untested code.
+All 154 tests should pass. Never deploy untested code.
 
 ### Step 5: Deploy to Devnet
 
@@ -489,19 +490,29 @@ cargo update constant_time_eq --precise 0.4.1
 cargo update blake3 --precise 1.5.5
 ```
 
-### Program Authority Mismatch on Initialize
+### Program Authority Mismatch on InitializeFactory
 
 ```
 Error: custom program error: 0x10e (UnauthorizedInitializer)
 ```
 
-**Cause:** The signer for account[0] doesn't match the `PROGRAM_AUTHORITY` constant hardcoded in the program.
+**Cause:** The signer for account[0] of `InitializeFactory` doesn't match the `PROGRAM_AUTHORITY` constant hardcoded in the program.
 
 **Fix:** Ensure you're signing with the keypair at `apps/programs/vault/program-authority-keypair.json`. Verify the public key matches:
 ```bash
 solana-keygen pubkey apps/programs/vault/program-authority-keypair.json
 # Must output: 9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf
 ```
+
+### Unauthorized Vault Creator on Initialize
+
+```
+Error: custom program error: 0x11c (UnauthorizedVaultCreator)
+```
+
+**Cause:** The signer is not a factory owner or factory admin. After the factory is created, vault creation is gated by the factory's admin list, not the `PROGRAM_AUTHORITY`.
+
+**Fix:** Ensure the signer is either the factory owner or has been added as a factory admin via `AddFactoryAdmin` (0x0E).
 
 ---
 

@@ -1,8 +1,10 @@
 # packages/omaha-programs-sdk - CLAUDE.md
 
+> **OUTDATED**: This SDK covers the original 13 vault instructions. The on-chain program now has 26 instructions (factory management, vault admin transfer, pause, cancel deposit/withdraw). VaultState is 584 bytes (was 520), PendingDeposit/PendingWithdraw are 88 bytes (was 80), and FactoryState (400 bytes) is new. `owners` → `operators` rename. `CollectFees` no longer takes a timestamp parameter (uses Clock sysvar). See `apps/programs/vault/CLAUDE.md` for the current program architecture. This SDK needs updating.
+
 ## Overview
 
-This package contains a **fully-typed TypeScript SDK for building Solana TransactionInstruction objects** for all 13 vault program instructions. It provides instruction builders, PDA derivation helpers, state deserializers, fee math utilities, and error codes — enabling type-safe on-chain transaction construction without requiring the Anchor IDL.
+This package contains a **fully-typed TypeScript SDK for building Solana TransactionInstruction objects** for the vault program instructions. It provides instruction builders, PDA derivation helpers, state deserializers, fee math utilities, and error codes — enabling type-safe on-chain transaction construction without requiring the Anchor IDL.
 
 ## Technology Stack
 

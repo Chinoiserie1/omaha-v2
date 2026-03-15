@@ -24,7 +24,7 @@ Autopilot (Omaha) is a Quant strategy platform for crypto, stocks, and commoditi
   - Classification and synthesis pipelines are **thread-aware**: tweets sharing a `conversationId` are grouped and concatenated into a single `[THREAD]` text block before being sent to the LLM, so a 5-tweet thread counts as one cohesive signal rather than 5 independent entries
 - **Shared package** (`packages/shared`) provides Zod schemas, DTOs, and types used by all apps
 - **Database package** (`packages/database`) wraps Prisma client and schema
-- **Omaha Programs SDK** (`packages/omaha-programs-sdk`) provides fully-typed TypeScript instruction builders for the Solana vault program (13 instructions, 4 PDA helpers, 3 state deserializers, fee math utilities) — consumed by the backend to construct on-chain transactions without requiring Anchor IDL
+- **Omaha Programs SDK** (`packages/omaha-programs-sdk`) provides fully-typed TypeScript instruction builders for the Solana vault program (26 instructions, 5 PDA helpers, 4 state deserializers, fee math utilities) — consumed by the backend to construct on-chain transactions without requiring Anchor IDL. **Note: SDK not yet updated for factory/vault two-domain architecture; see `apps/programs/vault/CLAUDE.md` for current program spec.**
 - **`algoEnabled` flag** on the `Quant` model allows opting out individual Quants from the automated pipeline (tweet sync, classification, thesis generation). Quants with `algoEnabled: false` (e.g. those using a predefined strategy) remain listed but skip all cron-driven processing
 
 ### Entity Model (March 2026)
@@ -180,6 +180,33 @@ Three interrelated bugs:
 - Shared schemas: `kolQuerySchema` → `quantQuerySchema`, `ingestContentSchema` fields
 - Native app: Local type definitions, component props (`kolUsername` → `quantUsername`)
 - DTOs: `KolQueryDto` → `QuantQueryDto`
+
+### Factory/Vault Two-Domain Architecture (Mar 2026)
+
+**Problem**: The vault program had a flat authority model — a single hardcoded `PROGRAM_AUTHORITY` constant gated vault creation, vault admin was immutable, no emergency pause, and several security vulnerabilities: caller-supplied timestamp in CollectFees (fee inflation attack), no expiry on pending deposits/withdrawals (funds locked if admin disappears), fee changes affecting in-flight requests, and no way to rotate compromised admin keys.
+
+**Fix**: Restructured into two distinct governance domains:
+
+1. **Factory (program-level, singleton PDA `["factory"]`, 400 bytes)**:
+   - Owner (transferable via 2-step propose/accept) + up to 10 admins
+   - Controls vault creation (replaces hardcoded PROGRAM_AUTHORITY for vault init)
+   - Global pause mechanism blocks all new vault creation
+   - PROGRAM_AUTHORITY now only used once: to create the factory itself
+
+2. **Vault (per-vault, `["vault", name]` PDA, 584 bytes — was 520)**:
+   - Admin transferable via 2-step (TransferVaultAdmin → AcceptVaultAdmin)
+   - Renamed `owners` → `operators` for clarity (operators can Execute CPI but not admin functions)
+   - Per-vault pause/unpause
+   - Back-reference to factory
+
+**Security fixes rolled in**:
+- **CollectFees**: Reads Clock sysvar instead of caller-supplied timestamp (prevents fee inflation via fake future timestamps)
+- **Fee snapshot**: PendingDeposit/PendingWithdraw now snapshot entry_fee_bps/exit_fee_bps at request time; fulfillment uses the snapshot, not current vault fees
+- **Expiry + cancel**: Pending deposits/withdrawals expire after 48h; CancelDeposit/CancelWithdraw let users reclaim funds if admin doesn't fulfill
+- **Zero pubkey validation**: AddOperator and AddFactoryAdmin reject the zero address
+- **Pause checks**: All vault-mutating instructions check is_paused flag
+
+**Scope**: 26 instructions (was 13), 29 error codes (was 16), 154 tests (was 148). SDK and backend vault-setup not yet updated to match.
 
 ## Lessons Learned & Best Practices
 

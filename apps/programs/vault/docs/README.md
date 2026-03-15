@@ -1,11 +1,13 @@
 # Vault Program — Overview
 
-A minimal Solana tokenized vault built with Pinocchio. Users deposit a base token
+> **OUTDATED (Mar 2026)**: This doc and the per-instruction docs (00–0C) describe the **original 13-instruction architecture**. The program now has **26 instructions** with a factory/vault two-domain model, renamed owners → operators, fee snapshots, pause mechanism, cancel instructions, and Clock sysvar for CollectFees. See [../CLAUDE.md](../CLAUDE.md) for the current authoritative documentation.
+
+A Solana tokenized vault built with Pinocchio under a shared factory. Users deposit a base token
 (e.g. USDC), receive fungible share tokens priced by the admin, and redeem them
 for base tokens on withdrawal. The vault PDA can sign CPIs to any external program
 — Jupiter, SPL Token, DeFi protocols — enabling on-chain strategy execution.
 
-Runtime: `no_std`, zero-copy state via bytemuck, ~37 KB compiled BPF binary.
+Runtime: `no_std`, zero-copy state via bytemuck, compiled BPF binary.
 
 See [../CLAUDE.md](../CLAUDE.md) for build/test commands and critical API notes.
 
