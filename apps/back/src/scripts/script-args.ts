@@ -107,16 +107,36 @@ export function resolveKeypair(
 }
 
 const DEVNET_RPC_URL = "https://api.devnet.solana.com";
+const MAINNET_RPC_URL = "https://api.mainnet-beta.solana.com";
 
 /**
  * Resolve an RPC connection.
- * CLI: --rpc-url <url>  |  Env: SOLANA_RPC_URL  |  Default: devnet
+ *
+ * Priority:
+ *   1. --rpc-url <url>             (explicit URL always wins)
+ *   2. --chain mainnet | devnet    (picks a default URL per chain)
+ *   3. Default: devnet
+ *
+ * When --chain mainnet is used, SOLANA_RPC_URL env var is used if set
+ * (typically a paid RPC like Helius). For devnet the public endpoint is fine.
  */
 export function resolveConnection(args: readonly string[]): Connection {
+  const explicitUrl = parseFlag(args, "--rpc-url");
+  if (explicitUrl) {
+    return new Connection(explicitUrl, "confirmed");
+  }
+
+  const chain = parseFlag(args, "--chain") ?? "devnet";
+  if (chain !== "devnet" && chain !== "mainnet") {
+    console.error(`ERROR: --chain must be "devnet" or "mainnet", got "${chain}".`);
+    process.exit(1);
+  }
+
   const url =
-    parseFlag(args, "--rpc-url") ??
-    process.env["SOLANA_RPC_URL"] ??
-    DEVNET_RPC_URL;
+    chain === "mainnet"
+      ? (process.env["SOLANA_RPC_URL"] ?? MAINNET_RPC_URL)
+      : DEVNET_RPC_URL;
+
   return new Connection(url, "confirmed");
 }
 

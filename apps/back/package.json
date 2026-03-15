@@ -24,6 +24,9 @@
     "manage-vault-operator": "tsx --env-file=../../.env src/scripts/manage-vault-operator.ts",
     "initialize-factory": "tsx --env-file=../../.env src/scripts/initialize-factory.ts",
     "create-vault-onchain": "tsx --env-file=../../.env src/scripts/create-vault-onchain.ts",
+    "test:vault:memo": "tsx --env-file=../../.env src/scripts/test-vault-memo-cpi.ts",
+    "test:vault:transfer": "tsx --env-file=../../.env src/scripts/test-vault-token-transfer-cpi.ts",
+    "test:vault:swap": "tsx --env-file=../../.env src/scripts/test-vault-swap-cpi.ts",
     "start:price-worker": "tsx --env-file=../../.env src/workers/price-worker.ts"
   },
   "dependencies": {

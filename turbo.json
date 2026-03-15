@@ -87,6 +87,18 @@
       "cache": false,
       "dependsOn": ["^build"]
     },
+    "test:vault:memo": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
+    "test:vault:transfer": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
+    "test:vault:swap": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
     "program:deploy": {
       "cache": false
     }
