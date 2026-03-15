@@ -53,33 +53,43 @@ apps/programs/vault/
 │   ├── sysvar.rs           # Clock sysvar reading (used by CollectFees)
 │   ├── token2022.rs        # Raw CPI wrappers for SPL Token 2022 (mint_to, burn, extensions, metadata)
 │   └── instructions/
-│       ├── mod.rs          # Re-exports all instruction structs
-│       ├── initialize.rs              # Create vault PDA + Token 2022 share mint (requires factory_state co-signer)
-│       ├── add_operator.rs            # Admin-only: add vault operator (was add_owner.rs)
-│       ├── remove_operator.rs         # Admin-only: remove vault operator (was remove_owner.rs)
-│       ├── set_share_price.rs         # Admin-only price update
-│       ├── execute.rs                 # Generic CPI passthrough (key feature)
-│       ├── update_fees.rs             # Admin: set fee BPS values + fee receiver
-│       ├── collect_fees.rs            # Admin: mint management + performance fee shares (uses Clock sysvar)
-│       ├── deposit_with_price.rs      # Admin: set price + deposit atomically (+ entry fee)
-│       ├── request_deposit.rs         # User: request async deposit (step 1, snapshots entry_fee_bps + created_at)
-│       ├── fulfill_deposit.rs         # Admin: fulfill pending deposit (step 2, uses fee snapshot)
-│       ├── withdraw_with_price.rs     # Admin: set price + withdraw atomically (+ exit fee)
-│       ├── request_withdraw.rs        # User: request async withdraw (step 1, snapshots exit_fee_bps + created_at)
-│       ├── fulfill_withdraw.rs        # Admin: fulfill pending withdraw (step 2, uses fee snapshot)
-│       ├── initialize_factory.rs      # 0x0D: Create singleton factory PDA (requires PROGRAM_AUTHORITY)
-│       ├── add_factory_admin.rs       # 0x0E: Factory owner: add factory admin
-│       ├── remove_factory_admin.rs    # 0x0F: Factory owner: remove factory admin
-│       ├── transfer_factory_ownership.rs  # 0x10: Factory owner: propose new owner (2-step)
-│       ├── accept_factory_ownership.rs    # 0x11: Pending owner: accept factory ownership
-│       ├── pause_factory.rs           # 0x12: Factory owner/admin: globally pause all vaults
-│       ├── unpause_factory.rs         # 0x13: Factory owner/admin: unpause factory
-│       ├── transfer_vault_admin.rs    # 0x14: Vault admin: propose new vault admin (2-step)
-│       ├── accept_vault_admin.rs      # 0x15: Pending vault admin: accept vault admin role
-│       ├── pause_vault.rs             # 0x16: Vault admin: pause individual vault
-│       ├── unpause_vault.rs           # 0x17: Vault admin: unpause individual vault
-│       ├── cancel_deposit.rs          # 0x18: User: cancel expired pending deposit (refunds base tokens)
-│       └── cancel_withdraw.rs         # 0x19: User: cancel expired pending withdraw (refunds shares)
+│       ├── mod.rs                     # Re-exports all 26 instruction structs from subdirectories
+│       ├── factory/                   # Factory governance (0x0D–0x13)
+│       │   ├── mod.rs
+│       │   ├── initialize_factory.rs      # 0x0D: Create singleton factory PDA (requires PROGRAM_AUTHORITY)
+│       │   ├── add_factory_admin.rs       # 0x0E: Factory owner: add factory admin
+│       │   ├── remove_factory_admin.rs    # 0x0F: Factory owner: remove factory admin
+│       │   ├── transfer_factory_ownership.rs  # 0x10: Factory owner: propose new owner (2-step)
+│       │   ├── accept_factory_ownership.rs    # 0x11: Pending owner: accept factory ownership
+│       │   ├── pause_factory.rs           # 0x12: Factory owner/admin: globally pause all vaults
+│       │   └── unpause_factory.rs         # 0x13: Factory owner/admin: unpause factory
+│       ├── vault_setup/               # Vault lifecycle & admin (0x00–0x04, 0x14–0x17)
+│       │   ├── mod.rs
+│       │   ├── initialize.rs              # 0x00: Create vault PDA + Token 2022 share mint
+│       │   ├── add_operator.rs            # 0x01: Admin-only: add vault operator
+│       │   ├── remove_operator.rs         # 0x02: Admin-only: remove vault operator
+│       │   ├── set_share_price.rs         # 0x03: Admin-only price update
+│       │   ├── execute.rs                 # 0x04: Generic CPI passthrough (key feature)
+│       │   ├── transfer_vault_admin.rs    # 0x14: Propose new vault admin (2-step)
+│       │   ├── accept_vault_admin.rs      # 0x15: Accept vault admin role
+│       │   ├── pause_vault.rs             # 0x16: Pause individual vault
+│       │   └── unpause_vault.rs           # 0x17: Unpause individual vault
+│       ├── deposit/                   # Deposit flow (0x07–0x09, 0x18)
+│       │   ├── mod.rs
+│       │   ├── deposit_with_price.rs      # 0x07: Set price + deposit atomically (+ entry fee)
+│       │   ├── request_deposit.rs         # 0x08: Request async deposit (snapshots entry_fee_bps)
+│       │   ├── fulfill_deposit.rs         # 0x09: Fulfill pending deposit (uses fee snapshot)
+│       │   └── cancel_deposit.rs          # 0x18: Cancel expired pending deposit (refunds base tokens)
+│       ├── withdraw/                  # Withdraw flow (0x0A–0x0C, 0x19)
+│       │   ├── mod.rs
+│       │   ├── withdraw_with_price.rs     # 0x0A: Set price + withdraw atomically (+ exit fee)
+│       │   ├── request_withdraw.rs        # 0x0B: Request async withdraw (snapshots exit_fee_bps)
+│       │   ├── fulfill_withdraw.rs        # 0x0C: Fulfill pending withdraw (uses fee snapshot)
+│       │   └── cancel_withdraw.rs         # 0x19: Cancel expired pending withdraw (refunds shares)
+│       └── fees/                      # Fee management (0x05–0x06)
+│           ├── mod.rs
+│           ├── update_fees.rs             # 0x05: Set fee BPS values + fee receiver
+│           └── collect_fees.rs            # 0x06: Mint management + performance fee shares
 └── tests/
     ├── helpers.rs              # Shared test utilities (mollusk setup, account builders)
     ├── initialize.rs           # Integration tests for Initialize instruction
