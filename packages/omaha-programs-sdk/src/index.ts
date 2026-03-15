@@ -15,13 +15,30 @@ export {
   DISC_WITHDRAW_WITH_PRICE,
   DISC_REQUEST_WITHDRAW,
   DISC_FULFILL_WITHDRAW,
+  DISC_INITIALIZE_FACTORY,
+  DISC_ADD_FACTORY_ADMIN,
+  DISC_REMOVE_FACTORY_ADMIN,
+  DISC_TRANSFER_FACTORY_OWNERSHIP,
+  DISC_ACCEPT_FACTORY_OWNERSHIP,
+  DISC_PAUSE_FACTORY,
+  DISC_UNPAUSE_FACTORY,
+  DISC_TRANSFER_VAULT_ADMIN,
+  DISC_ACCEPT_VAULT_ADMIN,
+  DISC_PAUSE_VAULT,
+  DISC_UNPAUSE_VAULT,
+  DISC_CANCEL_DEPOSIT,
+  DISC_CANCEL_WITHDRAW,
   VAULT_DISCRIMINATOR,
   PENDING_DEPOSIT_DISCRIMINATOR,
   PENDING_WITHDRAW_DISCRIMINATOR,
+  FACTORY_DISCRIMINATOR,
   VAULT_STATE_SIZE,
   PENDING_DEPOSIT_SIZE,
   PENDING_WITHDRAW_SIZE,
+  FACTORY_STATE_SIZE,
   MAX_OWNERS,
+  MAX_OPERATORS,
+  MAX_FACTORY_ADMINS,
   SPL_TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
   SYSTEM_PROGRAM_ID,
@@ -34,6 +51,7 @@ export {
 
 // PDA derivation
 export {
+  findFactoryPda,
   findVaultStatePda,
   findShareMintPda,
   findPendingDepositPda,
@@ -45,11 +63,13 @@ export {
   deserializeVaultState,
   deserializePendingDeposit,
   deserializePendingWithdraw,
+  deserializeFactoryState,
 } from "./state/index.js";
 export type {
   VaultState,
   PendingDeposit,
   PendingWithdraw,
+  FactoryState,
 } from "./state/index.js";
 
 // Instruction builders
@@ -67,6 +87,12 @@ export {
   createWithdrawWithPriceInstruction,
   createRequestWithdrawInstruction,
   createFulfillWithdrawInstruction,
+  createTransferFactoryOwnershipInstruction,
+  createAcceptFactoryOwnershipInstruction,
+  createAddFactoryAdminInstruction,
+  createRemoveFactoryAdminInstruction,
+  createTransferVaultAdminInstruction,
+  createAcceptVaultAdminInstruction,
 } from "./instructions/index.js";
 export type {
   InitializeParams,
@@ -82,6 +108,12 @@ export type {
   WithdrawWithPriceParams,
   RequestWithdrawParams,
   FulfillWithdrawParams,
+  TransferFactoryOwnershipParams,
+  AcceptFactoryOwnershipParams,
+  AddFactoryAdminParams,
+  RemoveFactoryAdminParams,
+  TransferVaultAdminParams,
+  AcceptVaultAdminParams,
 } from "./instructions/index.js";
 
 // Fee math

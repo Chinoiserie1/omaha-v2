@@ -3,6 +3,19 @@ import { PublicKey } from "@solana/web3.js";
 import { VAULT_PROGRAM_ID } from "./constants.js";
 
 /**
+ * Derive factory state PDA.
+ * Seeds: ["factory"]
+ */
+export function findFactoryPda(
+  programId: PublicKey = VAULT_PROGRAM_ID,
+): [PublicKey, number] {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("factory")],
+    programId,
+  );
+}
+
+/**
  * Derive vault state PDA.
  * Seeds: ["vault", name]
  */

@@ -1,4 +1,4 @@
-/** Custom error codes for the vault program (0x100–0x10D). */
+/** Custom error codes for the vault program (0x100–0x11C). */
 export enum VaultErrorCode {
   Unauthorized = 0x100,
   InvalidSharePrice = 0x101,
@@ -16,6 +16,19 @@ export enum VaultErrorCode {
   InvalidMetadata = 0x10d,
   UnauthorizedInitializer = 0x10e,
   InvalidVaultName = 0x10f,
+  VaultPaused = 0x110,
+  FactoryPaused = 0x111,
+  InvalidFactory = 0x112,
+  FactoryAdminsFull = 0x113,
+  FactoryAdminNotFound = 0x114,
+  DuplicateFactoryAdmin = 0x115,
+  NoPendingAdmin = 0x116,
+  InvalidPendingAdmin = 0x117,
+  PendingNotExpired = 0x118,
+  ZeroPubkey = 0x119,
+  NoPendingOwner = 0x11a,
+  InvalidPendingOwner = 0x11b,
+  UnauthorizedVaultCreator = 0x11c,
 }
 
 const ERROR_MESSAGES: Record<number, string> = {
@@ -24,14 +37,14 @@ const ERROR_MESSAGES: Record<number, string> = {
     "Share price must be greater than zero",
   [VaultErrorCode.InvalidAmount]:
     "Deposit or withdraw amount must be greater than zero",
-  [VaultErrorCode.OwnersFull]: "Owner list is full (max 10)",
-  [VaultErrorCode.OwnerNotFound]: "Owner not found",
-  [VaultErrorCode.InvalidDiscriminator]: "Vault account has wrong discriminator",
+  [VaultErrorCode.OwnersFull]: "Operator list is full (max 10)",
+  [VaultErrorCode.OwnerNotFound]: "Operator not found",
+  [VaultErrorCode.InvalidDiscriminator]: "Account has wrong discriminator",
   [VaultErrorCode.MathOverflow]:
     "Arithmetic overflow during share calculation",
   [VaultErrorCode.InsufficientFunds]:
     "Vault has insufficient base-token balance",
-  [VaultErrorCode.DuplicateOwner]: "Duplicate owner",
+  [VaultErrorCode.DuplicateOwner]: "Duplicate operator",
   [VaultErrorCode.InvalidPendingDeposit]:
     "Pending deposit account has wrong discriminator or is invalid",
   [VaultErrorCode.InvalidPendingWithdraw]:
@@ -43,6 +56,22 @@ const ERROR_MESSAGES: Record<number, string> = {
   [VaultErrorCode.UnauthorizedInitializer]:
     "Signer is not the program authority (cannot initialize vaults)",
   [VaultErrorCode.InvalidVaultName]: "Vault name is empty or exceeds 32 bytes",
+  [VaultErrorCode.VaultPaused]: "Vault is paused",
+  [VaultErrorCode.FactoryPaused]: "Factory is paused",
+  [VaultErrorCode.InvalidFactory]: "Invalid factory account",
+  [VaultErrorCode.FactoryAdminsFull]: "Factory admin list is full (max 10)",
+  [VaultErrorCode.FactoryAdminNotFound]: "Factory admin not found",
+  [VaultErrorCode.DuplicateFactoryAdmin]: "Duplicate factory admin",
+  [VaultErrorCode.NoPendingAdmin]: "No vault admin transfer in progress",
+  [VaultErrorCode.InvalidPendingAdmin]: "Signer does not match pending admin",
+  [VaultErrorCode.PendingNotExpired]:
+    "Pending deposit/withdraw has not expired (48h required)",
+  [VaultErrorCode.ZeroPubkey]: "Cannot use zero pubkey",
+  [VaultErrorCode.NoPendingOwner]: "No factory owner transfer in progress",
+  [VaultErrorCode.InvalidPendingOwner]:
+    "Signer does not match pending owner",
+  [VaultErrorCode.UnauthorizedVaultCreator]:
+    "Signer is not factory owner or factory admin",
 };
 
 /**

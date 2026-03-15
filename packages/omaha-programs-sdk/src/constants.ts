@@ -13,7 +13,7 @@ export const PROGRAM_AUTHORITY = new PublicKey(
   "9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf",
 );
 
-// ── Instruction Discriminators (0x00–0x0C) ──────────────────────────────────
+// ── Instruction Discriminators (0x00–0x0C): Vault Operations ─────────────────
 export const DISC_INITIALIZE = 0x00 as const;
 export const DISC_ADD_OWNER = 0x01 as const;
 export const DISC_REMOVE_OWNER = 0x02 as const;
@@ -28,18 +28,39 @@ export const DISC_WITHDRAW_WITH_PRICE = 0x0a as const;
 export const DISC_REQUEST_WITHDRAW = 0x0b as const;
 export const DISC_FULFILL_WITHDRAW = 0x0c as const;
 
+// ── Instruction Discriminators (0x0D–0x13): Factory Management ───────────────
+export const DISC_INITIALIZE_FACTORY = 0x0d as const;
+export const DISC_ADD_FACTORY_ADMIN = 0x0e as const;
+export const DISC_REMOVE_FACTORY_ADMIN = 0x0f as const;
+export const DISC_TRANSFER_FACTORY_OWNERSHIP = 0x10 as const;
+export const DISC_ACCEPT_FACTORY_OWNERSHIP = 0x11 as const;
+export const DISC_PAUSE_FACTORY = 0x12 as const;
+export const DISC_UNPAUSE_FACTORY = 0x13 as const;
+
+// ── Instruction Discriminators (0x14–0x19): Vault Admin Transfer & Pause ─────
+export const DISC_TRANSFER_VAULT_ADMIN = 0x14 as const;
+export const DISC_ACCEPT_VAULT_ADMIN = 0x15 as const;
+export const DISC_PAUSE_VAULT = 0x16 as const;
+export const DISC_UNPAUSE_VAULT = 0x17 as const;
+export const DISC_CANCEL_DEPOSIT = 0x18 as const;
+export const DISC_CANCEL_WITHDRAW = 0x19 as const;
+
 // ── Account Discriminators ──────────────────────────────────────────────────
 export const VAULT_DISCRIMINATOR = 0xa1 as const;
 export const PENDING_DEPOSIT_DISCRIMINATOR = 0xa2 as const;
 export const PENDING_WITHDRAW_DISCRIMINATOR = 0xa3 as const;
+export const FACTORY_DISCRIMINATOR = 0xa4 as const;
 
 // ── Account Sizes (bytes) ───────────────────────────────────────────────────
-export const VAULT_STATE_SIZE = 520 as const;
-export const PENDING_DEPOSIT_SIZE = 80 as const;
-export const PENDING_WITHDRAW_SIZE = 80 as const;
+export const VAULT_STATE_SIZE = 584 as const;
+export const PENDING_DEPOSIT_SIZE = 88 as const;
+export const PENDING_WITHDRAW_SIZE = 88 as const;
+export const FACTORY_STATE_SIZE = 400 as const;
 
-// ── Max Owners ──────────────────────────────────────────────────────────────
+// ── Max Counts ──────────────────────────────────────────────────────────────
 export const MAX_OWNERS = 10 as const;
+export const MAX_OPERATORS = 10 as const;
+export const MAX_FACTORY_ADMINS = 10 as const;
 
 // ── Token Programs ──────────────────────────────────────────────────────────
 export const SPL_TOKEN_PROGRAM_ID = new PublicKey(

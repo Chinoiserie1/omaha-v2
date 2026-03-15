@@ -23,19 +23,22 @@ function buildVaultStateBuffer(overrides?: {
   discriminator?: number;
   bump?: number;
   shareDecimals?: number;
-  numOwners?: number;
+  numOperators?: number;
   entryFeeBps?: number;
   exitFeeBps?: number;
   managementFeeBps?: number;
   performanceFeeBps?: number;
+  isPaused?: boolean;
   admin?: PublicKey;
+  pendingAdmin?: PublicKey;
   shareMint?: PublicKey;
   baseMint?: PublicKey;
   feeReceiver?: PublicKey;
+  factory?: PublicKey;
   sharePrice?: bigint;
   highWaterMark?: bigint;
   lastFeeTimestamp?: bigint;
-  owners?: PublicKey[];
+  operators?: PublicKey[];
   vaultNameLen?: number;
   vaultName?: string;
 }): Buffer {
@@ -45,28 +48,31 @@ function buildVaultStateBuffer(overrides?: {
   buf.writeUInt8(o.discriminator ?? VAULT_DISCRIMINATOR, 0);
   buf.writeUInt8(o.bump ?? 255, 1);
   buf.writeUInt8(o.shareDecimals ?? 6, 2);
-  buf.writeUInt8(o.numOwners ?? 0, 3);
+  buf.writeUInt8(o.numOperators ?? 0, 3);
   buf.writeUInt16LE(o.entryFeeBps ?? 0, 4);
   buf.writeUInt16LE(o.exitFeeBps ?? 0, 6);
   buf.writeUInt16LE(o.managementFeeBps ?? 0, 8);
   buf.writeUInt16LE(o.performanceFeeBps ?? 0, 10);
   buf.writeUInt8(o.vaultNameLen ?? 0, 12);
-  // padding at 13..16
+  buf.writeUInt8(o.isPaused ? 1 : 0, 13);
+  // padding at 14..16
   (o.admin ?? makeKey(1)).toBuffer().copy(buf, 16);
-  (o.shareMint ?? makeKey(2)).toBuffer().copy(buf, 48);
-  (o.baseMint ?? makeKey(3)).toBuffer().copy(buf, 80);
-  (o.feeReceiver ?? makeKey(4)).toBuffer().copy(buf, 112);
-  buf.writeBigUInt64LE(o.sharePrice ?? 1_000_000n, 144);
-  buf.writeBigUInt64LE(o.highWaterMark ?? 1_000_000n, 152);
-  buf.writeBigInt64LE(o.lastFeeTimestamp ?? 1700000000n, 160);
+  (o.pendingAdmin ?? PublicKey.default).toBuffer().copy(buf, 48);
+  (o.shareMint ?? makeKey(2)).toBuffer().copy(buf, 80);
+  (o.baseMint ?? makeKey(3)).toBuffer().copy(buf, 112);
+  (o.feeReceiver ?? makeKey(4)).toBuffer().copy(buf, 144);
+  (o.factory ?? makeKey(5)).toBuffer().copy(buf, 176);
+  buf.writeBigUInt64LE(o.sharePrice ?? 1_000_000n, 208);
+  buf.writeBigUInt64LE(o.highWaterMark ?? 1_000_000n, 216);
+  buf.writeBigInt64LE(o.lastFeeTimestamp ?? 1700000000n, 224);
 
-  const owners = o.owners ?? [];
-  for (let i = 0; i < owners.length; i++) {
-    owners[i]!.toBuffer().copy(buf, 168 + i * 32);
+  const operators = o.operators ?? [];
+  for (let i = 0; i < operators.length; i++) {
+    operators[i]!.toBuffer().copy(buf, 232 + i * 32);
   }
 
   if (o.vaultName !== undefined) {
-    Buffer.from(o.vaultName, "utf-8").copy(buf, 488);
+    Buffer.from(o.vaultName, "utf-8").copy(buf, 552);
   }
 
   return buf;
@@ -81,22 +87,26 @@ describe("VaultState deserialization", () => {
     const owner1 = makeKey(50);
     const owner2 = makeKey(60);
 
+    const factory = makeKey(70);
+
     const buf = buildVaultStateBuffer({
       bump: 253,
       shareDecimals: 9,
-      numOwners: 2,
+      numOperators: 2,
       entryFeeBps: 100,
       exitFeeBps: 200,
       managementFeeBps: 300,
       performanceFeeBps: 2000,
+      isPaused: false,
       admin,
       shareMint,
       baseMint,
       feeReceiver,
+      factory,
       sharePrice: 2_000_000n,
       highWaterMark: 1_500_000n,
       lastFeeTimestamp: 1700000000n,
-      owners: [owner1, owner2],
+      operators: [owner1, owner2],
       vaultNameLen: 10,
       vaultName: "test-vault",
     });
@@ -106,22 +116,25 @@ describe("VaultState deserialization", () => {
     expect(state.discriminator).toBe(VAULT_DISCRIMINATOR);
     expect(state.bump).toBe(253);
     expect(state.shareDecimals).toBe(9);
-    expect(state.numOwners).toBe(2);
+    expect(state.numOperators).toBe(2);
     expect(state.entryFeeBps).toBe(100);
     expect(state.exitFeeBps).toBe(200);
     expect(state.managementFeeBps).toBe(300);
     expect(state.performanceFeeBps).toBe(2000);
     expect(state.vaultNameLen).toBe(10);
+    expect(state.isPaused).toBe(false);
     expect(state.admin.toBase58()).toBe(admin.toBase58());
+    expect(state.pendingAdmin.toBase58()).toBe(PublicKey.default.toBase58());
     expect(state.shareMint.toBase58()).toBe(shareMint.toBase58());
     expect(state.baseMint.toBase58()).toBe(baseMint.toBase58());
     expect(state.feeReceiver.toBase58()).toBe(feeReceiver.toBase58());
+    expect(state.factory.toBase58()).toBe(factory.toBase58());
     expect(state.sharePrice).toBe(2_000_000n);
     expect(state.highWaterMark).toBe(1_500_000n);
     expect(state.lastFeeTimestamp).toBe(1700000000n);
-    expect(state.owners).toHaveLength(2);
-    expect(state.owners[0]!.toBase58()).toBe(owner1.toBase58());
-    expect(state.owners[1]!.toBase58()).toBe(owner2.toBase58());
+    expect(state.operators).toHaveLength(2);
+    expect(state.operators[0]!.toBase58()).toBe(owner1.toBase58());
+    expect(state.operators[1]!.toBase58()).toBe(owner2.toBase58());
     expect(state.vaultName).toBe("test-vault");
   });
 
@@ -136,10 +149,10 @@ describe("VaultState deserialization", () => {
     expect(() => deserializeVaultState(buf)).toThrow("discriminator");
   });
 
-  it("handles zero owners", () => {
-    const buf = buildVaultStateBuffer({ numOwners: 0 });
+  it("handles zero operators", () => {
+    const buf = buildVaultStateBuffer({ numOperators: 0 });
     const state = deserializeVaultState(buf);
-    expect(state.owners).toHaveLength(0);
+    expect(state.operators).toHaveLength(0);
   });
 });
 

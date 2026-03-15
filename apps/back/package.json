@@ -18,6 +18,10 @@
     "seed-stocks": "tsx --env-file=../../.env src/scripts/seed-stock-tokens.ts",
     "backfill-algo-all": "tsx --env-file=../../.env src/scripts/backfill-and-run-algo-all.ts",
     "sync-icons": "tsx --env-file=../../.env src/scripts/sync-token-icons.ts",
+    "transfer-factory-ownership": "tsx --env-file=../../.env src/scripts/transfer-factory-ownership.ts",
+    "manage-factory-admin": "tsx --env-file=../../.env src/scripts/manage-factory-admin.ts",
+    "transfer-vault-admin": "tsx --env-file=../../.env src/scripts/transfer-vault-admin.ts",
+    "manage-vault-operator": "tsx --env-file=../../.env src/scripts/manage-vault-operator.ts",
     "start:price-worker": "tsx --env-file=../../.env src/workers/price-worker.ts"
   },
   "dependencies": {

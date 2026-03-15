@@ -6,3 +6,6 @@ export type { PendingDeposit } from "./pending-deposit.js";
 
 export { deserializePendingWithdraw } from "./pending-withdraw.js";
 export type { PendingWithdraw } from "./pending-withdraw.js";
+
+export { deserializeFactoryState } from "./factory-state.js";
+export type { FactoryState } from "./factory-state.js";
