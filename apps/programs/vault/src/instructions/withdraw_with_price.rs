@@ -98,8 +98,8 @@ impl<'a> WithdrawWithPrice<'a> {
 
         // Copy values needed for PDA signing before dropping borrow
         let vault_bump = state.bump;
-        let admin_bytes = state.admin;
-        let base_mint_bytes = state.base_mint;
+        let vn_len = state.vault_name_len as usize;
+        let vault_name = state.vault_name;
 
         // Drop borrow before CPI
         drop(data);
@@ -116,10 +116,9 @@ impl<'a> WithdrawWithPrice<'a> {
 
         // Transfer base tokens: vault → withdrawer (legacy SPL Token, vault_state PDA signs)
         let vault_bump_bytes = [vault_bump];
-        let seeds: [Seed; 4] = [
+        let seeds: [Seed; 3] = [
             Seed::from(b"vault" as &[u8]),
-            Seed::from(&admin_bytes),
-            Seed::from(&base_mint_bytes),
+            Seed::from(&vault_name[..vn_len]),
             Seed::from(&vault_bump_bytes),
         ];
         let signers: [Signer; 1] = [Signer::from(&seeds)];

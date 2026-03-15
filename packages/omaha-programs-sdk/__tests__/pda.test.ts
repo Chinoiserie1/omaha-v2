@@ -9,19 +9,15 @@ import {
   findVaultStatePda,
 } from "../src/pda.js";
 
-const admin = new PublicKey("8dHEsAiGSpgGcRE7xwBpbfYZNWLG35c3KPjNAfNu7kRc");
-const baseMint = new PublicKey(
-  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
-);
 const depositor = new PublicKey(
   "HN7cABqLq46Es1jh92dQQisAq662SmxELLLsHHe4YWrH",
 );
 
 describe("PDA derivation", () => {
   it("findVaultStatePda matches PublicKey.findProgramAddressSync", () => {
-    const [pda, bump] = findVaultStatePda(admin, baseMint);
+    const [pda, bump] = findVaultStatePda("test-vault");
     const [expected, expectedBump] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), admin.toBuffer(), baseMint.toBuffer()],
+      [Buffer.from("vault"), Buffer.from("test-vault")],
       VAULT_PROGRAM_ID,
     );
     expect(pda.toBase58()).toBe(expected.toBase58());
@@ -29,7 +25,7 @@ describe("PDA derivation", () => {
   });
 
   it("findShareMintPda matches PublicKey.findProgramAddressSync", () => {
-    const [vaultState] = findVaultStatePda(admin, baseMint);
+    const [vaultState] = findVaultStatePda("test-vault");
     const [pda, bump] = findShareMintPda(vaultState);
     const [expected, expectedBump] = PublicKey.findProgramAddressSync(
       [Buffer.from("share_mint"), vaultState.toBuffer()],
@@ -40,7 +36,7 @@ describe("PDA derivation", () => {
   });
 
   it("findPendingDepositPda matches PublicKey.findProgramAddressSync", () => {
-    const [vaultState] = findVaultStatePda(admin, baseMint);
+    const [vaultState] = findVaultStatePda("test-vault");
     const [pda, bump] = findPendingDepositPda(vaultState, depositor);
     const [expected, expectedBump] = PublicKey.findProgramAddressSync(
       [
@@ -55,7 +51,7 @@ describe("PDA derivation", () => {
   });
 
   it("findPendingWithdrawPda matches PublicKey.findProgramAddressSync", () => {
-    const [vaultState] = findVaultStatePda(admin, baseMint);
+    const [vaultState] = findVaultStatePda("test-vault");
     const [pda, bump] = findPendingWithdrawPda(vaultState, depositor);
     const [expected, expectedBump] = PublicKey.findProgramAddressSync(
       [
@@ -73,9 +69,9 @@ describe("PDA derivation", () => {
     const customId = new PublicKey(
       "9xQeWvG816bUx9EPjHmaT23yvVM2ZWbrrpZb9PusVFin",
     );
-    const [pda] = findVaultStatePda(admin, baseMint, customId);
+    const [pda] = findVaultStatePda("test-vault", customId);
     const [expected] = PublicKey.findProgramAddressSync(
-      [Buffer.from("vault"), admin.toBuffer(), baseMint.toBuffer()],
+      [Buffer.from("vault"), Buffer.from("test-vault")],
       customId,
     );
     expect(pda.toBase58()).toBe(expected.toBase58());

@@ -67,7 +67,7 @@ fn test_deposit_with_price_success() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -76,7 +76,7 @@ fn test_deposit_with_price_success() {
     let deposit_amount: u64 = 10_000_000; // 10 USDC
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, old_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, old_price, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -143,7 +143,7 @@ fn test_deposit_with_price_admin_is_depositor() {
     let mollusk = setup_with_both_tokens();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -151,7 +151,7 @@ fn test_deposit_with_price_admin_is_depositor() {
     let deposit_amount: u64 = 5_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, new_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, new_price, &[], b"test-vault",
     );
 
     let admin_base_ata = Pubkey::new_unique();
@@ -199,11 +199,11 @@ fn test_deposit_with_price_unauthorized() {
     let not_admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -251,11 +251,11 @@ fn test_deposit_with_price_zero_price() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -302,11 +302,11 @@ fn test_deposit_with_price_zero_amount() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -353,11 +353,11 @@ fn test_deposit_with_price_missing_admin_signer() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -404,11 +404,11 @@ fn test_deposit_with_price_missing_depositor_signer() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -455,12 +455,12 @@ fn test_deposit_with_price_wrong_share_mint() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let wrong_share_mint = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();

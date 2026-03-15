@@ -26,7 +26,7 @@ fn test_initialize_hits_realloc_limit_in_mollusk() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Vault Share");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     let instruction = build_instruction(
@@ -64,7 +64,7 @@ fn test_initialize_zero_share_price() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     let instruction = build_instruction(
@@ -102,7 +102,7 @@ fn test_initialize_missing_admin_signer() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     let instruction = build_instruction(
@@ -178,7 +178,7 @@ fn test_initialize_insufficient_data() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     // disc + decimals + only 2 bytes of price (need 8)
@@ -242,7 +242,7 @@ fn test_initialize_wrong_token_program() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     // Pass legacy Token program instead of Token 2022
@@ -281,7 +281,7 @@ fn test_initialize_metadata_name_too_long() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     let long_name = [b'A'; 129]; // exceeds MAX_METADATA_STRING_LEN (128)
@@ -323,7 +323,7 @@ fn test_initialize_wrong_program_authority() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
     let wrong_authority = Pubkey::new_unique();
 
@@ -362,7 +362,7 @@ fn test_initialize_program_authority_not_signer() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     let instruction = build_instruction(
@@ -400,7 +400,7 @@ fn test_initialize_missing_program_authority() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, _) = vault_pda(&admin, &base_mint);
+    let (vault_key, _) = vault_pda(b"Test");
     let (share_mint_key, _) = share_mint_pda(&vault_key);
 
     // Only 6 accounts (old layout without program_authority)

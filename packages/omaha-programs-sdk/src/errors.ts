@@ -15,6 +15,7 @@ export enum VaultErrorCode {
   NoFeesToCollect = 0x10c,
   InvalidMetadata = 0x10d,
   UnauthorizedInitializer = 0x10e,
+  InvalidVaultName = 0x10f,
 }
 
 const ERROR_MESSAGES: Record<number, string> = {
@@ -41,6 +42,7 @@ const ERROR_MESSAGES: Record<number, string> = {
   [VaultErrorCode.InvalidMetadata]: "Metadata string exceeds max length",
   [VaultErrorCode.UnauthorizedInitializer]:
     "Signer is not the program authority (cannot initialize vaults)",
+  [VaultErrorCode.InvalidVaultName]: "Vault name is empty or exceeds 32 bytes",
 };
 
 /**

@@ -56,8 +56,8 @@ impl<'a> CollectFees<'a> {
 
         // Read vault state and calculate fees
         let vault_bump;
-        let admin_bytes;
-        let base_mint_bytes;
+        let vn_len;
+        let vault_name;
         let total_fee_shares;
         {
             let mut vs_data = self.vault_state.try_borrow_mut_data()?;
@@ -117,17 +117,16 @@ impl<'a> CollectFees<'a> {
             }
 
             vault_bump = state.bump;
-            admin_bytes = state.admin;
-            base_mint_bytes = state.base_mint;
+            vn_len = state.vault_name_len as usize;
+            vault_name = state.vault_name;
         }
 
         // Mint fee shares if any
         if total_fee_shares > 0 {
             let vault_bump_bytes = [vault_bump];
-            let seeds: [Seed; 4] = [
+            let seeds: [Seed; 3] = [
                 Seed::from(b"vault" as &[u8]),
-                Seed::from(&admin_bytes),
-                Seed::from(&base_mint_bytes),
+                Seed::from(&vault_name[..vn_len]),
                 Seed::from(&vault_bump_bytes),
             ];
             let signers: [Signer; 1] = [Signer::from(&seeds)];

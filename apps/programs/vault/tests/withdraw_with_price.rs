@@ -42,7 +42,7 @@ fn test_withdraw_with_price_success() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -52,7 +52,7 @@ fn test_withdraw_with_price_success() {
     // base_to_return = 3_000_000 * 2_000_000 / 10^6 = 6_000_000
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, old_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, old_price, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -124,11 +124,11 @@ fn test_withdraw_with_price_unauthorized() {
     let not_admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -175,11 +175,11 @@ fn test_withdraw_with_price_missing_withdrawer_signer() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -226,11 +226,11 @@ fn test_withdraw_with_price_zero_price() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -277,11 +277,11 @@ fn test_withdraw_with_price_zero_shares() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -328,12 +328,12 @@ fn test_withdraw_with_price_wrong_share_mint() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let wrong_share_mint = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();

@@ -34,6 +34,8 @@ pub enum VaultError {
     InvalidMetadata = 0x10D,
     /// Signer is not the program authority (cannot initialize vaults).
     UnauthorizedInitializer = 0x10E,
+    /// Vault name is empty or exceeds 32 bytes.
+    InvalidVaultName = 0x10F,
 }
 
 impl From<VaultError> for ProgramError {
@@ -108,6 +110,10 @@ mod tests {
             ProgramError::Custom(0x10E),
             ProgramError::from(VaultError::UnauthorizedInitializer)
         );
+        assert_eq!(
+            ProgramError::Custom(0x10F),
+            ProgramError::from(VaultError::InvalidVaultName)
+        );
     }
 
     #[test]
@@ -128,6 +134,7 @@ mod tests {
             VaultError::NoFeesToCollect as u32,
             VaultError::InvalidMetadata as u32,
             VaultError::UnauthorizedInitializer as u32,
+            VaultError::InvalidVaultName as u32,
         ];
         for i in 0..codes.len() {
             for j in (i + 1)..codes.len() {

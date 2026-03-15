@@ -13,10 +13,10 @@ fn test_set_share_price_success() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let new_price: u64 = 2_000_000;
@@ -47,10 +47,10 @@ fn test_set_share_price_unauthorized() {
     let stranger = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -79,10 +79,10 @@ fn test_set_share_price_zero() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -111,10 +111,10 @@ fn test_set_share_price_wrong_owner() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     // vault_state owned by wrong program
@@ -147,10 +147,10 @@ fn test_set_share_price_bad_discriminator() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
     vault_data[0] = 0xFF; // bad discriminator
 

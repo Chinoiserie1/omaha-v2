@@ -71,8 +71,8 @@ impl<'a> FulfillDeposit<'a> {
         // Borrow vault state mutably to update price and read config
         let share_decimals;
         let vault_bump;
-        let admin_bytes;
-        let base_mint_bytes;
+        let vn_len;
+        let vn_name;
         let entry_fee_bps;
         let has_fee_receiver;
         {
@@ -95,8 +95,8 @@ impl<'a> FulfillDeposit<'a> {
 
             share_decimals = state.share_decimals;
             vault_bump = state.bump;
-            admin_bytes = state.admin;
-            base_mint_bytes = state.base_mint;
+            vn_len = state.vault_name_len as usize;
+            vn_name = state.vault_name;
             entry_fee_bps = state.entry_fee_bps;
             has_fee_receiver = state.has_fee_receiver();
         }
@@ -125,10 +125,9 @@ impl<'a> FulfillDeposit<'a> {
 
         // Mint share tokens to depositor (vault_state PDA is mint authority)
         let vault_bump_bytes = [vault_bump];
-        let seeds: [Seed; 4] = [
+        let seeds: [Seed; 3] = [
             Seed::from(b"vault" as &[u8]),
-            Seed::from(&admin_bytes),
-            Seed::from(&base_mint_bytes),
+            Seed::from(&vn_name[..vn_len]),
             Seed::from(&vault_bump_bytes),
         ];
         let signers: [Signer; 1] = [Signer::from(&seeds)];

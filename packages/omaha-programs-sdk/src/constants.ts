@@ -34,7 +34,7 @@ export const PENDING_DEPOSIT_DISCRIMINATOR = 0xa2 as const;
 export const PENDING_WITHDRAW_DISCRIMINATOR = 0xa3 as const;
 
 // ── Account Sizes (bytes) ───────────────────────────────────────────────────
-export const VAULT_STATE_SIZE = 488 as const;
+export const VAULT_STATE_SIZE = 520 as const;
 export const PENDING_DEPOSIT_SIZE = 80 as const;
 export const PENDING_WITHDRAW_SIZE = 80 as const;
 

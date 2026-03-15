@@ -18,7 +18,7 @@ use crate::token2022;
 /// Accounts:
 ///   0. `[signer]`           program_authority — must match PROGRAM_AUTHORITY constant
 ///   1. `[signer, writable]` admin — pays for account creation, becomes vault admin
-///   2. `[writable]`         vault_state — PDA: ["vault", admin, base_mint]
+///   2. `[writable]`         vault_state — PDA: ["vault", name]
 ///   3. `[writable]`         share_mint — PDA: ["share_mint", vault_state]
 ///   4. `[]`                 base_mint — the deposit token (e.g. USDC)
 ///   5. `[]`                 system_program
@@ -53,12 +53,14 @@ impl<'a> Initialize<'a> {
     pub const DISCRIMINATOR: u8 = 0;
 
     pub fn process(self) -> ProgramResult {
-        // Derive vault PDA and verify address
-        let admin_key = self.admin.key();
-        let base_mint_key = self.base_mint.key();
+        // Validate vault name
+        if self.name.is_empty() || self.name.len() > 32 {
+            return Err(VaultError::InvalidVaultName.into());
+        }
 
+        // Derive vault PDA from name only: ["vault", name]
         let (expected_vault, vault_bump) = find_program_address(
-            &[b"vault", admin_key.as_ref(), base_mint_key.as_ref()],
+            &[b"vault", self.name],
             &crate::ID,
         );
         if self.vault_state.key() != &expected_vault {
@@ -77,10 +79,9 @@ impl<'a> Initialize<'a> {
 
         // Create vault state account
         let vault_bump_bytes = [vault_bump];
-        let vault_seeds: [Seed; 4] = [
+        let vault_seeds: [Seed; 3] = [
             Seed::from(b"vault" as &[u8]),
-            Seed::from(admin_key.as_ref()),
-            Seed::from(base_mint_key.as_ref()),
+            Seed::from(self.name),
             Seed::from(&vault_bump_bytes),
         ];
         let vault_signers: [Signer; 1] = [Signer::from(&vault_seeds)];
@@ -173,13 +174,16 @@ impl<'a> Initialize<'a> {
         state.share_decimals = self.share_decimals;
         state.num_owners = 0;
         // entry_fee_bps, exit_fee_bps, management_fee_bps, performance_fee_bps = 0
+        state.vault_name_len = self.name.len() as u8;
+        let admin_key = self.admin.key();
         state.admin = *admin_key;
         state.share_mint = *self.share_mint.key();
-        state.base_mint = *base_mint_key;
+        state.base_mint = *self.base_mint.key();
         // fee_receiver = [0; 32] (no fees until UpdateFees is called)
         state.share_price = self.share_price;
         state.high_water_mark = self.share_price;
         // last_fee_timestamp = 0 (initialized on first CollectFees call)
+        state.vault_name[..self.name.len()].copy_from_slice(self.name);
 
         Ok(())
     }

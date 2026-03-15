@@ -41,8 +41,8 @@ apps/programs/vault/
 ├── CLAUDE.md               # This file
 ├── src/
 │   ├── lib.rs              # Entrypoint + instruction routing (13 discriminators)
-│   ├── state.rs            # VaultState (488B) + PendingDeposit (80B) + PendingWithdraw (80B, bytemuck Pod)
-│   ├── error.rs            # 15 custom errors (0x100-0x10E)
+│   ├── state.rs            # VaultState (520B) + PendingDeposit (80B) + PendingWithdraw (80B, bytemuck Pod)
+│   ├── error.rs            # 16 custom errors (0x100-0x10F)
 │   ├── fees.rs             # Pure fee math (entry/exit/management/performance)
 │   ├── rent.rs             # Const fn rent exemption calculation
 │   ├── token2022.rs        # Raw CPI wrappers for SPL Token 2022 (mint_to, burn, extensions, metadata)
@@ -86,7 +86,7 @@ Instruction discriminators use the `0x00–0x0C` range. Account discriminators u
 
 | Disc | Instruction | Group | Access | Description |
 |------|------------|-------|--------|-------------|
-| 0x00 | Initialize | Setup | Program Authority + Admin (signers) | Creates vault PDA, Token 2022 share mint PDA with metadata extensions |
+| 0x00 | Initialize | Setup | Program Authority + Admin (signers) | Creates vault PDA (seeds: ["vault", name]), Token 2022 share mint PDA with metadata extensions |
 | 0x01 | AddOwner | Setup | Admin only | Adds an operator pubkey (max 10) |
 | 0x02 | RemoveOwner | Setup | Admin only | Removes an operator pubkey (swap-remove) |
 | 0x03 | SetSharePrice | Admin Ops | Admin only | Updates `share_price` in vault state |
@@ -104,7 +104,7 @@ Instruction discriminators use the `0x00–0x0C` range. Account discriminators u
 
 | PDA | Seeds | Authority |
 |-----|-------|-----------|
-| vault_state | `["vault", admin_pubkey, base_mint]` | Program owns the account |
+| vault_state | `["vault", vault_name]` | Program owns the account. vault_name is globally unique (e.g. "quant-username") |
 | share_mint | `["share_mint", vault_state_pubkey]` | vault_state PDA is mint authority |
 | pending_deposit | `["pending_deposit", vault_state_pubkey, depositor_pubkey]` | Program owns; closed after fulfill |
 | pending_withdraw | `["pending_withdraw", vault_state_pubkey, withdrawer_pubkey]` | Program owns; closed after fulfill |
@@ -135,7 +135,7 @@ Four fee types, all in basis points (BPS, 10,000 = 100%):
 
 Fee receiver is an optional account in deposit instructions (via `accounts.get(N)`).
 
-## VaultState Layout (488 bytes)
+## VaultState Layout (520 bytes)
 
 | Offset | Size | Field | Description |
 |--------|------|-------|-------------|
@@ -147,7 +147,8 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 6 | 2 | exit_fee_bps | Exit fee in basis points |
 | 8 | 2 | management_fee_bps | Management fee in basis points |
 | 10 | 2 | performance_fee_bps | Performance fee in basis points |
-| 12 | 4 | _padding | Alignment padding |
+| 12 | 1 | vault_name_len | Length of vault name (0..32) |
+| 13 | 3 | _padding | Alignment padding |
 | 16 | 32 | admin | Admin pubkey |
 | 48 | 32 | share_mint | Share Token 2022 mint (with metadata extensions) |
 | 80 | 32 | base_mint | Deposit token mint |
@@ -156,6 +157,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 152 | 8 | high_water_mark | HWM for performance fee calculation |
 | 160 | 8 | last_fee_timestamp | Unix timestamp of last fee collection |
 | 168 | 320 | owners | Up to 10 operator pubkeys (32 bytes each) |
+| 488 | 32 | vault_name | Vault name bytes (used in PDA seeds) |
 
 ## PendingDeposit Layout (80 bytes)
 
@@ -208,6 +210,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 0x10C | NoFeesToCollect | No fee receiver set or no fees to collect |
 | 0x10D | InvalidMetadata | Metadata string exceeds max length (128 bytes) |
 | 0x10E | UnauthorizedInitializer | Signer is not the program authority |
+| 0x10F | InvalidVaultName | Vault name is empty or exceeds 32 bytes |
 
 ## Build & Test
 

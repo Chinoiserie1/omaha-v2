@@ -36,6 +36,8 @@ function buildVaultStateBuffer(overrides?: {
   highWaterMark?: bigint;
   lastFeeTimestamp?: bigint;
   owners?: PublicKey[];
+  vaultNameLen?: number;
+  vaultName?: string;
 }): Buffer {
   const buf = Buffer.alloc(VAULT_STATE_SIZE);
   const o = overrides ?? {};
@@ -48,7 +50,8 @@ function buildVaultStateBuffer(overrides?: {
   buf.writeUInt16LE(o.exitFeeBps ?? 0, 6);
   buf.writeUInt16LE(o.managementFeeBps ?? 0, 8);
   buf.writeUInt16LE(o.performanceFeeBps ?? 0, 10);
-  // padding at 12..16
+  buf.writeUInt8(o.vaultNameLen ?? 0, 12);
+  // padding at 13..16
   (o.admin ?? makeKey(1)).toBuffer().copy(buf, 16);
   (o.shareMint ?? makeKey(2)).toBuffer().copy(buf, 48);
   (o.baseMint ?? makeKey(3)).toBuffer().copy(buf, 80);
@@ -60,6 +63,10 @@ function buildVaultStateBuffer(overrides?: {
   const owners = o.owners ?? [];
   for (let i = 0; i < owners.length; i++) {
     owners[i]!.toBuffer().copy(buf, 168 + i * 32);
+  }
+
+  if (o.vaultName !== undefined) {
+    Buffer.from(o.vaultName, "utf-8").copy(buf, 488);
   }
 
   return buf;
@@ -90,6 +97,8 @@ describe("VaultState deserialization", () => {
       highWaterMark: 1_500_000n,
       lastFeeTimestamp: 1700000000n,
       owners: [owner1, owner2],
+      vaultNameLen: 10,
+      vaultName: "test-vault",
     });
 
     const state = deserializeVaultState(buf);
@@ -102,6 +111,7 @@ describe("VaultState deserialization", () => {
     expect(state.exitFeeBps).toBe(200);
     expect(state.managementFeeBps).toBe(300);
     expect(state.performanceFeeBps).toBe(2000);
+    expect(state.vaultNameLen).toBe(10);
     expect(state.admin.toBase58()).toBe(admin.toBase58());
     expect(state.shareMint.toBase58()).toBe(shareMint.toBase58());
     expect(state.baseMint.toBase58()).toBe(baseMint.toBase58());
@@ -112,6 +122,7 @@ describe("VaultState deserialization", () => {
     expect(state.owners).toHaveLength(2);
     expect(state.owners[0]!.toBase58()).toBe(owner1.toBase58());
     expect(state.owners[1]!.toBase58()).toBe(owner2.toBase58());
+    expect(state.vaultName).toBe("test-vault");
   });
 
   it("throws on short data", () => {

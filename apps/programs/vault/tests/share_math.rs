@@ -45,11 +45,11 @@ fn run_deposit(
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -97,11 +97,11 @@ fn run_deposit_expect_err(
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -154,11 +154,11 @@ fn run_withdraw_expect_err(
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -209,7 +209,7 @@ fn test_deposit_high_decimals_9() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 9;
@@ -217,7 +217,7 @@ fn test_deposit_high_decimals_9() {
     let deposit_amount: u64 = 5_000_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -273,7 +273,7 @@ fn test_deposit_truncation_rounding() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -281,7 +281,7 @@ fn test_deposit_truncation_rounding() {
     let deposit_amount: u64 = 10_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let depositor_base_ata = Pubkey::new_unique();
@@ -403,7 +403,7 @@ fn test_withdraw_high_decimals_success() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 9;
@@ -411,7 +411,7 @@ fn test_withdraw_high_decimals_success() {
     let shares_to_burn: u64 = 3_000_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -465,7 +465,7 @@ fn test_withdraw_truncation_rounding() {
     let admin = Pubkey::new_unique();
     let withdrawer = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -473,7 +473,7 @@ fn test_withdraw_truncation_rounding() {
     let shares_to_burn: u64 = 10_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let withdrawer_share_ata = Pubkey::new_unique();
@@ -530,7 +530,7 @@ fn test_deposit_withdraw_round_trip() {
     let admin = Pubkey::new_unique();
     let user = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -538,7 +538,7 @@ fn test_deposit_withdraw_round_trip() {
     let deposit_amount: u64 = 7_500_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let user_base_ata = Pubkey::new_unique();
@@ -654,7 +654,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
     let admin = Pubkey::new_unique();
     let user = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -662,7 +662,7 @@ fn test_deposit_withdraw_round_trip_lossy() {
     let deposit_amount: u64 = 10;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, share_price, &[], b"test-vault",
     );
 
     let user_base_ata = Pubkey::new_unique();

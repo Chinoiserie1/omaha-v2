@@ -45,12 +45,12 @@ fn test_request_deposit_success() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let deposit_amount: u64 = 5_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, _pending_bump) = pending_deposit_pda(&vault_key, &depositor);
@@ -115,11 +115,11 @@ fn test_request_deposit_zero_amount() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, _) = pending_deposit_pda(&vault_key, &depositor);
@@ -163,11 +163,11 @@ fn test_request_deposit_missing_signer() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, _) = pending_deposit_pda(&vault_key, &depositor);
@@ -211,11 +211,11 @@ fn test_request_deposit_wrong_pending_pda() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let wrong_pending_key = Pubkey::new_unique(); // wrong PDA

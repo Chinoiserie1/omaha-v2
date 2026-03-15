@@ -4,15 +4,14 @@ import { VAULT_PROGRAM_ID } from "./constants.js";
 
 /**
  * Derive vault state PDA.
- * Seeds: ["vault", admin_pubkey, base_mint]
+ * Seeds: ["vault", name]
  */
 export function findVaultStatePda(
-  admin: PublicKey,
-  baseMint: PublicKey,
+  vaultName: string,
   programId: PublicKey = VAULT_PROGRAM_ID,
 ): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from("vault"), admin.toBuffer(), baseMint.toBuffer()],
+    [Buffer.from("vault"), Buffer.from(vaultName)],
     programId,
   );
 }

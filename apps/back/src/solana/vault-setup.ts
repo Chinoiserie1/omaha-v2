@@ -23,7 +23,7 @@ export async function createQuantVault(
   const vaultSymbol = `Q-${quantUsername.slice(0, 6).toUpperCase()}`;
 
   // Derive PDAs
-  const [vaultState] = findVaultStatePda(keeper.publicKey, USDC_MINT);
+  const [vaultState] = findVaultStatePda(vaultName);
   const [shareMint] = findShareMintPda(vaultState);
 
   // Derive vault's USDC ATA (owned by vault state PDA)

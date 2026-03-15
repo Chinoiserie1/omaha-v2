@@ -13,10 +13,10 @@ fn test_execute_admin_authorized() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -52,10 +52,10 @@ fn test_execute_owner_authorized() {
     let owner = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -89,10 +89,10 @@ fn test_execute_unauthorized() {
     let stranger = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -123,10 +123,10 @@ fn test_execute_not_signer() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -180,10 +180,10 @@ fn test_execute_bad_discriminator() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
     vault_data[0] = 0xFF; // bad discriminator
 

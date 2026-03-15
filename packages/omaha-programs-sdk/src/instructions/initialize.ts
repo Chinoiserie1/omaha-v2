@@ -32,7 +32,7 @@ export interface InitializeParams {
  * Accounts:
  *   0. [signer]           program_authority — must match PROGRAM_AUTHORITY constant
  *   1. [signer, writable] admin
- *   2. [writable]         vault_state  — PDA: ["vault", admin, base_mint]
+ *   2. [writable]         vault_state  — PDA: ["vault", name]
  *   3. [writable]         share_mint   — PDA: ["share_mint", vault_state]
  *   4. []                 base_mint
  *   5. []                 system_program

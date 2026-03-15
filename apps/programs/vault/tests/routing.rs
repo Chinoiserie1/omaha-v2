@@ -55,10 +55,10 @@ fn test_discriminator_0x03_routes_to_set_share_price() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -88,10 +88,10 @@ fn test_discriminator_0x01_routes_to_add_owner() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let new_owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -121,10 +121,10 @@ fn test_discriminator_0x02_routes_to_remove_owner() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner], b"test-vault",
     );
 
     let instruction = build_instruction(

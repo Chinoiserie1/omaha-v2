@@ -15,7 +15,7 @@ fn test_fulfill_deposit_success() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let share_decimals: u8 = 6;
@@ -24,7 +24,7 @@ fn test_fulfill_deposit_success() {
     let deposit_amount: u64 = 10_000_000;
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, share_decimals, old_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, old_price, &[], b"test-vault",
     );
 
     let (pending_key, pending_bump) = pending_deposit_pda(&vault_key, &depositor);
@@ -87,11 +87,11 @@ fn test_fulfill_deposit_unauthorized() {
     let not_admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, pending_bump) = pending_deposit_pda(&vault_key, &depositor);
@@ -138,11 +138,11 @@ fn test_fulfill_deposit_wrong_depositor() {
     let depositor = Pubkey::new_unique();
     let wrong_depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, pending_bump) = pending_deposit_pda(&vault_key, &depositor);
@@ -189,8 +189,8 @@ fn test_fulfill_deposit_wrong_vault() {
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let other_base_mint = Pubkey::new_unique();
-    let (vault_key, _bump) = vault_pda(&admin, &base_mint);
-    let (other_vault_key, other_bump) = vault_pda(&admin, &other_base_mint);
+    let (vault_key, _bump) = vault_pda(b"test-vault");
+    let (other_vault_key, other_bump) = vault_pda(b"other-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let (pending_key, pending_bump) = pending_deposit_pda(&vault_key, &depositor);
@@ -199,7 +199,7 @@ fn test_fulfill_deposit_wrong_vault() {
     );
 
     let other_vault_data = create_vault_state_data(
-        &admin, &other_base_mint, &share_mint_key, other_bump, 6, 1_000_000, &[],
+        &admin, &other_base_mint, &share_mint_key, other_bump, 6, 1_000_000, &[], b"other-vault",
     );
 
     let depositor_share_ata = Pubkey::new_unique();
@@ -240,11 +240,11 @@ fn test_fulfill_deposit_zero_price() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, pending_bump) = pending_deposit_pda(&vault_key, &depositor);
@@ -290,11 +290,11 @@ fn test_fulfill_deposit_missing_admin_signer() {
     let admin = Pubkey::new_unique();
     let depositor = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let (pending_key, pending_bump) = pending_deposit_pda(&vault_key, &depositor);

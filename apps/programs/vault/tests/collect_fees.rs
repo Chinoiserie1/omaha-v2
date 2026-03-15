@@ -12,13 +12,13 @@ fn test_collect_fees_first_call_initializes_timestamp() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let fee_receiver = Pubkey::new_unique();
     let fee_receiver_ata = Pubkey::new_unique();
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
     // Set fee receiver and management fee, but last_fee_timestamp = 0
     set_vault_fees(&mut vault_data, 0, 0, 200, 0, &fee_receiver, 1_000_000, 0);
@@ -68,7 +68,7 @@ fn test_collect_fees_management_fee() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let fee_receiver = Pubkey::new_unique();
     let fee_receiver_ata = Pubkey::new_unique();
@@ -80,7 +80,7 @@ fn test_collect_fees_management_fee() {
     let current_ts: i64 = last_ts + seconds_per_year; // exactly 1 year later
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
     set_vault_fees(&mut vault_data, 0, 0, mgmt_fee_bps, 0, &fee_receiver, 1_000_000, last_ts);
 
@@ -130,7 +130,7 @@ fn test_collect_fees_performance_fee() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let fee_receiver = Pubkey::new_unique();
     let fee_receiver_ata = Pubkey::new_unique();
@@ -143,7 +143,7 @@ fn test_collect_fees_performance_fee() {
     let current_ts: i64 = last_ts + 100; // small time gap
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, share_price, &[], b"test-vault",
     );
     // Only performance fee, no management fee
     set_vault_fees(&mut vault_data, 0, 0, 0, perf_fee_bps, &fee_receiver, hwm, last_ts);
@@ -194,13 +194,13 @@ fn test_collect_fees_no_fee_receiver() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let fee_receiver_ata = Pubkey::new_unique();
 
     // No fee receiver set (all zeros)
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -235,13 +235,13 @@ fn test_collect_fees_unauthorized() {
     let admin = Pubkey::new_unique();
     let not_admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let fee_receiver = Pubkey::new_unique();
     let fee_receiver_ata = Pubkey::new_unique();
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
     );
     set_vault_fees(&mut vault_data, 0, 0, 200, 0, &fee_receiver, 1_000_000, 0);
 
@@ -276,7 +276,7 @@ fn test_collect_fees_price_below_hwm_no_perf_fee() {
     let mollusk = setup_with_token2022();
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
     let fee_receiver = Pubkey::new_unique();
     let fee_receiver_ata = Pubkey::new_unique();
@@ -287,7 +287,7 @@ fn test_collect_fees_price_below_hwm_no_perf_fee() {
     let current_ts: i64 = last_ts + 100;
 
     let mut vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint_key, bump, 6, share_price, &[],
+        &admin, &base_mint, &share_mint_key, bump, 6, share_price, &[], b"test-vault",
     );
     // Only perf fee, no mgmt fee
     set_vault_fees(&mut vault_data, 0, 0, 0, 2000, &fee_receiver, hwm, last_ts);

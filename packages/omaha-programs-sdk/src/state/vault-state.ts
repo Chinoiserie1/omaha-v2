@@ -15,6 +15,7 @@ export interface VaultState {
   readonly exitFeeBps: number;
   readonly managementFeeBps: number;
   readonly performanceFeeBps: number;
+  readonly vaultNameLen: number;
   readonly admin: PublicKey;
   readonly shareMint: PublicKey;
   readonly baseMint: PublicKey;
@@ -23,10 +24,11 @@ export interface VaultState {
   readonly highWaterMark: bigint;
   readonly lastFeeTimestamp: bigint;
   readonly owners: readonly PublicKey[];
+  readonly vaultName: string;
 }
 
 /**
- * Deserialize a VaultState from raw account data (488 bytes).
+ * Deserialize a VaultState from raw account data (520 bytes).
  *
  * Layout:
  *   0:   discriminator (u8, 0xA1)
@@ -37,7 +39,8 @@ export interface VaultState {
  *   6:   exit_fee_bps (u16 LE)
  *   8:   management_fee_bps (u16 LE)
  *   10:  performance_fee_bps (u16 LE)
- *   12:  _padding (4 bytes)
+ *   12:  vault_name_len (u8)
+ *   13:  _padding (3 bytes)
  *   16:  admin (32)
  *   48:  share_mint (32)
  *   80:  base_mint (32)
@@ -46,6 +49,7 @@ export interface VaultState {
  *   152: high_water_mark (u64 LE)
  *   160: last_fee_timestamp (i64 LE)
  *   168: owners (10 × 32 = 320)
+ *   488: vault_name (vault_name_len bytes, max 32)
  */
 export function deserializeVaultState(data: Buffer): VaultState {
   if (data.length < VAULT_STATE_SIZE) {
@@ -62,11 +66,13 @@ export function deserializeVaultState(data: Buffer): VaultState {
   }
 
   const numOwners = data.readUInt8(3);
+  const vaultNameLen = data.readUInt8(12);
   const owners: PublicKey[] = [];
   for (let i = 0; i < Math.min(numOwners, MAX_OWNERS); i++) {
     const offset = 168 + i * 32;
     owners.push(new PublicKey(data.subarray(offset, offset + 32)));
   }
+  const vaultName = data.subarray(488, 488 + vaultNameLen).toString("utf-8");
 
   return {
     discriminator,
@@ -77,6 +83,7 @@ export function deserializeVaultState(data: Buffer): VaultState {
     exitFeeBps: data.readUInt16LE(6),
     managementFeeBps: data.readUInt16LE(8),
     performanceFeeBps: data.readUInt16LE(10),
+    vaultNameLen,
     admin: new PublicKey(data.subarray(16, 48)),
     shareMint: new PublicKey(data.subarray(48, 80)),
     baseMint: new PublicKey(data.subarray(80, 112)),
@@ -85,5 +92,6 @@ export function deserializeVaultState(data: Buffer): VaultState {
     highWaterMark: data.readBigUInt64LE(152),
     lastFeeTimestamp: data.readBigInt64LE(160),
     owners,
+    vaultName,
   };
 }

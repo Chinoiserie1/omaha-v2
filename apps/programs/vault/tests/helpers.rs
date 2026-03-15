@@ -59,10 +59,10 @@ pub fn setup_with_both_tokens() -> Mollusk {
     mollusk
 }
 
-/// Derive vault PDA: seeds = ["vault", admin, base_mint].
-pub fn vault_pda(admin: &Pubkey, base_mint: &Pubkey) -> (Pubkey, u8) {
+/// Derive vault PDA: seeds = ["vault", vault_name].
+pub fn vault_pda(vault_name: &[u8]) -> (Pubkey, u8) {
     Pubkey::find_program_address(
-        &[b"vault", admin.as_ref(), base_mint.as_ref()],
+        &[b"vault", vault_name],
         &program_id(),
     )
 }
@@ -79,7 +79,7 @@ pub fn share_mint_pda(vault_state: &Pubkey) -> (Pubkey, u8) {
 ///
 /// Fee fields default to 0 (no fees). Use `set_vault_fees` to configure fees.
 ///
-/// New layout (488 bytes):
+/// Layout (520 bytes):
 ///   [0]       discriminator
 ///   [1]       bump
 ///   [2]       share_decimals
@@ -88,7 +88,8 @@ pub fn share_mint_pda(vault_state: &Pubkey) -> (Pubkey, u8) {
 ///   [6..8]    exit_fee_bps (u16 LE)
 ///   [8..10]   management_fee_bps (u16 LE)
 ///   [10..12]  performance_fee_bps (u16 LE)
-///   [12..16]  _padding
+///   [12]      vault_name_len
+///   [13..16]  _padding
 ///   [16..48]  admin
 ///   [48..80]  share_mint
 ///   [80..112] base_mint
@@ -97,6 +98,7 @@ pub fn share_mint_pda(vault_state: &Pubkey) -> (Pubkey, u8) {
 ///   [152..160] high_water_mark (u64 LE)
 ///   [160..168] last_fee_timestamp (i64 LE)
 ///   [168..488] owners (10 × 32 bytes)
+///   [488..520] vault_name (32 bytes)
 pub fn create_vault_state_data(
     admin: &Pubkey,
     base_mint: &Pubkey,
@@ -105,6 +107,7 @@ pub fn create_vault_state_data(
     share_decimals: u8,
     share_price: u64,
     owners: &[Pubkey],
+    vault_name: &[u8],
 ) -> Vec<u8> {
     let mut data = vec![0u8; VaultState::LEN];
 
@@ -113,7 +116,8 @@ pub fn create_vault_state_data(
     data[2] = share_decimals;
     data[3] = owners.len() as u8;
     // fee BPS at [4..12] = 0 (no fees by default)
-    // _padding at [12..16] = 0
+    data[12] = vault_name.len() as u8;
+    // _padding at [13..16] = 0
 
     data[16..48].copy_from_slice(admin.as_ref());
     data[48..80].copy_from_slice(share_mint.as_ref());
@@ -128,6 +132,10 @@ pub fn create_vault_state_data(
         let offset = 168 + i * 32;
         data[offset..offset + 32].copy_from_slice(owner.as_ref());
     }
+
+    // vault_name at [488..520]
+    let vn_len = vault_name.len().min(32);
+    data[488..488 + vn_len].copy_from_slice(&vault_name[..vn_len]);
 
     data
 }

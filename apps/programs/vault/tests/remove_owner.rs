@@ -14,10 +14,10 @@ fn test_remove_owner_success() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -48,10 +48,10 @@ fn test_remove_owner_unauthorized() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -82,10 +82,10 @@ fn test_remove_owner_not_found() {
     let share_mint = Pubkey::new_unique();
     let owner = Pubkey::new_unique();
     let unknown = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[owner], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -117,11 +117,11 @@ fn test_remove_owner_swap_removes_correctly() {
     let owner_a = Pubkey::new_unique();
     let owner_b = Pubkey::new_unique();
     let owner_c = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
         &admin, &base_mint, &share_mint, bump, 6, 1_000_000,
-        &[owner_a, owner_b, owner_c],
+        &[owner_a, owner_b, owner_c], b"test-vault",
     );
 
     // Remove middle owner (owner_b)

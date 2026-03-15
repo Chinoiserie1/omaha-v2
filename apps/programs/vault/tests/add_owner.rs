@@ -14,10 +14,10 @@ fn test_add_owner_success() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let new_owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -48,10 +48,10 @@ fn test_add_owner_unauthorized() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let new_owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -81,11 +81,11 @@ fn test_add_owner_duplicate() {
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
     let existing_owner = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
         &admin, &base_mint, &share_mint, bump, 6, 1_000_000,
-        &[existing_owner],
+        &[existing_owner], b"test-vault",
     );
 
     let instruction = build_instruction(
@@ -114,12 +114,12 @@ fn test_add_owner_full() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     // Fill all 10 owner slots
     let owners: Vec<Pubkey> = (0..10).map(|_| Pubkey::new_unique()).collect();
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &owners,
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &owners, b"test-vault",
     );
 
     let new_owner = Pubkey::new_unique();
@@ -149,10 +149,10 @@ fn test_add_owner_insufficient_data() {
     let admin = Pubkey::new_unique();
     let base_mint = Pubkey::new_unique();
     let share_mint = Pubkey::new_unique();
-    let (vault_key, bump) = vault_pda(&admin, &base_mint);
+    let (vault_key, bump) = vault_pda(b"test-vault");
 
     let vault_data = create_vault_state_data(
-        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[],
+        &admin, &base_mint, &share_mint, bump, 6, 1_000_000, &[], b"test-vault",
     );
 
     // Only 16 bytes of owner key (need 32)

@@ -11,7 +11,7 @@ pub const VAULT_DISCRIMINATOR: u8 = 0xA1;
 
 /// On-chain vault state — zero-copy via bytemuck.
 ///
-/// Layout (488 bytes total):
+/// Layout (520 bytes total):
 ///   discriminator       (1)  — account type guard
 ///   bump                (1)  — vault PDA bump seed
 ///   share_decimals      (1)  — share token decimal places
@@ -20,7 +20,8 @@ pub const VAULT_DISCRIMINATOR: u8 = 0xA1;
 ///   exit_fee_bps        (2)  — exit/redemption fee in basis points
 ///   management_fee_bps  (2)  — annual management fee in basis points
 ///   performance_fee_bps (2)  — performance fee in basis points
-///   _padding            (4)  — alignment
+///   vault_name_len      (1)  — length of vault name (0..32)
+///   _padding            (3)  — alignment
 ///   admin               (32) — admin pubkey
 ///   share_mint          (32) — share SPL token mint
 ///   base_mint           (32) — deposit token mint (e.g. USDC)
@@ -29,6 +30,7 @@ pub const VAULT_DISCRIMINATOR: u8 = 0xA1;
 ///   high_water_mark     (8)  — highest share price for performance fee
 ///   last_fee_timestamp  (8)  — last management fee collection (unix seconds)
 ///   owners              (320) — up to 10 operator pubkeys
+///   vault_name          (32) — vault name bytes (used in PDA seeds)
 #[repr(C)]
 #[derive(Clone, Copy, Pod, Zeroable)]
 pub struct VaultState {
@@ -40,7 +42,8 @@ pub struct VaultState {
     pub exit_fee_bps: u16,
     pub management_fee_bps: u16,
     pub performance_fee_bps: u16,
-    pub _padding: [u8; 4],
+    pub vault_name_len: u8,
+    pub _padding: [u8; 3],
     pub admin: [u8; 32],
     pub share_mint: [u8; 32],
     pub base_mint: [u8; 32],
@@ -49,6 +52,7 @@ pub struct VaultState {
     pub high_water_mark: u64,
     pub last_fee_timestamp: i64,
     pub owners: [[u8; 32]; MAX_OWNERS],
+    pub vault_name: [u8; 32],
 }
 
 impl VaultState {
@@ -194,8 +198,8 @@ mod tests {
 
     #[test]
     fn test_vault_state_len() {
-        // 1+1+1+1 + 2+2+2+2 + 4 + 32+32+32+32 + 8+8+8 + 320 = 488
-        assert_eq!(VaultState::LEN, 488);
+        // 1+1+1+1 + 2+2+2+2 + 1+3 + 32+32+32+32 + 8+8+8 + 320 + 32 = 520
+        assert_eq!(VaultState::LEN, 520);
         assert_eq!(VaultState::LEN, core::mem::size_of::<VaultState>());
     }
 
