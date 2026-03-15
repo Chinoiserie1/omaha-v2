@@ -399,6 +399,23 @@ pub fn remove_factory_admin_data(admin: &Pubkey) -> Vec<u8> {
     data
 }
 
+/// Build TransferFactoryOwnership instruction data: [disc=0x10] [new_owner: 32 bytes].
+pub fn transfer_factory_ownership_data(new_owner: &Pubkey) -> Vec<u8> {
+    let mut data = vec![0x10];
+    data.extend_from_slice(new_owner.as_ref());
+    data
+}
+
+/// Build AcceptFactoryOwnership instruction data: [disc=0x11].
+pub fn accept_factory_ownership_data() -> Vec<u8> {
+    vec![0x11]
+}
+
+/// Set pending_owner on raw factory state data.
+pub fn set_factory_pending_owner(data: &mut [u8], pending_owner: &Pubkey) {
+    data[40..72].copy_from_slice(pending_owner.as_ref());
+}
+
 /// Build TransferVaultAdmin instruction data: [disc=0x14] [new_admin: 32 bytes].
 pub fn transfer_vault_admin_data(new_admin: &Pubkey) -> Vec<u8> {
     let mut data = vec![0x14];
