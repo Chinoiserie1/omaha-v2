@@ -17,7 +17,17 @@ export async function fetchAndStoreVaultPrices(): Promise<void> {
         mint: vault.mintAddress!,
       });
 
-      const result = await computeSharePrice(new PublicKey(vault.statePda));
+      let result;
+      try {
+        result = await computeSharePrice(new PublicKey(vault.statePda));
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        if (msg.includes("Invalid VaultState discriminator")) {
+          logger.warn({ vaultId: vault.id }, "Vault has incompatible on-chain state (likely legacy GLAM vault), skipping");
+          return;
+        }
+        throw err;
+      }
       if (result.computedPriceUsd === null) {
         logger.warn({ vaultId: vault.id }, "Share price unavailable, skipping");
         return;
