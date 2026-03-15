@@ -3,12 +3,12 @@ export enum VaultErrorCode {
   Unauthorized = 0x100,
   InvalidSharePrice = 0x101,
   InvalidAmount = 0x102,
-  OwnersFull = 0x103,
-  OwnerNotFound = 0x104,
+  OperatorsFull = 0x103,
+  OperatorNotFound = 0x104,
   InvalidDiscriminator = 0x105,
   MathOverflow = 0x106,
   InsufficientFunds = 0x107,
-  DuplicateOwner = 0x108,
+  DuplicateOperator = 0x108,
   InvalidPendingDeposit = 0x109,
   InvalidPendingWithdraw = 0x10a,
   FeeExceedsMaximum = 0x10b,
@@ -31,20 +31,27 @@ export enum VaultErrorCode {
   UnauthorizedVaultCreator = 0x11c,
 }
 
+/** @deprecated Use VaultErrorCode.OperatorsFull */
+export const OwnersFull = VaultErrorCode.OperatorsFull;
+/** @deprecated Use VaultErrorCode.OperatorNotFound */
+export const OwnerNotFound = VaultErrorCode.OperatorNotFound;
+/** @deprecated Use VaultErrorCode.DuplicateOperator */
+export const DuplicateOwner = VaultErrorCode.DuplicateOperator;
+
 const ERROR_MESSAGES: Record<number, string> = {
   [VaultErrorCode.Unauthorized]: "Signer is not the vault admin",
   [VaultErrorCode.InvalidSharePrice]:
     "Share price must be greater than zero",
   [VaultErrorCode.InvalidAmount]:
     "Deposit or withdraw amount must be greater than zero",
-  [VaultErrorCode.OwnersFull]: "Operator list is full (max 10)",
-  [VaultErrorCode.OwnerNotFound]: "Operator not found",
+  [VaultErrorCode.OperatorsFull]: "Operator list is full (max 10)",
+  [VaultErrorCode.OperatorNotFound]: "Operator not found",
   [VaultErrorCode.InvalidDiscriminator]: "Account has wrong discriminator",
   [VaultErrorCode.MathOverflow]:
     "Arithmetic overflow during share calculation",
   [VaultErrorCode.InsufficientFunds]:
     "Vault has insufficient base-token balance",
-  [VaultErrorCode.DuplicateOwner]: "Duplicate operator",
+  [VaultErrorCode.DuplicateOperator]: "Duplicate operator",
   [VaultErrorCode.InvalidPendingDeposit]:
     "Pending deposit account has wrong discriminator or is invalid",
   [VaultErrorCode.InvalidPendingWithdraw]:

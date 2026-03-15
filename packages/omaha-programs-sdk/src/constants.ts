@@ -75,6 +75,18 @@ export const SYSTEM_PROGRAM_ID = new PublicKey(
   "11111111111111111111111111111111",
 );
 
+// ── Clock Sysvar ──────────────────────────────────────────────────────────
+export const CLOCK_SYSVAR_ID = new PublicKey(
+  "SysvarC1ock11111111111111111111111111111111",
+);
+
+// ── Pending Expiry ────────────────────────────────────────────────────────
+export const PENDING_EXPIRY_SECONDS = 172_800 as const;
+
+// ── Operator Discriminator Aliases ────────────────────────────────────────
+export const DISC_ADD_OPERATOR = DISC_ADD_OWNER;
+export const DISC_REMOVE_OPERATOR = DISC_REMOVE_OWNER;
+
 // ── Fee Constants ───────────────────────────────────────────────────────────
 export const BPS_DENOMINATOR = 10_000n;
 export const SECONDS_PER_YEAR = 31_557_600n;

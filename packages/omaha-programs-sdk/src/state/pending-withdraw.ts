@@ -8,21 +8,25 @@ import {
 export interface PendingWithdraw {
   readonly discriminator: number;
   readonly bump: number;
+  readonly exitFeeBps: number;
   readonly vaultState: PublicKey;
   readonly withdrawer: PublicKey;
   readonly shares: bigint;
+  readonly createdAt: bigint;
 }
 
 /**
- * Deserialize a PendingWithdraw from raw account data (80 bytes).
+ * Deserialize a PendingWithdraw from raw account data (88 bytes).
  *
  * Layout:
  *   0:  discriminator (u8, 0xA3)
  *   1:  bump (u8)
- *   2:  _padding (6 bytes)
+ *   2:  exit_fee_bps (u16 LE)
+ *   4:  _padding (4 bytes)
  *   8:  vault_state (32)
  *   40: withdrawer (32)
  *   72: shares (u64 LE)
+ *   80: created_at (i64 LE)
  */
 export function deserializePendingWithdraw(data: Buffer): PendingWithdraw {
   if (data.length < PENDING_WITHDRAW_SIZE) {
@@ -41,8 +45,10 @@ export function deserializePendingWithdraw(data: Buffer): PendingWithdraw {
   return {
     discriminator,
     bump: data.readUInt8(1),
+    exitFeeBps: data.readUInt16LE(2),
     vaultState: new PublicKey(data.subarray(8, 40)),
     withdrawer: new PublicKey(data.subarray(40, 72)),
     shares: data.readBigUInt64LE(72),
+    createdAt: data.readBigInt64LE(80),
   };
 }

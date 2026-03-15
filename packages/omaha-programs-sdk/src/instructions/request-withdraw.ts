@@ -2,6 +2,7 @@ import type { AccountMeta, PublicKey, TransactionInstruction } from "@solana/web
 import { TransactionInstruction as TxInstruction } from "@solana/web3.js";
 
 import {
+  CLOCK_SYSVAR_ID,
   DISC_REQUEST_WITHDRAW,
   SYSTEM_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
@@ -32,6 +33,7 @@ export interface RequestWithdrawParams {
  *   4. [writable]         pending_withdraw — PDA to create
  *   5. []                 system_program
  *   6. []                 token_program    — Token 2022
+ *   7. []                 clock_sysvar
  */
 export function createRequestWithdrawInstruction(
   params: RequestWithdrawParams,
@@ -48,6 +50,7 @@ export function createRequestWithdrawInstruction(
     { pubkey: params.pendingWithdraw, isSigner: false, isWritable: true },
     { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: CLOCK_SYSVAR_ID, isSigner: false, isWritable: false },
   ];
 
   return new TxInstruction({

@@ -111,7 +111,7 @@ async function main(): Promise<void> {
     const ix = createAddOwnerInstruction({
       admin: signer.publicKey,
       vaultState: vaultPda,
-      newOwner: operatorPubkey,
+      newOperator: operatorPubkey,
       ...(programId ? { programId } : {}),
     });
 
@@ -129,7 +129,7 @@ async function main(): Promise<void> {
     const ix = createRemoveOwnerInstruction({
       admin: signer.publicKey,
       vaultState: vaultPda,
-      ownerToRemove: operatorPubkey,
+      operatorToRemove: operatorPubkey,
       ...(programId ? { programId } : {}),
     });
 

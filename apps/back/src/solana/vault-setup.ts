@@ -1,9 +1,10 @@
 import {
   createInitializeInstruction,
+  findFactoryPda,
   findVaultStatePda,
   findShareMintPda,
 } from "@repo/omaha-programs-sdk";
-import { getKeeper, getProgramAuthority, USDC_MINT } from "./config.js";
+import { getKeeper, USDC_MINT } from "./config.js";
 import { buildAndSendVersionedTx } from "./tx.js";
 import { logger } from "../utils/logger.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
@@ -17,12 +18,12 @@ export async function createQuantVault(
   quantUsername: string
 ): Promise<{ txSig: string; statePda: string; shareMint: string; baseTokenAta: string }> {
   const keeper = getKeeper();
-  const programAuthority = getProgramAuthority();
 
   const vaultName = `quant-${quantUsername}`;
   const vaultSymbol = `Q-${quantUsername.slice(0, 6).toUpperCase()}`;
 
   // Derive PDAs
+  const [factoryState] = findFactoryPda();
   const [vaultState] = findVaultStatePda(vaultName);
   const [shareMint] = findShareMintPda(vaultState);
 
@@ -45,7 +46,7 @@ export async function createQuantVault(
   );
 
   const initIx = createInitializeInstruction({
-    programAuthority: programAuthority.publicKey,
+    factoryState,
     admin: keeper.publicKey,
     vaultState,
     shareMint,
@@ -57,13 +58,9 @@ export async function createQuantVault(
     uri: "",
   });
 
-  // buildAndSendVersionedTx signs with keeper by default;
-  // we also need programAuthority to sign
   const txSig = await buildAndSendVersionedTx(
     [initIx],
     `Initialize vault: ${vaultName}`,
-    [],
-    [programAuthority],
   );
 
   logger.info(

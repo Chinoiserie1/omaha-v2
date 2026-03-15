@@ -2,6 +2,7 @@ import type { AccountMeta, PublicKey, TransactionInstruction } from "@solana/web
 import { TransactionInstruction as TxInstruction } from "@solana/web3.js";
 
 import {
+  CLOCK_SYSVAR_ID,
   DISC_REQUEST_DEPOSIT,
   SPL_TOKEN_PROGRAM_ID,
   SYSTEM_PROGRAM_ID,
@@ -32,6 +33,7 @@ export interface RequestDepositParams {
  *   4. [writable]         pending_deposit — PDA to create
  *   5. []                 system_program
  *   6. []                 token_program   — legacy SPL Token
+ *   7. []                 clock_sysvar
  */
 export function createRequestDepositInstruction(
   params: RequestDepositParams,
@@ -48,6 +50,7 @@ export function createRequestDepositInstruction(
     { pubkey: params.pendingDeposit, isSigner: false, isWritable: true },
     { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: SPL_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: CLOCK_SYSVAR_ID, isSigner: false, isWritable: false },
   ];
 
   return new TxInstruction({

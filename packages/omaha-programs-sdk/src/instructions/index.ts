@@ -1,10 +1,20 @@
 export { createInitializeInstruction } from "./initialize.js";
 export type { InitializeParams } from "./initialize.js";
 
+export { createAddOperatorInstruction } from "./add-operator.js";
+export type { AddOperatorParams } from "./add-operator.js";
+
+export { createRemoveOperatorInstruction } from "./remove-operator.js";
+export type { RemoveOperatorParams } from "./remove-operator.js";
+
+/** @deprecated Use createAddOperatorInstruction */
 export { createAddOwnerInstruction } from "./add-owner.js";
+/** @deprecated Use AddOperatorParams */
 export type { AddOwnerParams } from "./add-owner.js";
 
+/** @deprecated Use createRemoveOperatorInstruction */
 export { createRemoveOwnerInstruction } from "./remove-owner.js";
+/** @deprecated Use RemoveOperatorParams */
 export type { RemoveOwnerParams } from "./remove-owner.js";
 
 export { createSetSharePriceInstruction } from "./set-share-price.js";
@@ -37,6 +47,9 @@ export type { RequestWithdrawParams } from "./request-withdraw.js";
 export { createFulfillWithdrawInstruction } from "./fulfill-withdraw.js";
 export type { FulfillWithdrawParams } from "./fulfill-withdraw.js";
 
+export { createInitializeFactoryInstruction } from "./initialize-factory.js";
+export type { InitializeFactoryParams } from "./initialize-factory.js";
+
 export { createTransferFactoryOwnershipInstruction } from "./transfer-factory-ownership.js";
 export type { TransferFactoryOwnershipParams } from "./transfer-factory-ownership.js";
 
@@ -49,8 +62,26 @@ export type { AddFactoryAdminParams } from "./add-factory-admin.js";
 export { createRemoveFactoryAdminInstruction } from "./remove-factory-admin.js";
 export type { RemoveFactoryAdminParams } from "./remove-factory-admin.js";
 
+export { createPauseFactoryInstruction } from "./pause-factory.js";
+export type { PauseFactoryParams } from "./pause-factory.js";
+
+export { createUnpauseFactoryInstruction } from "./unpause-factory.js";
+export type { UnpauseFactoryParams } from "./unpause-factory.js";
+
 export { createTransferVaultAdminInstruction } from "./transfer-vault-admin.js";
 export type { TransferVaultAdminParams } from "./transfer-vault-admin.js";
 
 export { createAcceptVaultAdminInstruction } from "./accept-vault-admin.js";
 export type { AcceptVaultAdminParams } from "./accept-vault-admin.js";
+
+export { createPauseVaultInstruction } from "./pause-vault.js";
+export type { PauseVaultParams } from "./pause-vault.js";
+
+export { createUnpauseVaultInstruction } from "./unpause-vault.js";
+export type { UnpauseVaultParams } from "./unpause-vault.js";
+
+export { createCancelDepositInstruction } from "./cancel-deposit.js";
+export type { CancelDepositParams } from "./cancel-deposit.js";
+
+export { createCancelWithdrawInstruction } from "./cancel-withdraw.js";
+export type { CancelWithdrawParams } from "./cancel-withdraw.js";
