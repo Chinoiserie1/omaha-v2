@@ -22,6 +22,7 @@
     "manage-factory-admin": "tsx --env-file=../../.env src/scripts/manage-factory-admin.ts",
     "transfer-vault-admin": "tsx --env-file=../../.env src/scripts/transfer-vault-admin.ts",
     "manage-vault-operator": "tsx --env-file=../../.env src/scripts/manage-vault-operator.ts",
+    "initialize-factory": "tsx --env-file=../../.env src/scripts/initialize-factory.ts",
     "create-vault-onchain": "tsx --env-file=../../.env src/scripts/create-vault-onchain.ts",
     "start:price-worker": "tsx --env-file=../../.env src/workers/price-worker.ts"
   },

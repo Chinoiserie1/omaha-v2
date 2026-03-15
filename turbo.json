@@ -79,6 +79,10 @@
       "cache": false,
       "dependsOn": ["^db:generate"]
     },
+    "initialize-factory": {
+      "cache": false,
+      "dependsOn": ["^build"]
+    },
     "create-vault-onchain": {
       "cache": false,
       "dependsOn": ["^build"]
