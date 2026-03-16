@@ -1,26 +1,21 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountIdempotentInstruction,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 import { prisma } from "@repo/database";
 import { createWithdrawalSchema, type ApiResponse } from "@repo/shared";
-import {
-  createRequestWithdrawInstruction,
-  findPendingWithdrawPda,
-  findShareMintPda,
-  findVaultShareAta,
-  TOKEN_2022_PROGRAM_ID,
-} from "@repo/omaha-programs-sdk";
 import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
+import { computeOnChainSharePrice } from "../../../services/share-price-onchain.service.js";
+import {
+  getVaultBaseBalance,
+  computeBaseToReturn,
+} from "../../../services/vault-balance.service.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import {
   computeBatchId,
   computeIdempotencyKey,
 } from "../../../queue/batch-utils.js";
+import { buildInstantWithdrawTx } from "./build-instant-tx.js";
+import { buildQueuedWithdrawTx } from "./build-queued-tx.js";
 import { env } from "../../../utils/env.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -88,7 +83,7 @@ export async function requestWithdrawal(
       { withdrawalId: updated.id, newAmount: updated.amount },
       "Merged withdrawal request into existing",
     );
-    return buildAndReturnTx(reply, vault.statePda, vault.shareMint, updated.amount, signerPubkey, updated);
+    return buildAndReturnTx(reply, vault, updated.amount, signerPubkey, updated);
   }
 
   if (!user.walletAddress) {
@@ -120,90 +115,57 @@ export async function requestWithdrawal(
     `Withdrawal created — batch window: ${windowSec / 60}min`,
   );
 
-  return buildAndReturnTx(reply, vault.statePda, vault.shareMint, amount, signerPubkey, withdrawal);
+  return buildAndReturnTx(reply, vault, amount, signerPubkey, withdrawal);
 }
 
 async function buildAndReturnTx(
   reply: FastifyReply,
-  statePdaStr: string,
-  shareMintStr: string | null,
+  vault: { statePda: string; shareMint: string | null; baseTokenAta: string | null },
   amount: number,
   signerPubkey: PublicKey,
   withdrawal: { id: string },
 ) {
   try {
-    const statePda = new PublicKey(statePdaStr);
+    const statePda = new PublicKey(vault.statePda);
     const connection = getConnection();
-
     const shares = BigInt(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
 
-    const shareMint = shareMintStr
-      ? new PublicKey(shareMintStr)
-      : findShareMintPda(statePda)[0];
+    const { sharePrice, vaultState } = await computeOnChainSharePrice(statePda);
+    const shareMint = vault.shareMint
+      ? new PublicKey(vault.shareMint)
+      : vaultState.shareMint;
 
-    const withdrawerShareAta = await getAssociatedTokenAddress(
-      shareMint,
-      signerPubkey,
-      false,
-      TOKEN_2022_PROGRAM_ID,
-    );
-    const [pendingWithdraw] = findPendingWithdrawPda(statePda, signerPubkey);
-    const vaultShareAta = findVaultShareAta(shareMint, statePda);
-
-    const redeemIx = createRequestWithdrawInstruction({
-      withdrawer: signerPubkey,
-      withdrawerShareAta,
-      shareMint,
-      vaultState: statePda,
-      pendingWithdraw,
-      vaultShareAta,
-      shares,
-    });
-
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-
-    // Auto-create vault share escrow ATA if it doesn't exist
-    const vaultShareAtaInfo = await connection.getAccountInfo(vaultShareAta);
-
-    const transaction = new Transaction();
-    transaction.add(
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+    const vaultBalance = await getVaultBaseBalance(statePda, vault.baseTokenAta);
+    const baseToReturn = computeBaseToReturn(
+      shares, sharePrice, vaultState.shareDecimals, vaultState.exitFeeBps,
     );
 
-    if (!vaultShareAtaInfo) {
-      transaction.add(
-        createAssociatedTokenAccountIdempotentInstruction(
-          signerPubkey,
-          vaultShareAta,
-          statePda,
-          shareMint,
-          TOKEN_2022_PROGRAM_ID,
-          ASSOCIATED_TOKEN_PROGRAM_ID,
-        ),
-      );
+    const hasSufficientBalance = baseToReturn > 0n && vaultBalance >= baseToReturn;
+
+    let transaction: string;
+    let mode: "instant" | "queued";
+
+    if (hasSufficientBalance) {
+      transaction = await buildInstantWithdrawTx({
+        statePda, shareMint, baseTokenAta: vault.baseTokenAta,
+        shares, sharePrice, signerPubkey, connection,
+      });
+      mode = "instant";
+    } else {
+      transaction = await buildQueuedWithdrawTx({
+        statePda, shareMint, shares, signerPubkey, connection,
+      });
+      mode = "queued";
     }
 
-    transaction.add(redeemIx);
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = signerPubkey;
-
-    const serialized = transaction
-      .serialize({ requireAllSignatures: false })
-      .toString("base64");
-
     logger.info(
-      {
-        withdrawalId: withdrawal.id,
-        signer: signerPubkey.toBase58(),
-        totalIxCount: transaction.instructions.length,
-      },
-      "Redeem transaction built for user signing",
+      { withdrawalId: withdrawal.id, signer: signerPubkey.toBase58(), mode },
+      `Withdraw tx built (${mode})`,
     );
 
     return reply.status(201).send({
       success: true,
-      data: { transaction: serialized, withdrawalId: withdrawal.id },
+      data: { transaction, withdrawalId: withdrawal.id, mode },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

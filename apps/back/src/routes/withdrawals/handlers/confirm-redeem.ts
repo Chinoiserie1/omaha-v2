@@ -5,6 +5,7 @@ import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import { enqueueFulfillJob } from "../../../queue/withdrawal-queue.js";
 import { notifyUser } from "../../../infra/websocket.js";
 import { getConnection } from "../../../solana/config.js";
+import { detectInstantMode } from "./detect-withdraw-mode.js";
 import { logger } from "../../../utils/logger.js";
 
 type ConfirmRedeemRequest = FastifyRequest<{
@@ -13,8 +14,10 @@ type ConfirmRedeemRequest = FastifyRequest<{
 }>;
 
 /**
- * Confirm that the user signed and submitted the queuedRedeem tx.
- * Verifies on-chain, transitions REQUESTED → PROCESSING, enqueues fulfill job.
+ * Confirm that the user signed and submitted the redeem tx.
+ * Verifies on-chain, then determines the mode:
+ *   - Instant (WithdrawWithPrice): no PendingWithdraw PDA → REQUESTED → CLAIMED
+ *   - Queued  (RequestWithdraw):   PendingWithdraw PDA exists → REQUESTED → PROCESSING → batch
  * On failure: transitions to REMOVED so the user can retry immediately.
  */
 export async function confirmRedeemHandler(
@@ -47,7 +50,6 @@ export async function confirmRedeemHandler(
       } satisfies ApiResponse<never>);
     }
 
-    // Verify ownership
     const user = await prisma.user.findUnique({
       where: { privyId: request.privyUserId },
     });
@@ -65,7 +67,7 @@ export async function confirmRedeemHandler(
       } satisfies ApiResponse<never>);
     }
 
-    // Wait for tx to land on-chain using non-deprecated API
+    // Wait for tx to land on-chain
     const connection = getConnection();
 
     logger.info({ withdrawalId, txSignature }, "Waiting for tx confirmation");
@@ -94,49 +96,52 @@ export async function confirmRedeemHandler(
       } satisfies ApiResponse<never>);
     }
 
-    // Transition REQUESTED → PROCESSING
+    // Detect mode by checking if PendingWithdraw PDA exists
+    const isInstant = await detectInstantMode(withdrawal.vaultId, user.walletAddress);
     const now = new Date();
+
+    if (isInstant) {
+      await withdrawalRepo.updateStatus(withdrawalId, "CLAIMED", {
+        redeemTxSignature: txSignature,
+        claimedAt: now,
+      });
+
+      notifyUser(user.id, "withdrawal:status", {
+        withdrawalId,
+        status: "CLAIMED",
+        timestamp: now.toISOString(),
+        redeemTxSignature: txSignature,
+      });
+
+      logger.info(
+        { withdrawalId, txSignature, mode: "instant" },
+        "Instant withdrawal confirmed — CLAIMED directly",
+      );
+
+      return { success: true, data: { withdrawalId, status: "CLAIMED", mode: "instant" } };
+    }
+
+    // Queued path: PROCESSING + enqueue batch
     await withdrawalRepo.updateStatus(withdrawalId, "PROCESSING", {
       redeemTxSignature: txSignature,
       processingAt: now,
     });
 
-    // Notify user
-    notifyUser(withdrawal.userId, "withdrawal:status", {
+    notifyUser(user.id, "withdrawal:status", {
       withdrawalId,
       status: "PROCESSING",
       timestamp: now.toISOString(),
       redeemTxSignature: txSignature,
     });
 
-    // Enqueue fulfill job for this vault
     await enqueueFulfillJob(withdrawal.vaultId);
 
-    // Reload to log the full state
-    const updated = await withdrawalRepo.findById(withdrawalId);
     logger.info(
-      {
-        withdrawalId,
-        txSignature,
-        withdrawal: updated
-          ? {
-              id: updated.id,
-              userId: updated.userId,
-              vaultId: updated.vaultId,
-              amount: updated.amount,
-              status: updated.status,
-              batchId: updated.batchId,
-              idempotencyKey: updated.idempotencyKey,
-              redeemTxSignature: updated.redeemTxSignature,
-              processingAt: updated.processingAt,
-              requestedAt: updated.requestedAt,
-            }
-          : null,
-      },
-      "[DEBUG] Redeem confirmed, fulfill job enqueued — full withdrawal state",
+      { withdrawalId, txSignature, mode: "queued" },
+      "Queued withdrawal confirmed — PROCESSING, fulfill job enqueued",
     );
 
-    return { success: true, data: { withdrawalId, status: "PROCESSING" } };
+    return { success: true, data: { withdrawalId, status: "PROCESSING", mode: "queued" } };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     logger.error(
@@ -144,7 +149,6 @@ export async function confirmRedeemHandler(
       `Failed to confirm redeem: ${msg}`,
     );
 
-    // Soft-delete so the user can retry immediately
     try {
       await withdrawalRepo.markAsRemoved(
         withdrawalId,

@@ -1,22 +1,17 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import {
-  getAssociatedTokenAddress,
-  createAssociatedTokenAccountIdempotentInstruction,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 import { prisma } from "@repo/database";
 import { type ApiResponse } from "@repo/shared";
-import {
-  createRequestWithdrawInstruction,
-  findPendingWithdrawPda,
-  findShareMintPda,
-  findVaultShareAta,
-  TOKEN_2022_PROGRAM_ID,
-} from "@repo/omaha-programs-sdk";
 import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
+import { computeOnChainSharePrice } from "../../../services/share-price-onchain.service.js";
+import {
+  getVaultBaseBalance,
+  computeBaseToReturn,
+} from "../../../services/vault-balance.service.js";
 import * as withdrawalRepo from "../../../store/withdrawal.repository.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
+import { buildInstantWithdrawTx } from "./build-instant-tx.js";
+import { buildQueuedWithdrawTx } from "./build-queued-tx.js";
 import { env } from "../../../utils/env.js";
 import { logger } from "../../../utils/logger.js";
 
@@ -78,79 +73,52 @@ export async function retryWithdrawal(
     } satisfies ApiResponse<never>);
   }
 
-  await withdrawalRepo.updateStatus(withdrawalId, "REQUESTED", {
-    failedAt: null,
-    errorMessage: null,
-    redeemTxSignature: null,
-  });
-
   try {
     const signerPubkey = new PublicKey(user.walletAddress);
     const statePda = new PublicKey(vault.statePda);
     const connection = getConnection();
-
     const shares = BigInt(Math.round(withdrawal.amount * SHARE_TOKEN_MULTIPLIER));
 
+    const { sharePrice, vaultState } = await computeOnChainSharePrice(statePda);
     const shareMint = vault.shareMint
       ? new PublicKey(vault.shareMint)
-      : findShareMintPda(statePda)[0];
+      : vaultState.shareMint;
 
-    const withdrawerShareAta = await getAssociatedTokenAddress(
-      shareMint,
-      signerPubkey,
-      false,
-      TOKEN_2022_PROGRAM_ID,
-    );
-    const [pendingWithdraw] = findPendingWithdrawPda(statePda, signerPubkey);
-    const vaultShareAta = findVaultShareAta(shareMint, statePda);
-
-    const redeemIx = createRequestWithdrawInstruction({
-      withdrawer: signerPubkey,
-      withdrawerShareAta,
-      shareMint,
-      vaultState: statePda,
-      pendingWithdraw,
-      vaultShareAta,
-      shares,
-    });
-
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
-
-    // Auto-create vault share escrow ATA if it doesn't exist
-    const vaultShareAtaInfo = await connection.getAccountInfo(vaultShareAta);
-
-    const transaction = new Transaction();
-    transaction.add(
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+    const vaultBalance = await getVaultBaseBalance(statePda, vault.baseTokenAta);
+    const baseToReturn = computeBaseToReturn(
+      shares, sharePrice, vaultState.shareDecimals, vaultState.exitFeeBps,
     );
 
-    if (!vaultShareAtaInfo) {
-      transaction.add(
-        createAssociatedTokenAccountIdempotentInstruction(
-          signerPubkey,
-          vaultShareAta,
-          statePda,
-          shareMint,
-          TOKEN_2022_PROGRAM_ID,
-          ASSOCIATED_TOKEN_PROGRAM_ID,
-        ),
-      );
+    const hasSufficientBalance = baseToReturn > 0n && vaultBalance >= baseToReturn;
+
+    let transaction: string;
+    let mode: "instant" | "queued";
+
+    if (hasSufficientBalance) {
+      transaction = await buildInstantWithdrawTx({
+        statePda, shareMint, baseTokenAta: vault.baseTokenAta,
+        shares, sharePrice, signerPubkey, connection,
+      });
+      mode = "instant";
+    } else {
+      transaction = await buildQueuedWithdrawTx({
+        statePda, shareMint, shares, signerPubkey, connection,
+      });
+      mode = "queued";
     }
 
-    transaction.add(redeemIx);
-    transaction.recentBlockhash = blockhash;
-    transaction.feePayer = signerPubkey;
+    // Only transition to REQUESTED after tx is successfully built
+    await withdrawalRepo.updateStatus(withdrawalId, "REQUESTED", {
+      failedAt: null,
+      errorMessage: null,
+      redeemTxSignature: null,
+    });
 
-    const serialized = transaction
-      .serialize({ requireAllSignatures: false })
-      .toString("base64");
-
-    logger.info({ withdrawalId }, "Retry: redeem tx built for user signing");
+    logger.info({ withdrawalId, mode }, "Retry: redeem tx built for user signing");
 
     return {
       success: true,
-      data: { transaction: serialized, withdrawalId },
+      data: { transaction, withdrawalId, mode },
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
