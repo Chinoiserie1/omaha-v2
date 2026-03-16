@@ -46,6 +46,33 @@ export async function getLatestPriceMap(): Promise<Map<string, number>> {
   return map;
 }
 
+export interface PriceWithDate {
+  readonly usdPrice: number;
+  readonly date: Date;
+}
+
+export async function getLatestPriceMapWithDates(): Promise<
+  Map<string, PriceWithDate>
+> {
+  const tokens = await prisma.token.findMany({
+    include: {
+      prices: {
+        orderBy: { date: "desc" },
+        take: 1,
+      },
+    },
+  });
+
+  const map = new Map<string, PriceWithDate>();
+  for (const token of tokens) {
+    if (token.prices.length > 0) {
+      const p = token.prices[0]!;
+      map.set(token.mint, { usdPrice: p.usdPrice, date: p.date });
+    }
+  }
+  return map;
+}
+
 export async function findTokenByMint(mint: string): Promise<Token | null> {
   return prisma.token.findUnique({ where: { mint } });
 }

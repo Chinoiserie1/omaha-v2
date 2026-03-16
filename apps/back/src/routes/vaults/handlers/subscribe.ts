@@ -1,12 +1,18 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
 import {
-  createRequestDepositInstruction,
-  findPendingDepositPda,
+  getAssociatedTokenAddressSync,
+  createAssociatedTokenAccountIdempotentInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import {
+  createDepositWithPriceInstruction,
+  TOKEN_2022_PROGRAM_ID,
 } from "@repo/omaha-programs-sdk";
-import { getConnection, USDC_MINT } from "../../../solana/config.js";
+import { getConnection, getKeeper, USDC_MINT } from "../../../solana/config.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
+import { computeOnChainSharePrice } from "../../../services/share-price-onchain.service.js";
 import { logger } from "../../../utils/logger.js";
 
 type SubscribeRequest = FastifyRequest<{
@@ -41,54 +47,117 @@ export async function subscribeToVault(
   }
 
   const statePda = new PublicKey(vault.statePda);
-
-  // Convert human-readable USDC amount to raw u64 (6 decimals)
   const amountRaw = BigInt(Math.round(amount * 1_000_000));
 
   try {
+    const connection = getConnection();
+    const keeper = getKeeper();
+
+    // Compute share price (also returns vault state to avoid extra RPC call)
+    const { sharePrice, vaultState } =
+      await computeOnChainSharePrice(statePda);
+
     // Derive accounts
-    const depositorBaseAta = await getAssociatedTokenAddress(USDC_MINT, signerPubkey);
+    const depositorBaseAta = getAssociatedTokenAddressSync(
+      USDC_MINT,
+      signerPubkey,
+      false,
+      TOKEN_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    );
+
     const vaultBaseAta = vault.baseTokenAta
       ? new PublicKey(vault.baseTokenAta)
-      : await getAssociatedTokenAddress(USDC_MINT, statePda, true);
-    const [pendingDeposit] = findPendingDepositPda(statePda, signerPubkey);
+      : getAssociatedTokenAddressSync(
+          USDC_MINT,
+          statePda,
+          true,
+          TOKEN_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+        );
 
-    const depositIx = createRequestDepositInstruction({
+    const shareMint = vaultState.shareMint;
+
+    const depositorShareAta = getAssociatedTokenAddressSync(
+      shareMint,
+      signerPubkey,
+      false,
+      TOKEN_2022_PROGRAM_ID,
+      ASSOCIATED_TOKEN_PROGRAM_ID,
+    );
+
+    // Build transaction
+    const transaction = new Transaction();
+
+    transaction.add(
+      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
+      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
+    );
+
+    // Create user's share ATA if it doesn't exist (Token 2022)
+    transaction.add(
+      createAssociatedTokenAccountIdempotentInstruction(
+        signerPubkey,
+        depositorShareAta,
+        signerPubkey,
+        shareMint,
+        TOKEN_2022_PROGRAM_ID,
+        ASSOCIATED_TOKEN_PROGRAM_ID,
+      ),
+    );
+
+    // Build DepositWithPrice instruction
+    const depositParams = {
+      admin: keeper.publicKey,
       depositor: signerPubkey,
       depositorBaseAta,
       vaultBaseAta,
       vaultState: statePda,
-      pendingDeposit,
-      amount: amountRaw,
-    });
+      shareMint,
+      depositorShareAta,
+      newSharePrice: sharePrice,
+      depositAmount: amountRaw,
+      ...(vaultState.entryFeeBps > 0 && {
+        feeReceiverAta: getAssociatedTokenAddressSync(
+          shareMint,
+          vaultState.feeReceiver,
+          false,
+          TOKEN_2022_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+        ),
+      }),
+    };
 
-    const connection = getConnection();
+    const depositIx = createDepositWithPriceInstruction(depositParams);
+
+    transaction.add(depositIx);
+
     const { blockhash } = await connection.getLatestBlockhash("confirmed");
-
-    const transaction = new Transaction();
-    transaction.add(
-      ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
-      ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
-      depositIx,
-    );
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = signerPubkey;
 
-    // No keeper partial sign — user is sole signer
+    // Keeper partial-signs as vault admin
+    transaction.partialSign(keeper);
+
     const serialized = transaction
       .serialize({ requireAllSignatures: false })
       .toString("base64");
 
     logger.info(
-      { vaultId: id, signer: signerPublicKey, amount },
-      "Subscribe transaction built",
+      {
+        vaultId: id,
+        signer: signerPublicKey,
+        amount,
+        sharePrice: sharePrice.toString(),
+      },
+      "DepositWithPrice transaction built (keeper partial-signed)",
     );
 
     return { transaction: serialized };
   } catch (err) {
-    logger.error({ err, vaultId: id }, "Failed to build subscribe transaction");
+    logger.error({ err, vaultId: id }, "Failed to build deposit transaction");
     return reply.status(500).send({
-      error: "Failed to build subscribe transaction",
+      error: "Failed to build deposit transaction",
     });
   }
 }
