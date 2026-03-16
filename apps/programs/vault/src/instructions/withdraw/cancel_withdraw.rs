@@ -12,20 +12,20 @@ use crate::state::{
 };
 use crate::token2022;
 
-/// User-initiated: cancel an expired pending withdrawal and re-mint shares.
+/// User-initiated: cancel an expired pending withdrawal and return escrowed shares.
 ///
 /// After the 48-hour expiry window, the withdrawer can cancel their pending
-/// withdrawal and have their share tokens re-minted. The PendingWithdraw PDA
-/// is closed and rent is refunded to the withdrawer.
+/// withdrawal and have their share tokens returned from the vault's escrow ATA.
+/// The PendingWithdraw PDA is closed and rent is refunded to the withdrawer.
 ///
 /// Accounts:
-///   0. `[signer]`    withdrawer           — must match pending.withdrawer
-///   1. `[writable]`  pending_withdraw     — PDA to close
-///   2. `[]`          vault_state          — read-only (for PDA signer seeds + share_mint verification)
-///   3. `[writable]`  share_mint           — share token mint (Token 2022)
-///   4. `[writable]`  withdrawer_share_ata — destination for re-minted shares
-///   5. `[]`          token_program        — Token 2022
-///   6. `[]`          clock_sysvar         — Clock sysvar
+///   0. `[signer, writable]` withdrawer           — must match pending.withdrawer
+///   1. `[writable]`         pending_withdraw     — PDA to close
+///   2. `[]`                 vault_state          — read-only (for PDA signer seeds)
+///   3. `[writable]`         vault_share_ata      — escrow holding share tokens
+///   4. `[writable]`         withdrawer_share_ata — destination for returned shares
+///   5. `[]`                 token_program        — Token 2022
+///   6. `[]`                 clock_sysvar         — Clock sysvar
 ///
 /// Data:
 ///   [0] discriminator (0x19)
@@ -33,7 +33,7 @@ pub struct CancelWithdraw<'a> {
     withdrawer: &'a AccountInfo,
     pending_withdraw: &'a AccountInfo,
     vault_state: &'a AccountInfo,
-    share_mint: &'a AccountInfo,
+    vault_share_ata: &'a AccountInfo,
     withdrawer_share_ata: &'a AccountInfo,
     token_program: &'a AccountInfo,
     clock_sysvar: &'a AccountInfo,
@@ -80,11 +80,10 @@ impl<'a> CancelWithdraw<'a> {
             return Err(VaultError::PendingNotExpired.into());
         }
 
-        // Read VaultState to get bump, vault_name, and share_mint for PDA signing
+        // Read VaultState to get bump and vault_name for PDA signing
         let vault_bump;
         let vn_len;
         let vault_name;
-        let state_share_mint;
         {
             let vs_data = self.vault_state.try_borrow_data()?;
             let state: &VaultState = bytemuck::from_bytes(&vs_data[..VaultState::LEN]);
@@ -92,15 +91,9 @@ impl<'a> CancelWithdraw<'a> {
             vault_bump = state.bump;
             vn_len = state.vault_name_len as usize;
             vault_name = state.vault_name;
-            state_share_mint = state.share_mint;
         }
 
-        // Verify share_mint account matches vault state
-        if *self.share_mint.key() != state_share_mint {
-            return Err(ProgramError::InvalidAccountData);
-        }
-
-        // Mint shares back to withdrawer (vault PDA signs as mint authority)
+        // Transfer shares from escrow back to withdrawer (vault PDA signs)
         let vault_bump_bytes = [vault_bump];
         let seeds: [Seed; 3] = [
             Seed::from(b"vault" as &[u8]),
@@ -109,9 +102,9 @@ impl<'a> CancelWithdraw<'a> {
         ];
         let signers: [Signer; 1] = [Signer::from(&seeds)];
 
-        token2022::mint_to(
+        token2022::transfer(
             self.token_program,
-            self.share_mint,
+            self.vault_share_ata,
             self.withdrawer_share_ata,
             self.vault_state,
             pending_shares,
@@ -138,7 +131,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CancelWithdraw<'a> {
     fn try_from(
         (_data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [withdrawer, pending_withdraw, vault_state, share_mint, withdrawer_share_ata, token_program, clock_sysvar, ..] =
+        let [withdrawer, pending_withdraw, vault_state, vault_share_ata, withdrawer_share_ata, token_program, clock_sysvar, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -176,7 +169,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CancelWithdraw<'a> {
         }
 
         // Validate writable accounts
-        if !share_mint.is_writable() {
+        if !vault_share_ata.is_writable() {
             return Err(ProgramError::InvalidAccountData);
         }
         if !withdrawer_share_ata.is_writable() {
@@ -190,7 +183,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for CancelWithdraw<'a> {
             withdrawer,
             pending_withdraw,
             vault_state,
-            share_mint,
+            vault_share_ata,
             withdrawer_share_ata,
             token_program,
             clock_sysvar,

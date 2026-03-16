@@ -3,6 +3,8 @@ import { getAssociatedTokenAddress } from "@solana/spl-token";
 import {
   createFulfillWithdrawInstruction,
   findPendingWithdrawPda,
+  findShareMintPda,
+  findVaultShareAta,
 } from "@repo/omaha-programs-sdk";
 import { getConnection, getKeeper, USDC_MINT } from "../solana/config.js";
 import { computeSharePrice } from "./share-price.service.js";
@@ -52,6 +54,9 @@ export async function processFulfillBatch(
   }
 
   const statePda = new PublicKey(vault.statePda);
+  const shareMint = vault.shareMint
+    ? new PublicKey(vault.shareMint)
+    : findShareMintPda(statePda)[0];
 
   try {
     // Compute current share price for all fulfills
@@ -60,6 +65,7 @@ export async function processFulfillBatch(
     const txSig = await executeFulfillBatch(
       statePda,
       vault.baseTokenAta ? new PublicKey(vault.baseTokenAta) : null,
+      shareMint,
       requests,
       onChainPrice,
     );
@@ -91,6 +97,7 @@ export async function processFulfillBatch(
 async function executeFulfillBatch(
   statePda: PublicKey,
   vaultBaseAta: PublicKey | null,
+  shareMint: PublicKey,
   requests: Array<{ id: string; userId: string; amount: number }>,
   newSharePrice: bigint,
 ): Promise<string> {
@@ -103,6 +110,9 @@ async function executeFulfillBatch(
     statePda,
     true,
   );
+
+  // Derive vault share escrow ATA
+  const vaultShareAta = findVaultShareAta(shareMint, statePda);
 
   // Build FulfillWithdraw instruction for each request
   const fulfillIxs = await Promise.all(
@@ -133,6 +143,8 @@ async function executeFulfillBatch(
         vaultBaseAta: actualVaultBaseAta,
         withdrawerBaseAta,
         withdrawer,
+        vaultShareAta,
+        shareMint,
         newSharePrice,
       });
     }),

@@ -19,7 +19,7 @@ fn test_request_withdraw_success() {
     let base_mint = Pubkey::new_unique();
     let (vault_key, bump) = vault_pda(b"test-vault");
     let share_mint_key = Pubkey::new_unique();
-    let shares_to_burn: u64 = 3_000_000;
+    let shares_to_escrow: u64 = 3_000_000;
 
     let vault_data = create_vault_state_data(
         &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
@@ -27,30 +27,33 @@ fn test_request_withdraw_success() {
 
     let (pending_key, _pending_bump) = pending_withdraw_pda(&vault_key, &withdrawer);
     let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
-        request_withdraw_data(shares_to_burn),
+        request_withdraw_data(shares_to_escrow),
         vec![
             AccountMeta::new(withdrawer, true),                    // withdrawer (signer, writable)
-            AccountMeta::new(withdrawer_share_ata, false),         // shares to burn
-            AccountMeta::new(share_mint_key, false),               // share_mint
+            AccountMeta::new(withdrawer_share_ata, false),         // shares to transfer
+            AccountMeta::new_readonly(share_mint_key, false),      // share_mint (read-only)
             AccountMeta::new_readonly(vault_key, false),           // vault_state
             AccountMeta::new(pending_key, false),                  // pending_withdraw PDA
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),   // system_program
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false), // token_program
             AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),    // clock_sysvar
+            AccountMeta::new(vault_share_ata, false),              // vault_share_ata (escrow)
         ],
     );
 
     let accounts = vec![
         (withdrawer, Account::new(10_000_000_000, 0, &Pubkey::default())),
-        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
-        (share_mint_key, create_token2022_mint(&vault_key, 6, shares_to_burn, b"Share", b"SHR", b"")),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_escrow)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, shares_to_escrow, b"Share", b"SHR", b"")),
         (vault_key, make_vault_account(vault_data)),
         (pending_key, Account::new(0, 0, &Pubkey::default())),
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
         (CLOCK_SYSVAR_ID, create_clock_account(1000)),
+        (vault_share_ata, create_token2022_token_account(&share_mint_key, &vault_key, 0)),
     ];
 
     let result = mollusk.process_and_validate_instruction(
@@ -72,13 +75,25 @@ fn test_request_withdraw_success() {
 
     // Verify stored shares
     let stored_shares = u64::from_le_bytes(pending_account.data[72..80].try_into().unwrap());
-    assert_eq!(stored_shares, shares_to_burn);
+    assert_eq!(stored_shares, shares_to_escrow);
 
-    // Verify shares were burned
+    // Verify shares were transferred to escrow (not burned)
     let withdrawer_shares = result.resulting_accounts.iter()
         .find(|(k, _)| *k == withdrawer_share_ata).unwrap().1.clone();
     let shares_remaining = u64::from_le_bytes(withdrawer_shares.data[64..72].try_into().unwrap());
     assert_eq!(shares_remaining, 0);
+
+    // Verify escrow received shares
+    let escrow_shares = result.resulting_accounts.iter()
+        .find(|(k, _)| *k == vault_share_ata).unwrap().1.clone();
+    let escrow_balance = u64::from_le_bytes(escrow_shares.data[64..72].try_into().unwrap());
+    assert_eq!(escrow_balance, shares_to_escrow);
+
+    // Verify share_mint total supply is unchanged (no burn)
+    let mint_account = result.resulting_accounts.iter()
+        .find(|(k, _)| *k == share_mint_key).unwrap().1.clone();
+    let supply = u64::from_le_bytes(mint_account.data[36..44].try_into().unwrap());
+    assert_eq!(supply, shares_to_escrow);
 }
 
 #[test]
@@ -97,18 +112,20 @@ fn test_request_withdraw_zero_shares() {
 
     let (pending_key, _) = pending_withdraw_pda(&vault_key, &withdrawer);
     let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
         request_withdraw_data(0), // zero shares
         vec![
             AccountMeta::new(withdrawer, true),
             AccountMeta::new(withdrawer_share_ata, false),
-            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new_readonly(share_mint_key, false),
             AccountMeta::new_readonly(vault_key, false),
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
             AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
+            AccountMeta::new(vault_share_ata, false),
         ],
     );
 
@@ -121,6 +138,7 @@ fn test_request_withdraw_zero_shares() {
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
         (CLOCK_SYSVAR_ID, create_clock_account(1000)),
+        (vault_share_ata, create_token2022_token_account(&share_mint_key, &vault_key, 0)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -146,18 +164,20 @@ fn test_request_withdraw_missing_signer() {
 
     let (pending_key, _) = pending_withdraw_pda(&vault_key, &withdrawer);
     let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
         request_withdraw_data(1_000_000),
         vec![
             AccountMeta::new(withdrawer, false),                   // NOT signer
             AccountMeta::new(withdrawer_share_ata, false),
-            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new_readonly(share_mint_key, false),
             AccountMeta::new_readonly(vault_key, false),
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
             AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
+            AccountMeta::new(vault_share_ata, false),
         ],
     );
 
@@ -170,6 +190,7 @@ fn test_request_withdraw_missing_signer() {
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
         (CLOCK_SYSVAR_ID, create_clock_account(1000)),
+        (vault_share_ata, create_token2022_token_account(&share_mint_key, &vault_key, 0)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -195,18 +216,20 @@ fn test_request_withdraw_wrong_pending_pda() {
 
     let wrong_pending_key = Pubkey::new_unique(); // wrong PDA
     let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
         request_withdraw_data(1_000_000),
         vec![
             AccountMeta::new(withdrawer, true),
             AccountMeta::new(withdrawer_share_ata, false),
-            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new_readonly(share_mint_key, false),
             AccountMeta::new_readonly(vault_key, false),
             AccountMeta::new(wrong_pending_key, false),            // wrong PDA
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
             AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
+            AccountMeta::new(vault_share_ata, false),
         ],
     );
 
@@ -219,6 +242,7 @@ fn test_request_withdraw_wrong_pending_pda() {
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
         (CLOCK_SYSVAR_ID, create_clock_account(1000)),
+        (vault_share_ata, create_token2022_token_account(&share_mint_key, &vault_key, 0)),
     ];
 
     mollusk.process_and_validate_instruction(
@@ -245,18 +269,20 @@ fn test_request_withdraw_wrong_share_mint() {
 
     let (pending_key, _) = pending_withdraw_pda(&vault_key, &withdrawer);
     let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_share_ata = Pubkey::new_unique();
 
     let instruction = build_instruction(
         request_withdraw_data(1_000_000),
         vec![
             AccountMeta::new(withdrawer, true),
             AccountMeta::new(withdrawer_share_ata, false),
-            AccountMeta::new(wrong_mint, false),                   // wrong mint
+            AccountMeta::new_readonly(wrong_mint, false),           // wrong mint
             AccountMeta::new_readonly(vault_key, false),
             AccountMeta::new(pending_key, false),
             AccountMeta::new_readonly(SYSTEM_PROGRAM_ID, false),
             AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
             AccountMeta::new_readonly(CLOCK_SYSVAR_ID, false),
+            AccountMeta::new(vault_share_ata, false),
         ],
     );
 
@@ -269,6 +295,7 @@ fn test_request_withdraw_wrong_share_mint() {
         keyed_account_for_system_program(),
         mollusk_svm_programs_token::token2022::keyed_account(),
         (CLOCK_SYSVAR_ID, create_clock_account(1000)),
+        (vault_share_ata, create_token2022_token_account(&wrong_mint, &vault_key, 0)),
     ];
 
     mollusk.process_and_validate_instruction(

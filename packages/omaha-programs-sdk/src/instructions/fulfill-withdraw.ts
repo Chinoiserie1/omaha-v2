@@ -4,6 +4,7 @@ import { TransactionInstruction as TxInstruction } from "@solana/web3.js";
 import {
   DISC_FULFILL_WITHDRAW,
   SPL_TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID,
   VAULT_PROGRAM_ID,
 } from "../constants.js";
 import { writeU8, writeU64LE } from "../utils.js";
@@ -15,7 +16,10 @@ export interface FulfillWithdrawParams {
   readonly vaultBaseAta: PublicKey;
   readonly withdrawerBaseAta: PublicKey;
   readonly withdrawer: PublicKey;
+  readonly vaultShareAta: PublicKey;
+  readonly shareMint: PublicKey;
   readonly newSharePrice: bigint;
+  readonly shareTokenProgram?: PublicKey;
   readonly programId?: PublicKey;
 }
 
@@ -31,7 +35,10 @@ export interface FulfillWithdrawParams {
  *   3. [writable] vault_base_ata
  *   4. [writable] withdrawer_base_ata
  *   5. [writable] withdrawer — receives rent refund (NOT a signer)
- *   6. []         token_program — legacy SPL Token
+ *   6. []         token_program      — legacy SPL Token (base transfer)
+ *   7. [writable] vault_share_ata    — escrow holding share tokens
+ *   8. [writable] share_mint         — share token mint (Token 2022)
+ *   9. []         share_token_program — Token 2022
  */
 export function createFulfillWithdrawInstruction(
   params: FulfillWithdrawParams,
@@ -48,6 +55,9 @@ export function createFulfillWithdrawInstruction(
     { pubkey: params.withdrawerBaseAta, isSigner: false, isWritable: true },
     { pubkey: params.withdrawer, isSigner: false, isWritable: true },
     { pubkey: SPL_TOKEN_PROGRAM_ID, isSigner: false, isWritable: false },
+    { pubkey: params.vaultShareAta, isSigner: false, isWritable: true },
+    { pubkey: params.shareMint, isSigner: false, isWritable: true },
+    { pubkey: params.shareTokenProgram ?? TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
   ];
 
   return new TxInstruction({

@@ -13,7 +13,7 @@ export interface CancelWithdrawParams {
   readonly withdrawer: PublicKey;
   readonly pendingWithdraw: PublicKey;
   readonly vaultState: PublicKey;
-  readonly shareMint: PublicKey;
+  readonly vaultShareAta: PublicKey;
   readonly withdrawerShareAta: PublicKey;
   readonly programId?: PublicKey;
 }
@@ -26,9 +26,9 @@ export interface CancelWithdrawParams {
  * Accounts:
  *   0. [signer, writable] withdrawer — must match pending.withdrawer; gets refunded rent
  *   1. [writable]         pending_withdraw — PDA being closed
- *   2. []                 vault_state — read-only (for PDA signer seeds + share_mint verification)
- *   3. [writable]         share_mint — Token 2022 mint for re-minting shares
- *   4. [writable]         withdrawer_share_ata — destination for re-minted shares
+ *   2. []                 vault_state — read-only (for PDA signer seeds)
+ *   3. [writable]         vault_share_ata — escrow holding share tokens
+ *   4. [writable]         withdrawer_share_ata — destination for returned shares
  *   5. []                 token_program — Token 2022
  *   6. []                 clock_sysvar
  */
@@ -42,7 +42,7 @@ export function createCancelWithdrawInstruction(
     { pubkey: params.withdrawer, isSigner: true, isWritable: true },
     { pubkey: params.pendingWithdraw, isSigner: false, isWritable: true },
     { pubkey: params.vaultState, isSigner: false, isWritable: false },
-    { pubkey: params.shareMint, isSigner: false, isWritable: true },
+    { pubkey: params.vaultShareAta, isSigner: false, isWritable: true },
     { pubkey: params.withdrawerShareAta, isSigner: false, isWritable: true },
     { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: CLOCK_SYSVAR_ID, isSigner: false, isWritable: false },

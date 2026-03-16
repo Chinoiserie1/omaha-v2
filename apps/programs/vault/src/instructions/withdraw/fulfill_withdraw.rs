@@ -8,12 +8,14 @@ use pinocchio_token::instructions::Transfer;
 
 use crate::error::VaultError;
 use crate::state::{PendingWithdraw, VaultState, PENDING_WITHDRAW_DISCRIMINATOR, VAULT_DISCRIMINATOR};
+use crate::token2022;
 
-/// Admin-only: fulfill a pending withdrawal by setting share price and transferring base tokens.
+/// Admin-only: fulfill a pending withdrawal by burning escrowed shares,
+/// setting share price, and transferring base tokens.
 ///
-/// The admin sets the new share price, base tokens are calculated from the
-/// pending withdraw shares, transferred to the withdrawer, and the
-/// PendingWithdraw PDA is closed (rent refunded to withdrawer).
+/// The admin sets the new share price. Escrowed share tokens are burned from
+/// the vault's share ATA, base tokens are calculated and transferred to the
+/// withdrawer, and the PendingWithdraw PDA is closed (rent refunded).
 /// Exit fees are applied if configured (fee stays in vault).
 ///
 /// Accounts:
@@ -23,7 +25,10 @@ use crate::state::{PendingWithdraw, VaultState, PENDING_WITHDRAW_DISCRIMINATOR, 
 ///   3. `[writable]`  vault_base_ata     — vault's base token account
 ///   4. `[writable]`  withdrawer_base_ata — receives base tokens
 ///   5. `[writable]`  withdrawer         — receives rent refund (NOT a signer)
-///   6. `[]`          token_program
+///   6. `[]`          token_program      — legacy SPL Token (for base transfer)
+///   7. `[writable]`  vault_share_ata    — escrow holding share tokens
+///   8. `[writable]`  share_mint         — share token mint (Token 2022)
+///   9. `[]`          share_token_program — Token 2022
 ///
 /// Data:
 ///   [0]    discriminator (0x0C)
@@ -36,6 +41,9 @@ pub struct FulfillWithdraw<'a> {
     withdrawer_base_ata: &'a AccountInfo,
     withdrawer: &'a AccountInfo,
     _token_program: &'a AccountInfo,
+    vault_share_ata: &'a AccountInfo,
+    share_mint: &'a AccountInfo,
+    share_token_program: &'a AccountInfo,
     new_share_price: u64,
 }
 
@@ -127,7 +135,7 @@ impl<'a> FulfillWithdraw<'a> {
             return Err(VaultError::InvalidAmount.into());
         }
 
-        // Transfer base tokens: vault → withdrawer (vault_state PDA signs)
+        // Vault PDA signer seeds (used for both burn and transfer)
         let vault_bump_bytes = [vault_bump];
         let seeds: [Seed; 3] = [
             Seed::from(b"vault" as &[u8]),
@@ -136,6 +144,17 @@ impl<'a> FulfillWithdraw<'a> {
         ];
         let signers: [Signer; 1] = [Signer::from(&seeds)];
 
+        // Burn escrowed share tokens (vault PDA signs as authority over escrow)
+        token2022::burn(
+            self.share_token_program,
+            self.vault_share_ata,
+            self.share_mint,
+            self.vault_state,
+            pending_shares,
+            &signers,
+        )?;
+
+        // Transfer base tokens: vault → withdrawer (vault_state PDA signs)
         Transfer {
             from: self.vault_base_ata,
             to: self.withdrawer_base_ata,
@@ -164,7 +183,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for FulfillWithdraw<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [admin, vault_state, pending_withdraw, vault_base_ata, withdrawer_base_ata, withdrawer, token_program, ..] =
+        let [admin, vault_state, pending_withdraw, vault_base_ata, withdrawer_base_ata, withdrawer, token_program, vault_share_ata, share_mint, share_token_program, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -222,6 +241,14 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for FulfillWithdraw<'a> {
             return Err(VaultError::InvalidSharePrice.into());
         }
 
+        // Validate new writable accounts
+        if !vault_share_ata.is_writable() {
+            return Err(ProgramError::InvalidAccountData);
+        }
+        if !share_mint.is_writable() {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
         Ok(Self {
             admin,
             vault_state,
@@ -230,6 +257,9 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for FulfillWithdraw<'a> {
             withdrawer_base_ata,
             withdrawer,
             _token_program: token_program,
+            vault_share_ata,
+            share_mint,
+            share_token_program,
             new_share_price,
         })
     }

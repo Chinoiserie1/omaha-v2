@@ -16,6 +16,7 @@ export interface RequestWithdrawParams {
   readonly shareMint: PublicKey;
   readonly vaultState: PublicKey;
   readonly pendingWithdraw: PublicKey;
+  readonly vaultShareAta: PublicKey;
   readonly shares: bigint;
   readonly programId?: PublicKey;
 }
@@ -28,12 +29,13 @@ export interface RequestWithdrawParams {
  * Accounts:
  *   0. [signer, writable] withdrawer
  *   1. [writable]         withdrawer_share_ata
- *   2. [writable]         share_mint
+ *   2. []                 share_mint           — read-only (validation only)
  *   3. []                 vault_state
  *   4. [writable]         pending_withdraw — PDA to create
  *   5. []                 system_program
  *   6. []                 token_program    — Token 2022
  *   7. []                 clock_sysvar
+ *   8. [writable]         vault_share_ata  — escrow for share tokens
  */
 export function createRequestWithdrawInstruction(
   params: RequestWithdrawParams,
@@ -45,12 +47,13 @@ export function createRequestWithdrawInstruction(
   const keys: AccountMeta[] = [
     { pubkey: params.withdrawer, isSigner: true, isWritable: true },
     { pubkey: params.withdrawerShareAta, isSigner: false, isWritable: true },
-    { pubkey: params.shareMint, isSigner: false, isWritable: true },
+    { pubkey: params.shareMint, isSigner: false, isWritable: false },
     { pubkey: params.vaultState, isSigner: false, isWritable: false },
     { pubkey: params.pendingWithdraw, isSigner: false, isWritable: true },
     { pubkey: SYSTEM_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: TOKEN_2022_PROGRAM_ID, isSigner: false, isWritable: false },
     { pubkey: CLOCK_SYSVAR_ID, isSigner: false, isWritable: false },
+    { pubkey: params.vaultShareAta, isSigner: false, isWritable: true },
   ];
 
   return new TxInstruction({

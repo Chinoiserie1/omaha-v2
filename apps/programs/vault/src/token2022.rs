@@ -50,6 +50,38 @@ pub fn mint_to<'a>(
     )
 }
 
+/// Transfer via Token 2022: discriminator 3.
+pub fn transfer<'a>(
+    token_program: &'a AccountInfo,
+    source: &'a AccountInfo,
+    destination: &'a AccountInfo,
+    authority: &'a AccountInfo,
+    amount: u64,
+    signers: &[Signer],
+) -> ProgramResult {
+    let mut data = [0u8; 9];
+    data[0] = 3;
+    data[1..9].copy_from_slice(&amount.to_le_bytes());
+
+    let metas = [
+        AccountMeta::writable(source.key()),
+        AccountMeta::writable(destination.key()),
+        AccountMeta::readonly_signer(authority.key()),
+    ];
+
+    let ix = Instruction {
+        program_id: token_program.key(),
+        accounts: &metas,
+        data: &data,
+    };
+
+    cpi::slice_invoke_signed(
+        &ix,
+        &[source, destination, authority, token_program],
+        signers,
+    )
+}
+
 /// Burn via Token 2022: discriminator 8.
 pub fn burn<'a>(
     token_program: &'a AccountInfo,

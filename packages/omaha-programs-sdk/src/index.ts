@@ -60,6 +60,7 @@ export {
   findShareMintPda,
   findPendingDepositPda,
   findPendingWithdrawPda,
+  findVaultShareAta,
 } from "./pda.js";
 
 // State deserialization

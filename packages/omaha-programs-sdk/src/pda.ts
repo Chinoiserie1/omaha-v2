@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
-import { VAULT_PROGRAM_ID } from "./constants.js";
+import { TOKEN_2022_PROGRAM_ID, VAULT_PROGRAM_ID } from "./constants.js";
 
 /**
  * Derive factory state PDA.
@@ -78,5 +79,21 @@ export function findPendingWithdrawPda(
       withdrawer.toBuffer(),
     ],
     programId,
+  );
+}
+
+/**
+ * Derive vault share escrow ATA (Token 2022).
+ * This is the Associated Token Account for the share mint, owned by the vault_state PDA.
+ */
+export function findVaultShareAta(
+  shareMint: PublicKey,
+  vaultState: PublicKey,
+): PublicKey {
+  return getAssociatedTokenAddressSync(
+    shareMint,
+    vaultState,
+    true, // allowOwnerOffCurve — vault_state is a PDA
+    TOKEN_2022_PROGRAM_ID,
   );
 }

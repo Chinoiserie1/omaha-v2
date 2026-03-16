@@ -13,23 +13,25 @@ use crate::token2022;
 
 /// Request a withdrawal from the vault (async flow — step 1 of 2).
 ///
-/// The withdrawer burns share tokens and a PendingWithdraw PDA is created
-/// to record the request. The admin later fulfills the withdrawal by
-/// setting the share price and transferring base tokens.
+/// The withdrawer transfers share tokens to the vault's escrow ATA and a
+/// PendingWithdraw PDA is created to record the request. The admin later
+/// fulfills the withdrawal by burning the escrowed shares and transferring
+/// base tokens. If the request expires, shares are returned from escrow.
 ///
 /// Accounts:
-///   0. `[signer, writable]` withdrawer          — pays rent + signs share burn
-///   1. `[writable]`         withdrawer_share_ata — shares to burn
-///   2. `[writable]`         share_mint           — share token mint
+///   0. `[signer, writable]` withdrawer          — pays rent + signs share transfer
+///   1. `[writable]`         withdrawer_share_ata — shares to transfer
+///   2. `[]`                 share_mint           — share token mint (read-only, validation only)
 ///   3. `[]`                 vault_state          — PDA (read-only, for validation)
 ///   4. `[writable]`         pending_withdraw     — PDA to create
 ///   5. `[]`                 system_program
 ///   6. `[]`                 token_program
 ///   7. `[]`                 clock_sysvar
+///   8. `[writable]`         vault_share_ata      — escrow for share tokens
 ///
 /// Data:
 ///   [0]    discriminator (0x0B)
-///   [1..9] shares (u64 LE) — share tokens to burn
+///   [1..9] shares (u64 LE) — share tokens to escrow
 pub struct RequestWithdraw<'a> {
     withdrawer: &'a AccountInfo,
     withdrawer_share_ata: &'a AccountInfo,
@@ -39,6 +41,7 @@ pub struct RequestWithdraw<'a> {
     _system_program: &'a AccountInfo,
     token_program: &'a AccountInfo,
     clock_sysvar: &'a AccountInfo,
+    vault_share_ata: &'a AccountInfo,
     shares: u64,
 }
 
@@ -109,11 +112,11 @@ impl<'a> RequestWithdraw<'a> {
             state.created_at = current_timestamp;
         }
 
-        // Burn share tokens from withdrawer (no PDA signer needed — withdrawer signs)
-        token2022::burn(
+        // Transfer share tokens from withdrawer to vault escrow (withdrawer signs)
+        token2022::transfer(
             self.token_program,
             self.withdrawer_share_ata,
-            self.share_mint,
+            self.vault_share_ata,
             self.withdrawer,
             self.shares,
             &[],
@@ -129,7 +132,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestWithdraw<'a> {
     fn try_from(
         (data, accounts): (&'a [u8], &'a [AccountInfo]),
     ) -> Result<Self, Self::Error> {
-        let [withdrawer, withdrawer_share_ata, share_mint, vault_state, pending_withdraw, system_program, token_program, clock_sysvar, ..] =
+        let [withdrawer, withdrawer_share_ata, share_mint, vault_state, pending_withdraw, system_program, token_program, clock_sysvar, vault_share_ata, ..] =
             accounts
         else {
             return Err(ProgramError::NotEnoughAccountKeys);
@@ -165,6 +168,10 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestWithdraw<'a> {
             return Err(VaultError::InvalidAmount.into());
         }
 
+        if !vault_share_ata.is_writable() {
+            return Err(ProgramError::InvalidAccountData);
+        }
+
         Ok(Self {
             withdrawer,
             withdrawer_share_ata,
@@ -174,6 +181,7 @@ impl<'a> TryFrom<(&'a [u8], &'a [AccountInfo])> for RequestWithdraw<'a> {
             _system_program: system_program,
             token_program,
             clock_sysvar,
+            vault_share_ata,
             shares,
         })
     }

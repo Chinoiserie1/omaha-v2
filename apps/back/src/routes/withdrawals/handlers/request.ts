@@ -1,12 +1,17 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { ComputeBudgetProgram, PublicKey, Transaction } from "@solana/web3.js";
-import { getAssociatedTokenAddress } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountIdempotentInstruction,
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import { prisma } from "@repo/database";
 import { createWithdrawalSchema, type ApiResponse } from "@repo/shared";
 import {
   createRequestWithdrawInstruction,
   findPendingWithdrawPda,
   findShareMintPda,
+  findVaultShareAta,
   TOKEN_2022_PROGRAM_ID,
 } from "@repo/omaha-programs-sdk";
 import { getConnection, SHARE_TOKEN_MULTIPLIER } from "../../../solana/config.js";
@@ -143,6 +148,7 @@ async function buildAndReturnTx(
       TOKEN_2022_PROGRAM_ID,
     );
     const [pendingWithdraw] = findPendingWithdrawPda(statePda, signerPubkey);
+    const vaultShareAta = findVaultShareAta(shareMint, statePda);
 
     const redeemIx = createRequestWithdrawInstruction({
       withdrawer: signerPubkey,
@@ -150,17 +156,35 @@ async function buildAndReturnTx(
       shareMint,
       vaultState: statePda,
       pendingWithdraw,
+      vaultShareAta,
       shares,
     });
 
     const { blockhash } = await connection.getLatestBlockhash("confirmed");
 
+    // Auto-create vault share escrow ATA if it doesn't exist
+    const vaultShareAtaInfo = await connection.getAccountInfo(vaultShareAta);
+
     const transaction = new Transaction();
     transaction.add(
       ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
-      redeemIx,
     );
+
+    if (!vaultShareAtaInfo) {
+      transaction.add(
+        createAssociatedTokenAccountIdempotentInstruction(
+          signerPubkey,
+          vaultShareAta,
+          statePda,
+          shareMint,
+          TOKEN_2022_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+        ),
+      );
+    }
+
+    transaction.add(redeemIx);
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = signerPubkey;
 

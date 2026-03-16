@@ -382,32 +382,35 @@ describe("WithdrawWithPrice", () => {
 });
 
 describe("RequestWithdraw", () => {
-  it("builds correct instruction with clock sysvar", () => {
+  it("builds correct instruction with escrow pattern", () => {
     const ix = createRequestWithdrawInstruction({
       withdrawer: key(1),
       withdrawerShareAta: key(2),
       shareMint: key(3),
       vaultState: key(4),
       pendingWithdraw: key(5),
+      vaultShareAta: key(6),
       shares: 5_000_000n,
     });
 
     expect(ix.data[0]).toBe(DISC_REQUEST_WITHDRAW);
     expect(ix.data.length).toBe(9);
     expect(ix.data.readBigUInt64LE(1)).toBe(5_000_000n);
-    expect(ix.keys).toHaveLength(8);
+    expect(ix.keys).toHaveLength(9);
     expect(ix.keys[0]!.isSigner).toBe(true);
     expect(ix.keys[0]!.isWritable).toBe(true);
+    expect(ix.keys[2]!.isWritable).toBe(false); // share_mint read-only
     expect(ix.keys[5]!.pubkey.toBase58()).toBe(SYSTEM_PROGRAM_ID.toBase58());
     expect(ix.keys[6]!.pubkey.toBase58()).toBe(
       TOKEN_2022_PROGRAM_ID.toBase58(),
     );
     expect(ix.keys[7]!.pubkey.toBase58()).toBe(CLOCK_SYSVAR_ID.toBase58());
+    expect(ix.keys[8]!.isWritable).toBe(true); // vault_share_ata
   });
 });
 
 describe("FulfillWithdraw", () => {
-  it("builds correct instruction", () => {
+  it("builds correct instruction with burn-from-escrow", () => {
     const ix = createFulfillWithdrawInstruction({
       admin: key(1),
       vaultState: key(2),
@@ -415,17 +418,24 @@ describe("FulfillWithdraw", () => {
       vaultBaseAta: key(4),
       withdrawerBaseAta: key(5),
       withdrawer: key(6),
+      vaultShareAta: key(7),
+      shareMint: key(8),
       newSharePrice: 2_500_000n,
     });
 
     expect(ix.data[0]).toBe(DISC_FULFILL_WITHDRAW);
     expect(ix.data.length).toBe(9);
     expect(ix.data.readBigUInt64LE(1)).toBe(2_500_000n);
-    expect(ix.keys).toHaveLength(7);
+    expect(ix.keys).toHaveLength(10);
     expect(ix.keys[0]!.isSigner).toBe(true); // admin
     expect(ix.keys[5]!.isWritable).toBe(true); // withdrawer receives refund
     expect(ix.keys[6]!.pubkey.toBase58()).toBe(
       SPL_TOKEN_PROGRAM_ID.toBase58(),
+    );
+    expect(ix.keys[7]!.isWritable).toBe(true); // vault_share_ata
+    expect(ix.keys[8]!.isWritable).toBe(true); // share_mint
+    expect(ix.keys[9]!.pubkey.toBase58()).toBe(
+      TOKEN_2022_PROGRAM_ID.toBase58(),
     );
   });
 });
@@ -570,7 +580,7 @@ describe("CancelWithdraw", () => {
       withdrawer: key(1),
       pendingWithdraw: key(2),
       vaultState: key(3),
-      shareMint: key(4),
+      vaultShareAta: key(4),
       withdrawerShareAta: key(5),
     });
 
