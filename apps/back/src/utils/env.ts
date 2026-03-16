@@ -26,7 +26,9 @@ const envSchema = z.object({
   // Quant Pipeline — Birdeye (price data)
   BIRDEYE_API_KEY: z.string().min(1),
 
-  // Quant Pipeline — Solana (optional — crons work without these)
+  // Solana network & token config
+  SOLANA_NETWORK: z.enum(["mainnet", "devnet"]).default("mainnet"),
+  USDC_MINT: z.string().optional(),
   SOLANA_RPC_URL: z.string().optional(),
   KEEPER_PRIVATE_KEY: z.string().optional(),
   FEE_PAYER_PRIVATE_KEY: z.string().optional(),

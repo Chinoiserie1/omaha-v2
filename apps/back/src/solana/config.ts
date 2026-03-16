@@ -7,8 +7,11 @@ import { logger } from "../utils/logger.js";
 export const SHARE_TOKEN_DECIMALS = 6;
 export const SHARE_TOKEN_MULTIPLIER = 10 ** SHARE_TOKEN_DECIMALS; // 1_000_000
 
+const MAINNET_USDC = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
+const DEVNET_USDC = "4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU";
+
 export const USDC_MINT = new PublicKey(
-  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  env.USDC_MINT ?? (env.SOLANA_NETWORK === "devnet" ? DEVNET_USDC : MAINNET_USDC),
 );
 export const USDC_DECIMALS = 6;
 

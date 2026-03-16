@@ -84,6 +84,11 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 - `isNativeLiquidGlassSupported` — boolean, true on iOS 26+
 - `GLASS_CONFIG` — blur amounts, fallback colors, blur types
 
+### Config: `lib/solana.ts`
+
+- `SOLANA_RPC_URL` — from `EXPO_PUBLIC_SOLANA_RPC_URL` (default: mainnet RPC)
+- `USDC_MINT` — auto-selects devnet/mainnet USDC based on `EXPO_PUBLIC_SOLANA_NETWORK`, or overridden by `EXPO_PUBLIC_USDC_MINT`
+
 ## Screen Structure (March 2026)
 
 ### Home Tab - Vault Discovery

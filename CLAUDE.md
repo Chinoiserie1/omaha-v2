@@ -267,8 +267,12 @@ Create a `.env` file in the root directory (see `.env.example`). The native app 
 | `EXPO_PUBLIC_POSTHOG_API_KEY` | No | PostHog analytics key (EU cloud) |
 | `RAPIDAPI_KEY` | No | Twitter API via RapidAPI |
 | `ANTHROPIC_API_KEY` | No | Anthropic API for signal analysis |
+| `SOLANA_NETWORK` | No | `mainnet` or `devnet` (default: mainnet) — selects USDC mint |
 | `SOLANA_RPC_URL` | No | Solana RPC endpoint (backend) |
+| `USDC_MINT` | No | Override USDC mint address (auto-selected from `SOLANA_NETWORK`) |
+| `EXPO_PUBLIC_SOLANA_NETWORK` | No | `mainnet` or `devnet` (default: mainnet) — native app |
 | `EXPO_PUBLIC_SOLANA_RPC_URL` | No | Solana RPC endpoint (native app) |
+| `EXPO_PUBLIC_USDC_MINT` | No | Override USDC mint address (native app) |
 | `KEEPER_PRIVATE_KEY` | No | Keeper wallet for vault operations |
 | `PROGRAM_AUTHORITY_KEYPAIR` | No | Program authority keypair for factory init |
 | `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |

@@ -142,6 +142,8 @@ Uses `@repo/config-eslint/node` which includes:
 - **WithdrawalService** - Manages user withdrawals with multi-step flow
 - **FundSolService** - Gets Jupiter USDC→SOL quotes and builds swap plans with platform fees
 - **FundSolTxBuilder** - Builds funded swap transactions with fee payer partial signing
+- **SharePriceOnChainService** - Computes share price from TVL/supply for atomic deposit (DepositWithPrice); enforces 2-min price freshness
+- **TvlService** - Computes vault TVL from on-chain token accounts + cached DB prices; supports strict `maxAgeMs` freshness validation
 
 ## Key Repositories
 
@@ -210,7 +212,7 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | GET    | `/api/vaults/:id`                 | Vault details + performance + holdings          |
 | GET    | `/api/vaults/:id/performance`     | Vault returns (7d/30d/all-time)                 |
 | GET    | `/api/vaults/:id/holdings`        | Current vault token holdings                    |
-| POST   | `/api/vaults/:id/subscribe`       | Begin subscription (with on-chain confirmation) |
+| POST   | `/api/vaults/:id/subscribe`       | Atomic deposit via DepositWithPrice (keeper co-signs, computes share price from TVL) |
 | POST   | `/api/vaults/:id/investor-status` | Check user's investor status                    |
 | POST   | `/api/vaults/:id/redeem`          | Initiate redemption                             |
 
@@ -343,6 +345,11 @@ return reply.status(400).send({
 - `HOST` - Server host (default: 0.0.0.0)
 - `DATABASE_URL` - PostgreSQL connection string
 - `NODE_ENV` - Environment (development/production)
+
+### Solana Network & Tokens
+
+- `SOLANA_NETWORK` (optional, default: `mainnet`) - Set to `devnet` to auto-select devnet USDC mint
+- `USDC_MINT` (optional) - Override USDC mint address (auto-selected from `SOLANA_NETWORK` if omitted)
 
 ### Fund SOL (Swap USDC → SOL)
 

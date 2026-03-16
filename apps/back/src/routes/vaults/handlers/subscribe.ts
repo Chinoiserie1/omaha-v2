@@ -86,6 +86,12 @@ export async function subscribeToVault(
       ASSOCIATED_TOKEN_PROGRAM_ID,
     );
 
+    // Check which ATAs need to be created
+    const [vaultBaseAtaInfo, depositorShareAtaInfo] = await Promise.all([
+      connection.getAccountInfo(vaultBaseAta),
+      connection.getAccountInfo(depositorShareAta),
+    ]);
+
     // Build transaction
     const transaction = new Transaction();
 
@@ -94,17 +100,31 @@ export async function subscribeToVault(
       ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 50_000 }),
     );
 
-    // Create user's share ATA if it doesn't exist (Token 2022)
-    transaction.add(
-      createAssociatedTokenAccountIdempotentInstruction(
-        signerPubkey,
-        depositorShareAta,
-        signerPubkey,
-        shareMint,
-        TOKEN_2022_PROGRAM_ID,
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-      ),
-    );
+    if (!vaultBaseAtaInfo) {
+      transaction.add(
+        createAssociatedTokenAccountIdempotentInstruction(
+          signerPubkey,
+          vaultBaseAta,
+          statePda,
+          USDC_MINT,
+          TOKEN_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+        ),
+      );
+    }
+
+    if (!depositorShareAtaInfo) {
+      transaction.add(
+        createAssociatedTokenAccountIdempotentInstruction(
+          signerPubkey,
+          depositorShareAta,
+          signerPubkey,
+          shareMint,
+          TOKEN_2022_PROGRAM_ID,
+          ASSOCIATED_TOKEN_PROGRAM_ID,
+        ),
+      );
+    }
 
     // Build DepositWithPrice instruction
     const depositParams = {
