@@ -8,7 +8,7 @@
 
 ## Purpose
 
-Step 2 of the async Request → Fulfill withdraw flow. The admin sets the share price, calculates the base token payout from the pending withdraw shares, transfers base tokens to the withdrawer, and closes the `PendingWithdraw` PDA (refunding rent to the withdrawer).
+Step 2 of the async Request → Fulfill withdraw flow. The admin burns the escrowed share tokens from the vault's share ATA, sets the share price, calculates the base token payout, transfers base tokens to the withdrawer, and closes the `PendingWithdraw` PDA (refunding rent to the withdrawer).
 
 If exit fees are configured (via `UpdateFees`), the fee amount is deducted from the base tokens returned. The fee stays in the vault, benefiting remaining shareholders.
 
@@ -39,12 +39,17 @@ Admin
   │       └─ (base_to_return, fee) = apply_fee(gross_base, exit_fee_bps)
   │       └─ fee stays in vault (not transferred)
   │
-  ├─ 7. Transfer base tokens (Token CPI, invoke_signed)
+  ├─ 7. Burn escrowed shares (Token 2022 CPI, invoke_signed)
+  │       from:      vault_share_ata (escrow)
+  │       mint:      share_mint
+  │       authority: vault_state PDA (signs with bump)
+  │
+  ├─ 8. Transfer base tokens (Token CPI, invoke_signed)
   │       from:      vault_base_ata
   │       to:        withdrawer_base_ata
   │       authority: vault_state PDA (signs with bump)
   │
-  └─ 7. Close PendingWithdraw PDA
+  └─ 9. Close PendingWithdraw PDA
           └─ transfer rent lamports to withdrawer
           └─ zero account data via close()
 ```
@@ -59,7 +64,10 @@ Admin
 | 3 | `vault_base_ata` | Yes | No | Vault's base token custody account (source of payout) |
 | 4 | `withdrawer_base_ata` | Yes | No | Withdrawer's base token account (receives payout) |
 | 5 | `withdrawer` | Yes | No | Receives rent refund — NOT a signer |
-| 6 | `token_program` | No | No | SPL Token program |
+| 6 | `token_program` | No | No | Legacy SPL Token program (base transfer) |
+| 7 | `vault_share_ata` | Yes | No | Vault's escrow ATA holding escrowed shares |
+| 8 | `share_mint` | Yes | No | Share token mint (Token 2022) |
+| 9 | `share_token_program` | No | No | Token 2022 program |
 
 ## Instruction Data Layout
 
@@ -78,7 +86,7 @@ Checked in `TryFrom`:
 
 | Check | Error |
 |-------|-------|
-| 7+ accounts provided | `NotEnoughAccountKeys` |
+| 10+ accounts provided | `NotEnoughAccountKeys` |
 | `admin` is a signer | `MissingRequiredSignature` |
 | `vault_state` is writable | `InvalidAccountData` |
 | `vault_state` owned by this program | `IllegalOwner` |
@@ -113,7 +121,7 @@ The withdrawer receives ~1,447,680 lamports back (the rent they paid during `Req
 
 - **Withdrawer does NOT sign** — the admin fulfills on the withdrawer's behalf. The withdrawer already committed their shares during `RequestWithdraw`.
 - **Price update is global** — same as `WithdrawWithPrice`, the `vault_state.share_price` is permanently updated.
-- **Shares were already burned** — during `RequestWithdraw`, so `FulfillWithdraw` only transfers base tokens. No burn CPI is needed.
+- **Shares are burned here** — `FulfillWithdraw` burns the escrowed shares from `vault_share_ata` (vault PDA signs). This is when the total supply actually decreases. The burn happens before the base token transfer for atomicity.
 - **Batch-friendly** — the admin can fulfill multiple pending withdrawals in the same transaction by including multiple `FulfillWithdraw` instructions, each with a different `pending_withdraw` PDA.
 
 ## Cross-References

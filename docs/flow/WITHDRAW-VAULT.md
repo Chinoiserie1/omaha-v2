@@ -52,7 +52,10 @@ REQUESTED → PROCESSING → CLAIMED
 │  4. Build unsigned redeem transaction:                        │
 │     ├── ComputeBudgetProgram.setComputeUnitLimit(400k)       │
 │     ├── ComputeBudgetProgram.setComputeUnitPrice(50k µL)     │
+│     ├── createAssociatedTokenAccountIdempotent() (if needed) │
+│     │   └── Creates vault share escrow ATA (first time only) │
 │     └── createRequestWithdrawInstruction()                   │
+│         └── Transfers shares to vault escrow (not burned)    │
 │  5. Return { transaction (base64), withdrawalId }            │
 └──────────────┬───────────────────────────────────────────────┘
                │
@@ -147,7 +150,8 @@ Two separate Solana transactions across the flow:
 | --- | --- | --- |
 | 1 | `setComputeUnitLimit(400k)` | Reserve compute units |
 | 2 | `setComputeUnitPrice(50k µLamports)` | Priority fee for inclusion |
-| 3 | `createRequestWithdrawInstruction()` | Queue share redemption in Omaha Vault |
+| 3 | `createAssociatedTokenAccountIdempotent()` | Create vault share escrow ATA (if not exists) |
+| 4 | `createRequestWithdrawInstruction()` | Transfer shares to escrow, create PendingWithdraw PDA |
 
 **Signers:** User wallet only (signs on device via Privy)
 **Fee payer:** User's wallet
@@ -156,7 +160,7 @@ Two separate Solana transactions across the flow:
 
 | # | Instruction | Purpose |
 | --- | --- | --- |
-| 1 | `createFulfillWithdrawInstruction()` | Process batch redemption and transfer base tokens directly to user wallets |
+| 1 | `createFulfillWithdrawInstruction()` | Burn escrowed shares, transfer base tokens to user wallets |
 
 **Signers:** Keeper keypair only (vault manager, signs on backend)
 **Fee payer:** Keeper (platform pays)
@@ -238,7 +242,7 @@ Worker picks up job
 
 ### Why this works
 
-- **`createFulfillWithdrawInstruction()`** operates on the vault level, not per-user. It processes all queued redemptions for the vault in a single instruction and transfers base tokens directly. The batching doesn't require passing individual amounts — the on-chain program knows the full queue.
+- **`createFulfillWithdrawInstruction()`** operates per-PendingWithdraw PDA. It burns the escrowed shares from the vault's share ATA and transfers base tokens directly to the user. Multiple instructions can be batched in a single transaction for efficiency.
 - **The DB is the source of truth** for which requests to transition. The BullMQ job is just a trigger — it says "go process vault X now" and the worker collects everything at execution time.
 - **Late arrivals still get caught.** If User D confirms a redeem at 09:59 (just before the window closes), their DB row is `PROCESSING` when the job fires at 10:00, so they're included in the same batch.
 
@@ -378,7 +382,7 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 
 ## Key Design Decisions
 
-1. **Two separate transactions** — The Omaha Vault program merges fulfill and claim into a single `FulfillWithdraw` step. The keeper fulfills all queued redemptions and transfers base tokens directly to each user's wallet in one transaction, eliminating the separate claim step and making the flow simpler.
+1. **Escrow pattern with deferred burn** — During `RequestWithdraw`, shares are transferred to a vault-controlled escrow ATA (not burned). During `FulfillWithdraw`, shares are burned from escrow and base tokens are transferred to the user's wallet. This ensures shares remain locked during the pending period and are only destroyed when USDC is actually disbursed. If the request expires (48h), `CancelWithdraw` returns shares from escrow to the user.
 
 2. **Batch window with idempotency** — Within a 10-minute window (configurable via `WITHDRAWAL_BATCH_WINDOW_MS`), duplicate requests from the same user for the same vault are merged via `sha256(userId, vaultId, batchId)`. This prevents accidental double-redemptions from network retries or UI re-taps.
 

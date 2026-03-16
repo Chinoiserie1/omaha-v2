@@ -12,7 +12,7 @@ Atomically sets the share price and processes a withdrawal in a single instructi
 
 If exit fees are configured (via `UpdateFees`), the fee amount is deducted from the base tokens returned. The fee stays in the vault, benefiting remaining shareholders.
 
-Synchronous counterpart to the async `RequestWithdraw` → `FulfillWithdraw` flow. Inspired by GLAM Protocol's instant redemption model where price feeds are included in the same transaction.
+Synchronous counterpart to the async `RequestWithdraw` → `FulfillWithdraw` flow. Unlike the async flow (which escrows shares during the pending period and burns at fulfillment), this instruction burns shares and transfers base tokens atomically. Inspired by GLAM Protocol's instant redemption model where price feeds are included in the same transaction.
 
 ## Flow Diagram
 

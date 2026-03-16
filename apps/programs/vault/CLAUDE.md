@@ -51,7 +51,7 @@ apps/programs/vault/
 │   ├── fees.rs             # Pure fee math (entry/exit/management/performance)
 │   ├── rent.rs             # Const fn rent exemption calculation
 │   ├── sysvar.rs           # Clock sysvar reading (used by CollectFees)
-│   ├── token2022.rs        # Raw CPI wrappers for SPL Token 2022 (mint_to, burn, extensions, metadata)
+│   ├── token2022.rs        # Raw CPI wrappers for SPL Token 2022 (transfer, mint_to, burn, extensions, metadata)
 │   └── instructions/
 │       ├── mod.rs                     # Re-exports all 26 instruction structs from subdirectories
 │       ├── factory/                   # Factory governance (0x0D–0x13)
@@ -151,8 +151,8 @@ Instruction discriminators use the `0x00–0x19` range. Account discriminators u
 | 0x08 | RequestDeposit | Deposit | Anyone | Creates PendingDeposit PDA, transfers base tokens to vault; snapshots entry_fee_bps + created_at |
 | 0x09 | FulfillDeposit | Deposit | Vault admin only | Sets price, mints shares using fee snapshot from PendingDeposit, closes PDA |
 | 0x0A | WithdrawWithPrice | Withdraw | Vault admin only | Sets share price + withdraws atomically (2 signers) |
-| 0x0B | RequestWithdraw | Withdraw | Anyone | Burns shares, creates PendingWithdraw PDA; snapshots exit_fee_bps + created_at |
-| 0x0C | FulfillWithdraw | Withdraw | Vault admin only | Sets price, transfers base tokens using fee snapshot, closes PendingWithdraw PDA |
+| 0x0B | RequestWithdraw | Withdraw | Anyone | Transfers shares to vault escrow ATA, creates PendingWithdraw PDA; snapshots exit_fee_bps + created_at |
+| 0x0C | FulfillWithdraw | Withdraw | Vault admin only | Burns escrowed shares, sets price, transfers base tokens using fee snapshot, closes PendingWithdraw PDA |
 
 ### 0x0D–0x13: Factory Management (new)
 
@@ -180,7 +180,7 @@ Instruction discriminators use the `0x00–0x19` range. Account discriminators u
 | Disc | Instruction | Access | Description |
 |------|------------|--------|-------------|
 | 0x18 | CancelDeposit | Depositor only (after expiry) | Cancels expired PendingDeposit; returns base tokens to depositor; closes PDA |
-| 0x19 | CancelWithdraw | Withdrawer only (after expiry) | Cancels expired PendingWithdraw; remints shares back to withdrawer; closes PDA |
+| 0x19 | CancelWithdraw | Withdrawer only (after expiry) | Cancels expired PendingWithdraw; returns escrowed shares to withdrawer; closes PDA |
 
 ## PDA Seeds
 
@@ -283,7 +283,7 @@ Fee receiver is an optional account in deposit instructions (via `accounts.get(N
 | 4 | 4 | _padding | Alignment padding |
 | 8 | 32 | vault_state | Vault this withdrawal belongs to |
 | 40 | 32 | withdrawer | Who initiated the withdrawal |
-| 72 | 8 | shares | Number of share tokens burned |
+| 72 | 8 | shares | Number of share tokens escrowed |
 | 80 | 8 | created_at | Unix timestamp of creation (for 48h expiry check) |
 
 ## Access Control
@@ -344,10 +344,10 @@ Factory management instructions (0x0D–0x13) follow a separate access matrix: `
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (154 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (164 tests total)
 ```
 
-The test suite has **154 tests**: unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`.
+The test suite has **164 tests**: unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 
@@ -379,8 +379,9 @@ Raw CPI wrappers (no `pinocchio-token-2022` crate exists):
 
 | Function | Disc | Purpose |
 |----------|------|---------|
+| `transfer()` | 3 | Transfer share tokens (escrow in/out for withdraw flows) |
 | `mint_to()` | 7 | Mint share tokens (deposit flows, fee collection) |
-| `burn()` | 8 | Burn share tokens (withdraw flows) |
+| `burn()` | 8 | Burn share tokens (fulfill withdraw, atomic withdraw) |
 | `initialize_mint2()` | 20 | Initialize Token 2022 mint |
 | `initialize_mint_close_authority()` | 25 | Set close authority extension |
 | `initialize_metadata_pointer()` | 39/0 | Set metadata pointer extension |
@@ -402,10 +403,11 @@ Instructions that touch both base tokens and share tokens require two token prog
 | DepositWithPrice | Transfer base tokens | MintTo shares | 10 (+ optional fee_receiver) |
 | WithdrawWithPrice | Transfer base tokens | Burn shares | 9 |
 | FulfillDeposit | — | MintTo shares | 9 (+ optional fee_receiver) |
-| RequestWithdraw | — | Burn shares | 8 |
+| RequestWithdraw | — | Transfer shares to escrow | 9 |
+| FulfillWithdraw | Transfer base tokens | Burn escrowed shares | 10 |
 | CollectFees | — | MintTo fee shares | 6 (includes Clock sysvar) |
 
-Instructions that only touch base tokens (RequestDeposit, FulfillWithdraw) use legacy SPL Token only — no changes.
+Instructions that only touch base tokens (RequestDeposit) use legacy SPL Token only.
 
 ## Execute Instruction (CPI Passthrough)
 

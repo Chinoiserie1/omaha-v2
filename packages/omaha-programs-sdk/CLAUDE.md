@@ -1,6 +1,6 @@
 # packages/omaha-programs-sdk - CLAUDE.md
 
-> **OUTDATED**: This SDK covers the original 13 vault instructions. The on-chain program now has 26 instructions (factory management, vault admin transfer, pause, cancel deposit/withdraw). VaultState is 584 bytes (was 520), PendingDeposit/PendingWithdraw are 88 bytes (was 80), and FactoryState (400 bytes) is new. `owners` → `operators` rename. `CollectFees` no longer takes a timestamp parameter (uses Clock sysvar). See `apps/programs/vault/CLAUDE.md` for the current program architecture. This SDK needs updating.
+> **OUTDATED**: This SDK covers the original 13 vault instructions. The on-chain program now has 26 instructions (factory management, vault admin transfer, pause, cancel deposit/withdraw). VaultState is 584 bytes (was 520), PendingDeposit/PendingWithdraw are 88 bytes (was 80), and FactoryState (400 bytes) is new. `owners` → `operators` rename. `CollectFees` no longer takes a timestamp parameter (uses Clock sysvar). Withdraw flow uses escrow pattern: `RequestWithdraw` transfers shares to vault escrow ATA (9 accounts), `FulfillWithdraw` burns from escrow (10 accounts), `CancelWithdraw` returns shares from escrow. See `apps/programs/vault/CLAUDE.md` for the current program architecture. This SDK needs updating.
 
 ## Overview
 
