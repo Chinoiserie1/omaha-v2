@@ -344,10 +344,10 @@ Factory management instructions (0x0D–0x13) follow a separate access matrix: `
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (164 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (173 tests total)
 ```
 
-The test suite has **164 tests**: unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`.
+The test suite has **173 tests**: unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 

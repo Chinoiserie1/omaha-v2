@@ -135,6 +135,16 @@ impl<'a> FulfillWithdraw<'a> {
             return Err(VaultError::InvalidAmount.into());
         }
 
+        // Pre-flight: verify vault has enough base tokens before any CPI
+        {
+            let ata_data = self.vault_base_ata.try_borrow_data()?;
+            let vault_balance =
+                u64::from_le_bytes(ata_data[64..72].try_into().map_err(|_| ProgramError::InvalidAccountData)?);
+            if base_to_return > vault_balance {
+                return Err(VaultError::InsufficientFunds.into());
+            }
+        }
+
         // Vault PDA signer seeds (used for both burn and transfer)
         let vault_bump_bytes = [vault_bump];
         let seeds: [Seed; 3] = [

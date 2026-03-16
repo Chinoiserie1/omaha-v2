@@ -373,3 +373,167 @@ fn test_withdraw_with_price_wrong_share_mint() {
         &[Check::err(ProgramError::InvalidAccountData)],
     );
 }
+
+#[test]
+fn test_withdraw_with_price_insufficient_funds() {
+    let mollusk = setup_with_both_tokens();
+    let admin = Pubkey::new_unique();
+    let withdrawer = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, bump) = vault_pda(b"test-vault");
+    let share_mint_key = Pubkey::new_unique();
+
+    let share_decimals: u8 = 6;
+    let new_price: u64 = 2_000_000;
+    let shares_to_burn: u64 = 3_000_000;
+    // base_to_return = 3_000_000 * 2_000_000 / 10^6 = 6_000_000
+    // vault only has 1_000_000 → insufficient
+
+    let vault_data = create_vault_state_data(
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, 1_000_000, &[], b"test-vault",
+    );
+
+    let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_base_ata = Pubkey::new_unique();
+    let withdrawer_base_ata = Pubkey::new_unique();
+
+    let instruction = build_instruction(
+        withdraw_with_price_data(new_price, shares_to_burn),
+        vec![
+            AccountMeta::new_readonly(admin, true),
+            AccountMeta::new_readonly(withdrawer, true),
+            AccountMeta::new(withdrawer_share_ata, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new(vault_base_ata, false),
+            AccountMeta::new(withdrawer_base_ata, false),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, shares_to_burn, b"Test", b"TST", b"")),
+        (vault_base_ata, create_token_account(&base_mint, &vault_key, 1_000_000)), // Only 1M, need 6M
+        (withdrawer_base_ata, create_token_account(&base_mint, &withdrawer, 0)),
+        (vault_key, make_vault_account(vault_data)),
+        mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &accounts,
+        &[Check::err(ProgramError::Custom(0x107))], // InsufficientFunds
+    );
+}
+
+#[test]
+fn test_withdraw_with_price_exact_balance() {
+    let mollusk = setup_with_both_tokens();
+    let admin = Pubkey::new_unique();
+    let withdrawer = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, bump) = vault_pda(b"test-vault");
+    let share_mint_key = Pubkey::new_unique();
+
+    let share_decimals: u8 = 6;
+    let new_price: u64 = 2_000_000;
+    let shares_to_burn: u64 = 3_000_000;
+    // base_to_return = 6_000_000 — vault has exactly 6_000_000
+
+    let vault_data = create_vault_state_data(
+        &admin, &base_mint, &share_mint_key, bump, share_decimals, 1_000_000, &[], b"test-vault",
+    );
+
+    let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_base_ata = Pubkey::new_unique();
+    let withdrawer_base_ata = Pubkey::new_unique();
+
+    let instruction = build_instruction(
+        withdraw_with_price_data(new_price, shares_to_burn),
+        vec![
+            AccountMeta::new_readonly(admin, true),
+            AccountMeta::new_readonly(withdrawer, true),
+            AccountMeta::new(withdrawer_share_ata, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new(vault_base_ata, false),
+            AccountMeta::new(withdrawer_base_ata, false),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, shares_to_burn)),
+        (share_mint_key, create_token2022_mint(&vault_key, share_decimals, shares_to_burn, b"Test", b"TST", b"")),
+        (vault_base_ata, create_token_account(&base_mint, &vault_key, 6_000_000)), // Exactly enough
+        (withdrawer_base_ata, create_token_account(&base_mint, &withdrawer, 0)),
+        (vault_key, make_vault_account(vault_data)),
+        mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &accounts,
+        &[Check::success()],
+    );
+}
+
+#[test]
+fn test_withdraw_with_price_zero_vault_balance() {
+    let mollusk = setup_with_both_tokens();
+    let admin = Pubkey::new_unique();
+    let withdrawer = Pubkey::new_unique();
+    let base_mint = Pubkey::new_unique();
+    let (vault_key, bump) = vault_pda(b"test-vault");
+    let share_mint_key = Pubkey::new_unique();
+
+    let vault_data = create_vault_state_data(
+        &admin, &base_mint, &share_mint_key, bump, 6, 1_000_000, &[], b"test-vault",
+    );
+
+    let withdrawer_share_ata = Pubkey::new_unique();
+    let vault_base_ata = Pubkey::new_unique();
+    let withdrawer_base_ata = Pubkey::new_unique();
+
+    let instruction = build_instruction(
+        withdraw_with_price_data(1_000_000, 1_000_000),
+        vec![
+            AccountMeta::new_readonly(admin, true),
+            AccountMeta::new_readonly(withdrawer, true),
+            AccountMeta::new(withdrawer_share_ata, false),
+            AccountMeta::new(share_mint_key, false),
+            AccountMeta::new(vault_base_ata, false),
+            AccountMeta::new(withdrawer_base_ata, false),
+            AccountMeta::new(vault_key, false),
+            AccountMeta::new_readonly(TOKEN_PROGRAM_ID, false),
+            AccountMeta::new_readonly(TOKEN_2022_PROGRAM_ID, false),
+        ],
+    );
+
+    let accounts = vec![
+        (admin, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (withdrawer, Account::new(1_000_000_000, 0, &Pubkey::default())),
+        (withdrawer_share_ata, create_token2022_token_account(&share_mint_key, &withdrawer, 1_000_000)),
+        (share_mint_key, create_token2022_mint(&vault_key, 6, 1_000_000, b"Test", b"TST", b"")),
+        (vault_base_ata, create_token_account(&base_mint, &vault_key, 0)), // Zero balance
+        (withdrawer_base_ata, create_token_account(&base_mint, &withdrawer, 0)),
+        (vault_key, make_vault_account(vault_data)),
+        mollusk_svm_programs_token::token::keyed_account(),
+        mollusk_svm_programs_token::token2022::keyed_account(),
+    ];
+
+    mollusk.process_and_validate_instruction(
+        &instruction,
+        &accounts,
+        &[Check::err(ProgramError::Custom(0x107))], // InsufficientFunds
+    );
+}
