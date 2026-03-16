@@ -71,7 +71,9 @@ src/
 │   ├── classifier.service.ts   # Tweet classification (uses aliases)
 │   ├── thesis.service.ts       # Portfolio synthesis (uses curated assets)
 │   ├── rebalancer.service.ts   # Vault rebalancing (uses Jupiter tradeableAssets)
-│   ├── withdrawal.service.ts   # Multi-step withdrawal flow (triggers WS notifications)
+│   ├── withdrawal.service.ts   # Queued withdrawal flow with batch fulfillment (triggers WS notifications)
+│   ├── withdrawal-claim.service.ts # Claim withdrawal claim after batch fulfillment
+│   ├── vault-balance.service.ts    # Check vault USDC balance for instant vs queued decision
 │   ├── fund-sol.service.ts     # Jupiter quote + swap plan builder for USDC → SOL
 │   ├── fund-sol-tx.builder.ts  # Transaction builder with fee payer partial sign
 │   └── jupiter-instruction.util.ts  # Shared Jupiter instruction deserializer
@@ -139,7 +141,9 @@ Uses `@repo/config-eslint/node` which includes:
 - **RebalancerService** - Executes on-chain vault swaps via Jupiter
 - **TwitterService** - Fetches tweets via RapidAPI
 - **PortfolioSnapshotService** - Captures portfolio value snapshots on-demand (March 2026)
-- **WithdrawalService** - Manages user withdrawals with multi-step flow
+- **WithdrawalService** - Manages queued withdrawal flow with batch fulfillment (RequestWithdraw → FulfillWithdraw pattern)
+- **WithdrawalClaimService** - Manages claim phase after batch fulfillment
+- **VaultBalanceService** - Checks vault USDC balance to detect instant vs queued withdrawal modes
 - **FundSolService** - Gets Jupiter USDC→SOL quotes and builds swap plans with platform fees
 - **FundSolTxBuilder** - Builds funded swap transactions with fee payer partial signing
 - **SharePriceOnChainService** - Computes share price from TVL/supply for atomic deposit (DepositWithPrice); enforces 2-min price freshness
@@ -220,10 +224,12 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 
 | Method | Endpoint                                 | Description                                 |
 | ------ | ---------------------------------------- | ------------------------------------------- |
-| POST   | `/api/withdrawals/initiate`              | Start withdrawal request                    |
-| POST   | `/api/withdrawals/:id/confirm-subscribe` | Confirm withdrawal subscription             |
-| GET    | `/api/withdrawals/:id/claim`             | Claim withdrawn tokens (after batch window) |
-| POST   | `/api/withdrawals/:id/confirm-claim`     | Finalize claim                              |
+| POST   | `/api/withdrawals/{vaultId}/request`     | Request withdrawal; returns `{ transaction, withdrawalId, mode: "instant" \| "queued" }` |
+| POST   | `/api/withdrawals/{id}/confirm-redeem`   | Confirm redeem tx on-chain; triggers instant fulfill (if mode=instant) or batch queue (if mode=queued) |
+| GET    | `/api/withdrawals/{id}/status`           | Poll withdrawal status and mode             |
+| GET    | `/api/withdrawals`                       | List user withdrawals                       |
+| POST   | `/api/withdrawals/{vaultId}/reconcile`   | Fix DB/chain divergence                     |
+| POST   | `/api/withdrawals/{id}/retry`            | Retry failed withdrawal                     |
 
 ### WebSocket
 

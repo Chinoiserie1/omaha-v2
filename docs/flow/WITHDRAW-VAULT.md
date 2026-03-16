@@ -1,11 +1,17 @@
 # Withdraw from Vault Flow
 
-> Redeem vault shares → fulfill batch → tokens returned to wallet.
+> Redeem vault shares → (instant or queued fulfill) → tokens returned to wallet.
 
-Users invest USDC into Quant vaults (Omaha Vault program tokenized vaults on Solana). When they want to exit a position, this two-step withdrawal flow redeems their vault shares and returns USDC to their Privy embedded wallet. The process uses asynchronous batch fulfillment where the keeper fulfills and transfers base tokens directly in a single step.
+Users invest USDC into Quant vaults (Omaha Vault program tokenized vaults on Solana). When they want to exit a position, the withdrawal flow redeems their vault shares and returns USDC to their Privy embedded wallet. The backend checks the vault's USDC balance and chooses between **instant** (`WithdrawWithPrice`) or **queued** (`RequestWithdraw → FulfillWithdraw`) modes. Instant fulfillment executes immediately if sufficient balance exists; queued uses asynchronous batch fulfillment for efficiency.
 
 ## Status Lifecycle
 
+**Instant Mode** (`WithdrawWithPrice` — sufficient USDC balance):
+```
+REQUESTED → CLAIMED (single atomic tx)
+```
+
+**Queued Mode** (`RequestWithdraw → FulfillWithdraw` — insufficient balance):
 ```
 REQUESTED → PROCESSING → CLAIMED
                 │
@@ -14,13 +20,13 @@ REQUESTED → PROCESSING → CLAIMED
               REMOVED (soft-delete for retry)
 ```
 
-| Status | Meaning |
-| --- | --- |
-| `REQUESTED` | User submitted unsigned redeem tx, DB record created |
-| `PROCESSING` | User signed & submitted redeem tx on-chain, backend confirmed |
-| `CLAIMED` | Backend fulfilled the batch (keeper signed), base tokens transferred directly to user wallet |
-| `FAILED` | Error during processing or fulfillment, user can retry |
-| `REMOVED` | Soft-deleted (idempotency key reassigned), allows immediate retry |
+| Status | Meaning | Mode |
+| --- | --- | --- |
+| `REQUESTED` | User submitted unsigned redeem tx, DB record created | Both |
+| `PROCESSING` | User signed & submitted redeem tx on-chain, backend confirmed; awaiting batch fulfillment | Queued only |
+| `CLAIMED` | Fulfillment complete (instant or batch), base tokens transferred to user wallet | Both |
+| `FAILED` | Error during processing or fulfillment, user can retry | Both |
+| `REMOVED` | Soft-deleted (idempotency key reassigned), allows immediate retry | Queued only |
 
 ## Flow Diagram
 
@@ -48,15 +54,29 @@ REQUESTED → PROCESSING → CLAIMED
 │                                                              │
 │  1. Validate request (Zod: positive amount, valid pubkey)    │
 │  2. Check idempotency (same user + vault + batch window)     │
-│  3. Create WithdrawalRequest record (status: REQUESTED)      │
-│  4. Build unsigned redeem transaction:                        │
+│  3. Detect withdrawal mode:                                  │
+│     ├── Check vault USDC balance via RPC                     │
+│     ├── If balance >= amount → INSTANT mode                  │
+│     └── If balance < amount → QUEUED mode                    │
+│  4. Create WithdrawalRequest record (status: REQUESTED)      │
+│  5. Build unsigned transaction based on mode:                │
+│                                                              │
+│     [INSTANT MODE]                                           │
+│     ├── ComputeBudgetProgram.setComputeUnitLimit(400k)       │
+│     ├── ComputeBudgetProgram.setComputeUnitPrice(50k µL)     │
+│     ├── createAssociatedTokenAccountIdempotent() (if needed) │
+│     └── createWithdrawWithPriceInstruction()                 │
+│         └── Atomic: set price + burn shares + transfer USDC  │
+│                                                              │
+│     [QUEUED MODE]                                            │
 │     ├── ComputeBudgetProgram.setComputeUnitLimit(400k)       │
 │     ├── ComputeBudgetProgram.setComputeUnitPrice(50k µL)     │
 │     ├── createAssociatedTokenAccountIdempotent() (if needed) │
 │     │   └── Creates vault share escrow ATA (first time only) │
 │     └── createRequestWithdrawInstruction()                   │
 │         └── Transfers shares to vault escrow (not burned)    │
-│  5. Return { transaction (base64), withdrawalId }            │
+│                                                              │
+│  6. Return { transaction (base64), withdrawalId, mode }      │
 └──────────────┬───────────────────────────────────────────────┘
                │
                │  Unsigned transaction (base64)
@@ -72,18 +92,29 @@ REQUESTED → PROCESSING → CLAIMED
 │     { txSignature }                                          │
 └──────────────┬───────────────────────────────────────────────┘
                │
-               │  STEP 2: CONFIRM REDEEM → PROCESSING
+               │  STEP 2: CONFIRM REDEEM
                ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  BACKEND                                                     │
 │                                                              │
 │  1. Verify redeem tx landed on-chain                         │
-│  2. Update status: REQUESTED → PROCESSING                   │
-│  3. Enqueue fulfill job via BullMQ                           │
-│  4. Broadcast WS event: withdrawal:status → PROCESSING      │
+│  2. Update status based on mode:                             │
+│                                                              │
+│     [INSTANT MODE]                                           │
+│     ├── Verify WithdrawWithPrice tx succeeded                │
+│     ├── Update status: REQUESTED → CLAIMED                   │
+│     ├── Record tx signature in DB                            │
+│     └── Broadcast WS event: withdrawal:status → CLAIMED      │
+│                                                              │
+│     [QUEUED MODE]                                            │
+│     ├── Verify RequestWithdraw tx succeeded                  │
+│     ├── Update status: REQUESTED → PROCESSING                │
+│     ├── Enqueue fulfill job via BullMQ (deterministic, dedup)│
+│     └── Broadcast WS event: withdrawal:status → PROCESSING   │
 └──────────────┬───────────────────────────────────────────────┘
                │
-               │  STEP 3: FULFILL BATCH (async, delayed via Redis/BullMQ)
+               │  STEP 3: FULFILL BATCH (queued mode only; async, delayed via Redis/BullMQ)
+               │  [SKIPPED for instant mode]
                ▼
 ┌──────────────────────────────────────────────────────────────┐
 │  REDIS (BullMQ Queue — delayed job)                          │
@@ -269,10 +300,10 @@ await enqueueFulfillJob(req.vaultId, { delayMs: 0 });
 
 | Method | Endpoint | Purpose | Request Body | Response |
 | --- | --- | --- | --- | --- |
-| POST | `/api/withdrawals/{vaultId}/request` | Start withdrawal | `{ amount, signerPublicKey }` | `{ transaction, withdrawalId }` |
-| POST | `/api/withdrawals/{id}/confirm-redeem` | Confirm redeem tx | `{ txSignature }` | `{ withdrawalId, status }` |
-| GET | `/api/withdrawals/{id}/status` | Poll status | — | `WithdrawalRequest` |
-| GET | `/api/withdrawals` | List user withdrawals | — | `WithdrawalRequest[]` |
+| POST | `/api/withdrawals/{vaultId}/request` | Start withdrawal | `{ amount, signerPublicKey }` | `{ transaction, withdrawalId, mode: "instant" \| "queued" }` |
+| POST | `/api/withdrawals/{id}/confirm-redeem` | Confirm redeem tx | `{ txSignature }` | `{ withdrawalId, status, mode }` |
+| GET | `/api/withdrawals/{id}/status` | Poll status | — | `WithdrawalRequest` (includes `mode` field) |
+| GET | `/api/withdrawals` | List user withdrawals | — | `WithdrawalRequest[]` (each includes `mode`) |
 | POST | `/api/withdrawals/{vaultId}/reconcile` | Fix DB/chain drift | `{ walletAddress }` | `WithdrawalRequest` |
 | POST | `/api/withdrawals/{id}/retry` | Retry failed | — | `WithdrawalRequest` |
 
@@ -346,18 +377,23 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 | File | Responsibility |
 | --- | --- |
 | `apps/back/src/routes/withdrawals/index.ts` | Route registration (auth middleware) |
-| `apps/back/src/routes/withdrawals/handlers/request.ts` | Build unsigned redeem tx, create DB record |
-| `apps/back/src/routes/withdrawals/handlers/confirm-redeem.ts` | Verify redeem on-chain, enqueue fulfill |
+| `apps/back/src/routes/withdrawals/handlers/request.ts` | Validate request, detect mode (instant/queued), build unsigned tx |
+| `apps/back/src/routes/withdrawals/handlers/detect-withdraw-mode.ts` | Check vault USDC balance, decide instant vs queued |
+| `apps/back/src/routes/withdrawals/handlers/build-instant-tx.ts` | Build WithdrawWithPrice atomic transaction |
+| `apps/back/src/routes/withdrawals/handlers/build-queued-tx.ts` | Build RequestWithdraw transaction |
+| `apps/back/src/routes/withdrawals/handlers/confirm-redeem.ts` | Verify tx on-chain, transition status (mode-dependent), enqueue fulfill (if queued) |
 | `apps/back/src/routes/withdrawals/handlers/reconcile.ts` | Fix DB/chain divergence |
 | `apps/back/src/routes/withdrawals/handlers/retry.ts` | Retry failed withdrawals |
-| `apps/back/src/routes/withdrawals/handlers/status.ts` | Fetch withdrawal status |
+| `apps/back/src/routes/withdrawals/handlers/status.ts` | Fetch withdrawal status and mode |
 | `apps/back/src/routes/withdrawals/handlers/list.ts` | List user withdrawals |
-| `apps/back/src/services/withdrawal.service.ts` | Batch fulfillment logic (FulfillWithdraw) |
+| `apps/back/src/services/withdrawal.service.ts` | Queued batch fulfillment logic (FulfillWithdraw, BullMQ worker) |
+| `apps/back/src/services/withdrawal-claim.service.ts` | Claim management for batch-fulfilled withdrawals |
+| `apps/back/src/services/vault-balance.service.ts` | Check vault USDC balance on-chain for mode detection |
 | `apps/back/src/store/withdrawal.repository.ts` | Data access layer (Prisma queries) |
-| `apps/back/src/queue/withdrawal-queue.ts` | BullMQ job queue + delayed enqueue with dedup |
-| `apps/back/src/queue/withdrawal-worker.ts` | Worker: process fulfill batch |
+| `apps/back/src/queue/withdrawal-queue.ts` | BullMQ job queue + delayed enqueue with dedup (queued mode only) |
+| `apps/back/src/queue/withdrawal-worker.ts` | Worker: process queued fulfill batch |
 | `apps/back/src/queue/batch-utils.ts` | Batch ID, idempotency key, remaining window calc |
-| `apps/back/src/cron/recovery-withdrawals.ts` | Recovery cron for stuck withdrawals |
+| `apps/back/src/cron/recovery-withdrawals.ts` | Recovery cron for stuck withdrawals (queued mode) |
 | `apps/back/src/infra/websocket.ts` | WebSocket server for real-time updates |
 | `apps/back/src/solana/config.ts` | Keeper keypair loading, Solana constants |
 
@@ -382,14 +418,18 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 
 ## Key Design Decisions
 
-1. **Escrow pattern with deferred burn** — During `RequestWithdraw`, shares are transferred to a vault-controlled escrow ATA (not burned). During `FulfillWithdraw`, shares are burned from escrow and base tokens are transferred to the user's wallet. This ensures shares remain locked during the pending period and are only destroyed when USDC is actually disbursed. If the request expires (48h), `CancelWithdraw` returns shares from escrow to the user.
+1. **Instant vs queued withdrawal modes** — At request time, the backend checks the vault's USDC balance via RPC. If balance ≥ withdrawal amount, use `WithdrawWithPrice` (instant atomic tx: set price → burn shares → transfer USDC). If balance < amount, use `RequestWithdraw → FulfillWithdraw` (queued batch mode). This is transparent to the client — they receive the mode in the response and can surface different UX (instant claim vs batch queue). Instant mode completes in a single on-chain tx; queued mode batches multiple requests in a single fulfillment for gas efficiency.
 
-2. **Batch window with idempotency** — Within a 10-minute window (configurable via `WITHDRAWAL_BATCH_WINDOW_MS`), duplicate requests from the same user for the same vault are merged via `sha256(userId, vaultId, batchId)`. This prevents accidental double-redemptions from network retries or UI re-taps.
+2. **Escrow pattern with deferred burn** — In queued mode, `RequestWithdraw` transfers shares to a vault-controlled escrow ATA (not burned). `FulfillWithdraw` burns escrowed shares and transfers base tokens. This ensures shares remain locked during the batch window and are only destroyed when USDC is actually disbursed. If the request expires (48h), `CancelWithdraw` returns shares from escrow to the user.
 
-3. **Delayed fulfillment via Redis/BullMQ** — The fulfill step runs as a delayed background job. When a redeem is confirmed, `enqueueFulfillJob()` schedules a job with `delay = remainingBatchWindowMs(now)` — the time left until the current batch window closes. The job ID is deterministic (`fulfill-{vaultId}-{windowSlot}`), so BullMQ auto-deduplicates: if a second user confirms a redeem for the same vault within the same window, no new job is created. When the window closes, the single delayed job fires, the worker calls `processFulfillBatch(vaultId)` which collects ALL `PROCESSING` records for that vault and fulfills them in one on-chain transaction. This saves gas and reduces vault rebalance operations. Recovery jobs (stuck `PROCESSING` records) bypass the delay with `delayMs: 0` since they're already past the window.
+3. **Batch window with idempotency (queued mode only)** — Within a 10-minute window (configurable via `WITHDRAWAL_BATCH_WINDOW_MS`), duplicate requests from the same user for the same vault are merged via `sha256(userId, vaultId, batchId)`. This prevents accidental double-redemptions from network retries or UI re-taps.
 
-4. **WebSocket + polling hybrid** — The mobile app listens to WebSocket events for instant status transitions (PROCESSING → CLAIMED) but also polls every 10-30s as a fallback. This handles cases where WS connections drop on mobile networks.
+4. **Delayed fulfillment via Redis/BullMQ (queued mode only)** — The queued fulfill step runs as a delayed background job. When a redeem is confirmed in queued mode, `enqueueFulfillJob()` schedules a job with `delay = remainingBatchWindowMs(now)` — the time left until the current batch window closes. The job ID is deterministic (`fulfill-{vaultId}-{windowSlot}`), so BullMQ auto-deduplicates: if a second user confirms a redeem for the same vault within the same window, no new job is created. When the window closes, the single delayed job fires, the worker calls `processFulfillBatch(vaultId)` which collects ALL `PROCESSING` records for that vault and fulfills them in one on-chain transaction. This saves gas and reduces vault rebalance operations. Recovery jobs (stuck `PROCESSING` records) bypass the delay with `delayMs: 0` since they're already past the window.
 
-5. **Soft-delete for retry-ability** — Failed withdrawals are marked `REMOVED` (not hard-deleted) with the idempotency key reassigned. This lets users retry immediately within the same batch window without hitting uniqueness constraints.
+5. **WebSocket + polling hybrid** — The mobile app listens to WebSocket events for instant status transitions (`CLAIMED` for instant mode, `PROCESSING` → `CLAIMED` for queued) but also polls every 10-30s as a fallback. This handles cases where WS connections drop on mobile networks.
 
-6. **Reconciliation endpoint** — If the mobile app crashes after the user signs the redeem tx but before calling `confirm-redeem`, the on-chain state and DB diverge. The reconcile endpoint detects this by checking on-chain state and creates the missing DB record, ensuring no funds are stuck.
+6. **Soft-delete for retry-ability (queued mode)** — Failed withdrawals in queued mode are marked `REMOVED` (not hard-deleted) with the idempotency key reassigned. This lets users retry immediately within the same batch window without hitting uniqueness constraints.
+
+7. **Pre-flight balance check on-chain** — Both `WithdrawWithPrice` (instant) and `FulfillWithdraw` (queued) instructions include an on-chain pre-flight check to verify vault USDC balance before processing. This prevents partial withdrawals and ensures consistency between backend decision logic and actual fulfillment.
+
+8. **Reconciliation endpoint** — If the mobile app crashes after the user signs the redeem tx but before calling `confirm-redeem`, the on-chain state and DB diverge. The reconcile endpoint detects this by checking on-chain state and creates the missing DB record, ensuring no funds are stuck.

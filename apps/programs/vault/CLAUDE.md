@@ -150,9 +150,9 @@ Instruction discriminators use the `0x00–0x19` range. Account discriminators u
 | 0x07 | DepositWithPrice | Deposit | Vault admin only | Sets share price + deposits atomically (2 signers) |
 | 0x08 | RequestDeposit | Deposit | Anyone | Creates PendingDeposit PDA, transfers base tokens to vault; snapshots entry_fee_bps + created_at |
 | 0x09 | FulfillDeposit | Deposit | Vault admin only | Sets price, mints shares using fee snapshot from PendingDeposit, closes PDA |
-| 0x0A | WithdrawWithPrice | Withdraw | Vault admin only | Sets share price + withdraws atomically (2 signers) |
+| 0x0A | WithdrawWithPrice | Withdraw | Vault admin only | Sets share price + withdraws atomically (2 signers); includes USDC balance pre-flight check |
 | 0x0B | RequestWithdraw | Withdraw | Anyone | Transfers shares to vault escrow ATA, creates PendingWithdraw PDA; snapshots exit_fee_bps + created_at |
-| 0x0C | FulfillWithdraw | Withdraw | Vault admin only | Burns escrowed shares, sets price, transfers base tokens using fee snapshot, closes PendingWithdraw PDA |
+| 0x0C | FulfillWithdraw | Withdraw | Vault admin only | Burns escrowed shares, sets price, transfers base tokens using fee snapshot, closes PendingWithdraw PDA; includes USDC balance pre-flight check |
 
 ### 0x0D–0x13: Factory Management (new)
 
@@ -347,7 +347,7 @@ pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
 pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (173 tests total)
 ```
 
-The test suite has **173 tests**: unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`.
+The test suite has **173 tests** (up from 164): unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`. Recent additions include USDC balance pre-flight checks in `WithdrawWithPrice` and `FulfillWithdraw` instructions.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 
