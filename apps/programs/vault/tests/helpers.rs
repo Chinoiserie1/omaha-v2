@@ -428,6 +428,36 @@ pub fn accept_vault_admin_data() -> Vec<u8> {
     vec![0x15]
 }
 
+/// Build PauseVault instruction data: [disc=0x16].
+pub fn pause_vault_data() -> Vec<u8> {
+    vec![0x16]
+}
+
+/// Build UnpauseVault instruction data: [disc=0x17].
+pub fn unpause_vault_data() -> Vec<u8> {
+    vec![0x17]
+}
+
+/// Build PauseFactory instruction data: [disc=0x12].
+pub fn pause_factory_data() -> Vec<u8> {
+    vec![0x12]
+}
+
+/// Build UnpauseFactory instruction data: [disc=0x13].
+pub fn unpause_factory_data() -> Vec<u8> {
+    vec![0x13]
+}
+
+/// Set is_paused flag on raw vault state data (offset 13).
+pub fn set_vault_paused(data: &mut [u8], paused: bool) {
+    data[13] = if paused { 1 } else { 0 };
+}
+
+/// Set is_paused flag on raw factory state data (offset 2).
+pub fn set_factory_paused(data: &mut [u8], paused: bool) {
+    data[2] = if paused { 1 } else { 0 };
+}
+
 // ── Pending State Builders ──────────────────────────────────────────
 
 /// Create raw PendingDeposit bytes (88 bytes).

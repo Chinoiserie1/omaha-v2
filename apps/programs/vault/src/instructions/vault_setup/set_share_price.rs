@@ -34,10 +34,6 @@ impl<'a> SetSharePrice<'a> {
             return Err(VaultError::Unauthorized.into());
         }
 
-        if state.paused() {
-            return Err(VaultError::VaultPaused.into());
-        }
-
         state.share_price = self.new_share_price;
 
         Ok(())

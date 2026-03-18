@@ -50,10 +50,6 @@ impl<'a> Execute<'a> {
             return Err(VaultError::Unauthorized.into());
         }
 
-        if state.paused() {
-            return Err(VaultError::VaultPaused.into());
-        }
-
         let vault_bump = state.bump;
         let vn_len = state.vault_name_len as usize;
         let vault_name = state.vault_name;

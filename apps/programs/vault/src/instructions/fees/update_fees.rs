@@ -42,10 +42,6 @@ impl<'a> UpdateFees<'a> {
         let state: &mut VaultState =
             bytemuck::from_bytes_mut(&mut data[..VaultState::LEN]);
 
-        if state.paused() {
-            return Err(VaultError::VaultPaused.into());
-        }
-
         if !state.is_admin(self.admin.key()) {
             return Err(VaultError::Unauthorized.into());
         }

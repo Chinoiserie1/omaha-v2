@@ -93,11 +93,6 @@ impl<'a> FulfillWithdraw<'a> {
                 return Err(VaultError::Unauthorized.into());
             }
 
-            // Check pause state
-            if state.paused() {
-                return Err(VaultError::VaultPaused.into());
-            }
-
             // Update share price
             state.share_price = self.new_share_price;
 

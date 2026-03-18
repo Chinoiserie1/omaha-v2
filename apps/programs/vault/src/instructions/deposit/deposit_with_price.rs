@@ -61,11 +61,6 @@ impl<'a> DepositWithPrice<'a> {
             return Err(VaultError::Unauthorized.into());
         }
 
-        // Check pause state
-        if state.paused() {
-            return Err(VaultError::VaultPaused.into());
-        }
-
         // Verify share mint matches
         if state.share_mint != *self.share_mint.key() {
             return Err(ProgramError::InvalidAccountData);
