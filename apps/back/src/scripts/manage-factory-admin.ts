@@ -12,7 +12,7 @@
  *   --program-id <pubkey> Vault program ID override
  *
  * Env fallbacks:
- *   ADMIN_PROGRAM_KEYPAIR    for --keypair
+ *   ADMIN_PROGRAM_PRIVATE_KEY    for --keypair
  *   SOLANA_RPC_URL        for --rpc-url
  */
 import { PublicKey } from "@solana/web3.js";
@@ -43,7 +43,7 @@ function printUsage(): never {
       "  --rpc-url <url>       Solana RPC URL\n" +
       "  --program-id <pubkey> Vault program ID override\n" +
       "\nEnv fallbacks:\n" +
-      "  ADMIN_PROGRAM_KEYPAIR    for --keypair\n" +
+      "  ADMIN_PROGRAM_PRIVATE_KEY    for --keypair\n" +
       "  SOLANA_RPC_URL        for --rpc-url\n",
   );
   process.exit(1);
@@ -65,7 +65,7 @@ async function main(): Promise<void> {
   }
 
   const connection = resolveConnection(args);
-  const signer = resolveKeypair(args, "--keypair", "ADMIN_PROGRAM_KEYPAIR");
+  const signer = resolveKeypair(args, "--keypair", "ADMIN_PROGRAM_PRIVATE_KEY");
   const programId = resolveProgramId(args, PublicKey);
 
   const adminRaw = parseFlag(args, "--admin");

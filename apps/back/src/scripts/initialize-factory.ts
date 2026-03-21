@@ -15,7 +15,7 @@
  *   --dry-run                      Preview only, do not send transaction
  *
  * Env fallbacks:
- *   ADMIN_PROGRAM_KEYPAIR             for --keypair
+ *   ADMIN_PROGRAM_PRIVATE_KEY             for --keypair
  *   PROGRAM_AUTHORITY_PRIVATE_KEY  for --program-authority
  *   SOLANA_RPC_URL                 for --rpc-url
  */
@@ -37,7 +37,7 @@ async function main(): Promise<void> {
   const argv = process.argv.slice(2);
 
   const connection = resolveConnection(argv);
-  const owner = resolveKeypair(argv, "--keypair", "ADMIN_PROGRAM_KEYPAIR");
+  const owner = resolveKeypair(argv, "--keypair", "ADMIN_PROGRAM_PRIVATE_KEY");
   const programAuthority = resolveKeypair(argv, "--program-authority", "PROGRAM_AUTHORITY_PRIVATE_KEY");
   const programId = resolveProgramId(argv, PublicKey) ?? VAULT_PROGRAM_ID;
   const dryRun = hasFlag(argv, "--dry-run");

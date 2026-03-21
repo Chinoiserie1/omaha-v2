@@ -256,7 +256,7 @@ The Omaha Vault program is a tokenized vault built with Pinocchio (raw Rust, no 
 | Keypair | Purpose | Location |
 |---------|---------|----------|
 | **Program Authority** | Upgrade authority + factory init co-signer (cold storage) | `apps/programs/vault/program-authority-mainnet-keypair.json` |
-| **Admin** | Factory owner, vault admin, runtime operations | `ADMIN_PROGRAM_KEYPAIR` env var |
+| **Admin** | Factory owner, vault admin, runtime operations | `ADMIN_PROGRAM_PRIVATE_KEY` env var |
 | **Program Keypair** | Derives the on-chain program address (Program ID) | `target/deploy/omaha_vault_mainnet-keypair.json` |
 | **Fee Payer** | Pays gas for Fund SOL flow (optional) | `FEE_PAYER_PRIVATE_KEY` env var |
 
@@ -296,7 +296,7 @@ ANTHROPIC_API_KEY=
 
 # Solana (optional)
 SOLANA_RPC_URL=
-ADMIN_PROGRAM_KEYPAIR=
+ADMIN_PROGRAM_PRIVATE_KEY=
 PROGRAM_AUTHORITY_PRIVATE_KEY=<base58_keypair>  # Only for factory init, remove after
 
 # Jupiter

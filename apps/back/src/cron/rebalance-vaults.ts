@@ -10,8 +10,8 @@ export async function rebalanceVaults(): Promise<void> {
     logger.error("SOLANA_RPC_URL is required for vault rebalancing — skipping");
     return;
   }
-  if (!env.ADMIN_PROGRAM_KEYPAIR) {
-    logger.error("ADMIN_PROGRAM_KEYPAIR is required for vault rebalancing — skipping");
+  if (!env.ADMIN_PROGRAM_PRIVATE_KEY) {
+    logger.error("ADMIN_PROGRAM_PRIVATE_KEY is required for vault rebalancing — skipping");
     return;
   }
 

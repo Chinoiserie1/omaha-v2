@@ -55,7 +55,7 @@ function keypairFromEnv(raw: string): Keypair {
 }
 
 function loadKeypair(): Keypair | null {
-  const envKey = env.ADMIN_PROGRAM_KEYPAIR;
+  const envKey = env.ADMIN_PROGRAM_PRIVATE_KEY;
   if (!envKey) return null;
   return keypairFromEnv(envKey);
 }
@@ -64,7 +64,7 @@ const _keeperKeypair = loadKeypair();
 
 export function getKeeper(): Keypair {
   if (!_keeperKeypair) {
-    throw new Error("ADMIN_PROGRAM_KEYPAIR is not set");
+    throw new Error("ADMIN_PROGRAM_PRIVATE_KEY is not set");
   }
   return _keeperKeypair;
 }

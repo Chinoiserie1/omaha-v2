@@ -150,7 +150,7 @@ These keypairs are loaded from environment variables at backend startup. They ar
 | Property    | Value                                                        |
 | ----------- | ------------------------------------------------------------ |
 | **Purpose** | Vault operator that signs rebalancing, fee collection, and other vault management transactions. |
-| **Env Var** | `ADMIN_PROGRAM_KEYPAIR`                                         |
+| **Env Var** | `ADMIN_PROGRAM_PRIVATE_KEY`                                         |
 | **Required**| Yes (backend crashes if missing)                             |
 | **Location**| `.env` file (never committed)                                |
 
@@ -176,13 +176,13 @@ These keypairs are loaded from environment variables at backend startup. They ar
 **Supported formats for both env var keypairs:**
 ```bash
 # JSON array (most common)
-ADMIN_PROGRAM_KEYPAIR='[90,152,180,127,...64 bytes total]'
+ADMIN_PROGRAM_PRIVATE_KEY='[90,152,180,127,...64 bytes total]'
 
 # Base58 (Phantom wallet export format)
-ADMIN_PROGRAM_KEYPAIR='5K1gR...'
+ADMIN_PROGRAM_PRIVATE_KEY='5K1gR...'
 
 # Base64
-ADMIN_PROGRAM_KEYPAIR='WpiYf...'
+ADMIN_PROGRAM_PRIVATE_KEY='WpiYf...'
 ```
 
 ---
@@ -445,7 +445,7 @@ When running the backend against devnet, set these environment variables in `.en
 SOLANA_RPC_URL=https://api.devnet.solana.com
 
 # Required: vault operator keypair (JSON array, base58, or base64)
-ADMIN_PROGRAM_KEYPAIR='[90,152,...]'
+ADMIN_PROGRAM_PRIVATE_KEY='[90,152,...]'
 
 # Optional: fee payer for Fund SOL flow
 FEE_PAYER_PRIVATE_KEY='[131,197,...]'
@@ -543,7 +543,7 @@ Error: custom program error: 0x11c (UnauthorizedVaultCreator)
    ```
    This is irreversible — the program can never be upgraded again.
 
-6. **Environment variable keypairs** (`ADMIN_PROGRAM_KEYPAIR`, `FEE_PAYER_PRIVATE_KEY`) must only live in `.env` files that are gitignored. Never log or expose these values.
+6. **Environment variable keypairs** (`ADMIN_PROGRAM_PRIVATE_KEY`, `FEE_PAYER_PRIVATE_KEY`) must only live in `.env` files that are gitignored. Never log or expose these values.
 
 ---
 

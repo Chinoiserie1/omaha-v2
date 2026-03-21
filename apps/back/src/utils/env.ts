@@ -30,7 +30,7 @@ const envSchema = z.object({
   SOLANA_NETWORK: z.enum(["mainnet", "devnet"]).default("mainnet"),
   USDC_MINT: z.string().optional(),
   SOLANA_RPC_URL: z.string().optional(),
-  ADMIN_PROGRAM_KEYPAIR: z.string().optional(),
+  ADMIN_PROGRAM_PRIVATE_KEY: z.string().optional(),
   FEE_PAYER_PRIVATE_KEY: z.string().optional(),
   FUND_SOL_FEE_PCT: z.coerce.number().default(2),
   PROGRAM_AUTHORITY_PRIVATE_KEY: z.string().optional(),

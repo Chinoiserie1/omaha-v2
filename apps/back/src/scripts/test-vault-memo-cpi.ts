@@ -21,7 +21,7 @@
  *   --dry-run                 Preview only, no transaction
  *
  * Env fallbacks:
- *   ADMIN_PROGRAM_KEYPAIR        for --keypair
+ *   ADMIN_PROGRAM_PRIVATE_KEY        for --keypair
  *   SOLANA_RPC_URL            for --rpc-url
  */
 import { PublicKey } from "@solana/web3.js";
@@ -54,7 +54,7 @@ async function main(): Promise<void> {
 
   const message =
     parseFlag(argv, "--message") ?? "omaha vault execute cpi test";
-  const signer = resolveKeypair(argv, "--keypair", "ADMIN_PROGRAM_KEYPAIR");
+  const signer = resolveKeypair(argv, "--keypair", "ADMIN_PROGRAM_PRIVATE_KEY");
   const connection = resolveConnection(argv);
   const programId = resolveProgramId(argv, PublicKey) ?? VAULT_PROGRAM_ID;
   const dryRun = hasFlag(argv, "--dry-run");

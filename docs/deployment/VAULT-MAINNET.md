@@ -41,7 +41,7 @@ Deployed on **2026-03-21**.
 | **Purpose** | Factory owner, vault admin, backend operations |
 | **Public Key** | `GhRsrhp57iD3SSa3MzjCnxKSLiEUa8UFmMpC4VtwcKU4` |
 | **File** | `admin-program-mainnet-keypair.json` (repo root, gitignored) |
-| **Env Var** | `ADMIN_PROGRAM_KEYPAIR` (stays in `.env` permanently) |
+| **Env Var** | `ADMIN_PROGRAM_PRIVATE_KEY` (stays in `.env` permanently) |
 | **Status** | **Active** — used by backend at runtime |
 
 **What it can do:**
@@ -90,7 +90,7 @@ solana account 34Eu1r4mQN7E3u5mB5GZ3wrBCLfiAtfFX2hay6n1hS4n \
 SOLANA_NETWORK=mainnet
 SOLANA_RPC_URL=https://mainnet.helius-rpc.com/?api-key=<KEY>
 USDC_MINT=EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v
-ADMIN_PROGRAM_KEYPAIR='<base58 from admin-program-mainnet-keypair.json>'
+ADMIN_PROGRAM_PRIVATE_KEY='<base58 from admin-program-mainnet-keypair.json>'
 # PROGRAM_AUTHORITY_PRIVATE_KEY removed — cold storage
 ```
 
@@ -131,7 +131,7 @@ solana program set-upgrade-authority 2jPr4HDqnzyHdEvwxJxq7NAmt67mEnmHyxhHtV1Cwz8
 ## Security Notes
 
 - Program authority keypair is in cold storage — not in `.env`, not on any server
-- Admin keypair (`ADMIN_PROGRAM_KEYPAIR`) is the only key on the backend server
+- Admin keypair (`ADMIN_PROGRAM_PRIVATE_KEY`) is the only key on the backend server
 - All keypair files are gitignored (`*-keypair.json`)
 - RPC API keys should be rotated periodically
 - Consider transferring upgrade authority to a multisig for additional security

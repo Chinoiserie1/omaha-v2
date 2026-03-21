@@ -4,7 +4,7 @@
  * Usage:
  *   # Step 1: Propose new owner
  *   pnpm transfer-factory-ownership propose \
- *     --keypair <owner-private-key>   \  # or ADMIN_PROGRAM_KEYPAIR env
+ *     --keypair <owner-private-key>   \  # or ADMIN_PROGRAM_PRIVATE_KEY env
  *     --new-owner <pubkey>            \
  *     --rpc-url <url>                 \  # or SOLANA_RPC_URL env
  *     --program-id <pubkey>              # optional, defaults to SDK
@@ -43,7 +43,7 @@ function printUsage(): never {
       "  --rpc-url <url>       Solana RPC URL\n" +
       "  --program-id <pubkey> Vault program ID override\n" +
       "\nEnv fallbacks:\n" +
-      "  ADMIN_PROGRAM_KEYPAIR     for --keypair (propose)\n" +
+      "  ADMIN_PROGRAM_PRIVATE_KEY     for --keypair (propose)\n" +
       "  NEW_OWNER_PRIVATE_KEY  for --keypair (accept)\n" +
       "  SOLANA_RPC_URL         for --rpc-url\n",
   );
@@ -70,7 +70,7 @@ async function main(): Promise<void> {
   const state = deserializeFactoryState(Buffer.from(accountInfo.data));
 
   if (step === "propose") {
-    const signer = resolveKeypair(args, "--keypair", "ADMIN_PROGRAM_KEYPAIR");
+    const signer = resolveKeypair(args, "--keypair", "ADMIN_PROGRAM_PRIVATE_KEY");
     const newOwnerRaw = parseFlag(args, "--new-owner");
     if (!newOwnerRaw) {
       console.error("ERROR: --new-owner <pubkey> is required for propose.");

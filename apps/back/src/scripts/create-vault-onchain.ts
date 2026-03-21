@@ -31,7 +31,7 @@
  *   --dry-run                   Preview only, do not send transaction
  *
  * Env fallbacks:
- *   ADMIN_PROGRAM_KEYPAIR          for --keypair
+ *   ADMIN_PROGRAM_PRIVATE_KEY          for --keypair
  *   SOLANA_RPC_URL              for --rpc-url
  */
 import { type Connection, type Keypair, PublicKey } from "@solana/web3.js";
@@ -108,7 +108,7 @@ function printUsage(): never {
       "  --program-id <pubkey>       Vault program ID override\n" +
       "  --dry-run                   Preview only, no transaction\n" +
       "\nEnv fallbacks:\n" +
-      "  ADMIN_PROGRAM_KEYPAIR          for --keypair\n" +
+      "  ADMIN_PROGRAM_PRIVATE_KEY          for --keypair\n" +
       "  SOLANA_RPC_URL              for --rpc-url\n",
   );
   process.exit(1);
@@ -195,7 +195,7 @@ function parseVaultArgs(argv: readonly string[]): VaultArgs {
 
   const dryRun = hasFlag(argv, "--dry-run");
   const connection = resolveConnection(argv);
-  const signer = resolveKeypair(argv, "--keypair", "ADMIN_PROGRAM_KEYPAIR");
+  const signer = resolveKeypair(argv, "--keypair", "ADMIN_PROGRAM_PRIVATE_KEY");
   const programId = resolveProgramId(argv, PublicKey) ?? VAULT_PROGRAM_ID;
 
   return {
