@@ -274,7 +274,7 @@ Create a `.env` file in the root directory (see `.env.example`). The native app 
 | `EXPO_PUBLIC_SOLANA_NETWORK` | No | `mainnet` or `devnet` (default: mainnet) — native app |
 | `EXPO_PUBLIC_SOLANA_RPC_URL` | No | Solana RPC endpoint (native app) |
 | `EXPO_PUBLIC_USDC_MINT` | No | Override USDC mint address (native app) |
-| `KEEPER_PRIVATE_KEY` | No | Keeper wallet for vault operations |
+| `ADMIN_PROGRAM_KEYPAIR` | No | Factory owner + vault admin keypair for on-chain operations |
 | `PROGRAM_AUTHORITY_PRIVATE_KEY` | No | Program authority keypair for factory init (remove after) |
 | `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |
 | `JUPITER_API_KEY` | No | Jupiter swap API key |

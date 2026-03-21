@@ -4,7 +4,7 @@
  * Usage:
  *   # Step 1: Propose new admin
  *   pnpm transfer-vault-admin propose \
- *     --keypair <admin-private-key>  \  # or KEEPER_PRIVATE_KEY env
+ *     --keypair <admin-private-key>  \  # or ADMIN_PROGRAM_KEYPAIR env
  *     --vault-name <name>            \
  *     --new-admin <pubkey>           \
  *     --rpc-url <url>                \  # or SOLANA_RPC_URL env
@@ -46,7 +46,7 @@ function printUsage(): never {
       "  --rpc-url <url>       Solana RPC URL\n" +
       "  --program-id <pubkey> Vault program ID override\n" +
       "\nEnv fallbacks:\n" +
-      "  KEEPER_PRIVATE_KEY     for --keypair (propose)\n" +
+      "  ADMIN_PROGRAM_KEYPAIR     for --keypair (propose)\n" +
       "  NEW_ADMIN_PRIVATE_KEY  for --keypair (accept)\n" +
       "  SOLANA_RPC_URL         for --rpc-url\n",
   );
@@ -79,7 +79,7 @@ async function main(): Promise<void> {
   const state = deserializeVaultState(Buffer.from(accountInfo.data));
 
   if (step === "propose") {
-    const signer = resolveKeypair(args, "--keypair", "KEEPER_PRIVATE_KEY");
+    const signer = resolveKeypair(args, "--keypair", "ADMIN_PROGRAM_KEYPAIR");
 
     const newAdminRaw = parseFlag(args, "--new-admin");
     if (!newAdminRaw) {

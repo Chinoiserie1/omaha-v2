@@ -91,7 +91,7 @@ export function keypairFromRaw(raw: string): Keypair {
  * Resolve a keypair from CLI flag, falling back to env var.
  * @param args  - process.argv.slice(2)
  * @param flag  - CLI flag name (e.g. "--keypair")
- * @param envName - env var fallback (e.g. "KEEPER_PRIVATE_KEY")
+ * @param envName - env var fallback (e.g. "ADMIN_PROGRAM_KEYPAIR")
  */
 export function resolveKeypair(
   args: readonly string[],
