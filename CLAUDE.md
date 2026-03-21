@@ -14,7 +14,8 @@ This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native
 
 ### Deployment
 
-- [Vault Devnet Deployment](./docs/deployment/VAULT-DEVNET.md) — Keypair inventory, step-by-step deploy commands, and troubleshooting
+- [Vault Mainnet Deployment](./docs/deployment/VAULT-MAINNET.md) — Mainnet addresses, keypair inventory, and operational commands
+- [Vault Devnet Deployment](./docs/deployment/VAULT-DEVNET.md) — Devnet keypair inventory, step-by-step deploy commands, and troubleshooting
 
 ### Apps
 
@@ -274,7 +275,7 @@ Create a `.env` file in the root directory (see `.env.example`). The native app 
 | `EXPO_PUBLIC_SOLANA_RPC_URL` | No | Solana RPC endpoint (native app) |
 | `EXPO_PUBLIC_USDC_MINT` | No | Override USDC mint address (native app) |
 | `KEEPER_PRIVATE_KEY` | No | Keeper wallet for vault operations |
-| `PROGRAM_AUTHORITY_KEYPAIR` | No | Program authority keypair for factory init |
+| `PROGRAM_AUTHORITY_PRIVATE_KEY` | No | Program authority keypair for factory init (remove after) |
 | `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |
 | `JUPITER_API_KEY` | No | Jupiter swap API key |
 | `BIRDEYE_API_KEY` | No | Birdeye price data for backtesting |

@@ -232,6 +232,16 @@ See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentati
 
 The Omaha Vault program is a tokenized vault built with Pinocchio (raw Rust, no Anchor) and deployed on Solana. It manages on-chain allocations based on Quant strategies using Token 2022.
 
+### Deployed Program (Mainnet)
+
+| Property          | Value                                            |
+| ----------------- | ------------------------------------------------ |
+| Program ID        | `2jPr4HDqnzyHdEvwxJxq7NAmt67mEnmHyxhHtV1Cwz8C` |
+| Factory PDA       | `34Eu1r4mQN7E3u5mB5GZ3wrBCLfiAtfFX2hay6n1hS4n` |
+| Upgrade Authority | `FZdLXHrkoFVyLcsmQ88TS3w9XKqkku1jFhpMaLkrNCqw` |
+| Program Authority | `FZdLXHrkoFVyLcsmQ88TS3w9XKqkku1jFhpMaLkrNCqw` |
+| Admin             | `GhRsrhp57iD3SSa3MzjCnxKSLiEUa8UFmMpC4VtwcKU4` |
+
 ### Deployed Program (Devnet)
 
 | Property          | Value                                            |
@@ -243,17 +253,15 @@ The Omaha Vault program is a tokenized vault built with Pinocchio (raw Rust, no 
 
 ### Keypairs
 
-The program uses 4 distinct keypairs — each serves a different purpose:
-
 | Keypair | Purpose | Location |
 |---------|---------|----------|
-| **Deploy Wallet** | Pays for deployment, upgrade authority for the program binary | `~/.config/solana/id.json` |
-| **Program Keypair** | Derives the on-chain program address (Program ID) | `target/deploy/omaha_vault-keypair.json` |
-| **Program Authority** | Must co-sign `Initialize` instructions (vault creation gate) | `apps/programs/vault/program-authority-keypair.json` |
-| **Keeper** | Signs vault operations at runtime (rebalance, fees) | `KEEPER_PRIVATE_KEY` env var |
+| **Program Authority** | Upgrade authority + factory init co-signer (cold storage) | `apps/programs/vault/program-authority-mainnet-keypair.json` |
+| **Admin** | Factory owner, vault admin, runtime operations | `KEEPER_PRIVATE_KEY` env var |
+| **Program Keypair** | Derives the on-chain program address (Program ID) | `target/deploy/omaha_vault_mainnet-keypair.json` |
 | **Fee Payer** | Pays gas for Fund SOL flow (optional) | `FEE_PAYER_PRIVATE_KEY` env var |
 
-> See [docs/deployment/VAULT-DEVNET.md](docs/deployment/VAULT-DEVNET.md) for the full deployment guide with step-by-step instructions, keypair details, and troubleshooting.
+> See [docs/deployment/VAULT-MAINNET.md](docs/deployment/VAULT-MAINNET.md) for mainnet addresses and operational commands.
+> See [docs/deployment/VAULT-DEVNET.md](docs/deployment/VAULT-DEVNET.md) for devnet deployment guide.
 
 ## Environment Variables
 
@@ -289,7 +297,7 @@ ANTHROPIC_API_KEY=
 # Solana (optional)
 SOLANA_RPC_URL=
 KEEPER_PRIVATE_KEY=
-PROGRAM_AUTHORITY_KEYPAIR=<base58_keypair>
+PROGRAM_AUTHORITY_PRIVATE_KEY=<base58_keypair>  # Only for factory init, remove after
 
 # Jupiter
 JUPITER_API_KEY=

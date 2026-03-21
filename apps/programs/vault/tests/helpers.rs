@@ -25,14 +25,14 @@ pub const CLOCK_SYSVAR_ID: Pubkey =
 
 /// The program ID matching `declare_id!` in lib.rs.
 pub fn program_id() -> Pubkey {
-    "5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR"
+    "2jPr4HDqnzyHdEvwxJxq7NAmt67mEnmHyxhHtV1Cwz8C"
         .parse()
         .unwrap()
 }
 
 /// The program authority matching `PROGRAM_AUTHORITY` in lib.rs.
 pub fn program_authority() -> Pubkey {
-    "9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf"
+    "FZdLXHrkoFVyLcsmQ88TS3w9XKqkku1jFhpMaLkrNCqw"
         .parse()
         .unwrap()
 }

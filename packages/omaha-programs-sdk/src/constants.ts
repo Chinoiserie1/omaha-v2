@@ -1,16 +1,15 @@
 import { PublicKey } from "@solana/web3.js";
 
 // ── Program ID ──────────────────────────────────────────────────────────────
-// TODO: Replace with actual deployed program address for mainnet
 export const VAULT_PROGRAM_ID = new PublicKey(
-  "5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR",
+  "2jPr4HDqnzyHdEvwxJxq7NAmt67mEnmHyxhHtV1Cwz8C",
 );
 
 // ── Program Authority ───────────────────────────────────────────────────────
-// TODO: Replace with actual program authority keypair before mainnet deploy
-// Only this pubkey can co-sign Initialize instructions to create new vaults.
+// Only this pubkey can co-sign InitializeFactory. After factory creation,
+// vault creation is gated by factory admins/owner instead.
 export const PROGRAM_AUTHORITY = new PublicKey(
-  "9hLNRfyFw32aU6xyKZHSUSJt3N2QC9oen8HDqPyJ3Ryf",
+  "FZdLXHrkoFVyLcsmQ88TS3w9XKqkku1jFhpMaLkrNCqw",
 );
 
 // ── Instruction Discriminators (0x00–0x0C): Vault Operations ─────────────────

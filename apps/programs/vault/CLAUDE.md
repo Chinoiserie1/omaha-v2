@@ -32,7 +32,7 @@ The program has **two domains**: a singleton **Factory** (program-level governan
 3. **`no_std` entrypoint** — must use `program_entrypoint!()` + `default_allocator!()` + `nostd_panic_handler!()`. NOT `entrypoint!()` which requires `std`.
 4. **`Signer` and `Seed`** live in `pinocchio::instruction`, NOT `pinocchio::cpi`.
 5. **State is zero-copy** — cast directly from account data via bytemuck. Never serialize/deserialize.
-6. **Replace program ID before mainnet deploy** — current `declare_id!` uses a dev keypair.
+6. **Program IDs** — Mainnet: `2jPr4HDqnzyHdEvwxJxq7NAmt67mEnmHyxhHtV1Cwz8C`. Devnet: `5yY17NisfXbyjanUEBxrdKsSCuRiWcjzEt6LXGZqDiVR`. The code currently has mainnet addresses in `declare_id!` and `PROGRAM_AUTHORITY`. See [VAULT-MAINNET.md](../../../docs/deployment/VAULT-MAINNET.md) for full address inventory.
 7. **`PROGRAM_AUTHORITY` constant** — hardcoded pubkey in `lib.rs` used **only** for `InitializeFactory`. After factory creation, vault creation is gated by factory admins/owner instead.
 8. **Zero pubkey validation** — `AddOperator` and `AddFactoryAdmin` reject the zero pubkey (`ZeroPubkey` error 0x119).
 9. **Clock via sysvar** — `CollectFees` reads the current timestamp from the Clock sysvar (`src/sysvar.rs`), not from caller-supplied data.
