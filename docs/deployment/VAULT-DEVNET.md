@@ -267,7 +267,7 @@ file target/deploy/omaha_vault.so
 pnpm program:test
 ```
 
-All 173 tests should pass. Never deploy untested code. Recent additions include USDC balance pre-flight checks in `WithdrawWithPrice` and `FulfillWithdraw` instructions.
+All 201 tests should pass. Never deploy untested code. Includes 27 multi-interaction tests covering real user flows (sequential deposits/withdrawals, multi-vault, full cycles, fees, pause, cancel, depletion).
 
 ### Step 5: Deploy to Devnet
 
@@ -557,4 +557,4 @@ Error: custom program error: 0x11c (UnauthorizedVaultCreator)
 | Data Length        | ~97KB                                              |
 | Cluster           | Devnet (`https://api.devnet.solana.com`)           |
 | Last Upgrade      | 2026-03-16                                         |
-| Features          | 173 tests, USDC balance pre-flight checks (WithdrawWithPrice, FulfillWithdraw), instant vs queued withdrawal decision logic |
+| Features          | 201 tests (incl. 27 multi-interaction), USDC balance pre-flight checks (WithdrawWithPrice, FulfillWithdraw), instant vs queued withdrawal decision logic |

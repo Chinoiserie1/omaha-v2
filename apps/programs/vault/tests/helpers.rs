@@ -448,6 +448,16 @@ pub fn unpause_factory_data() -> Vec<u8> {
     vec![0x13]
 }
 
+/// Build CancelDeposit instruction data: [disc=0x18].
+pub fn cancel_deposit_data() -> Vec<u8> {
+    vec![0x18]
+}
+
+/// Build CancelWithdraw instruction data: [disc=0x19].
+pub fn cancel_withdraw_data() -> Vec<u8> {
+    vec![0x19]
+}
+
 /// Set is_paused flag on raw vault state data (offset 13).
 pub fn set_vault_paused(data: &mut [u8], paused: bool) {
     data[13] = if paused { 1 } else { 0 };
@@ -655,4 +665,25 @@ pub fn create_clock_account(unix_timestamp: i64) -> Account {
         executable: false,
         rent_epoch: 0,
     }
+}
+
+// ── Result Extraction Helper ──────────────────────────────────────
+
+/// Extract an account from `InstructionResult::resulting_accounts` by pubkey.
+pub fn extract_account(
+    result: &mollusk_svm::result::InstructionResult,
+    key: &Pubkey,
+) -> Account {
+    result
+        .resulting_accounts
+        .iter()
+        .find(|(k, _)| k == key)
+        .unwrap()
+        .1
+        .clone()
+}
+
+/// Read a u64 from a byte slice at the given offset (little-endian).
+pub fn read_u64(data: &[u8], offset: usize) -> u64 {
+    u64::from_le_bytes(data[offset..offset + 8].try_into().unwrap())
 }

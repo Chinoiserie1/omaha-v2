@@ -108,7 +108,9 @@ apps/programs/vault/
     ├── update_fees.rs          # Integration tests for UpdateFees instruction
     ├── collect_fees.rs         # Integration tests for CollectFees instruction
     ├── routing.rs              # Integration tests for instruction discriminator routing
-    └── share_math.rs           # Unit tests for share price math
+    ├── share_math.rs           # Unit tests for share price math
+    ├── multi_interaction.rs    # Multi-step deposit integration tests (14 tests: sequential deposits, multi-vault, full cycle, fees, pause, cancel)
+    └── multi_interaction_withdraw.rs  # Multi-step withdraw integration tests (13 tests: sequential withdrawals, multi-vault, partial, price changes, fees, pause, cancel, depletion)
 ```
 
 ## Two-Domain Architecture
@@ -344,10 +346,10 @@ Factory management instructions (0x0D–0x13) follow a separate access matrix: `
 ```bash
 # From monorepo root:
 pnpm program:build    # cargo build-sbf with bpf-entrypoint feature
-pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (173 tests total)
+pnpm program:test     # SBF_OUT_DIR=$PWD/target/deploy cargo test (201 tests total)
 ```
 
-The test suite has **173 tests** (up from 164): unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`. Recent additions include USDC balance pre-flight checks in `WithdrawWithPrice` and `FulfillWithdraw` instructions.
+The test suite has **201 tests** (60 unit + 141 integration): unit tests (state, fees, share math, error codes) and integration tests via `mollusk-svm`. Includes 27 multi-interaction tests covering sequential deposits/withdrawals, multi-vault flows, full cycles, price change scenarios, fee interactions, pause/unpause flows, cancel+retry, vault depletion, and mixed deposit→withdraw→deposit flows.
 
 Integration tests load the compiled BPF binary from `target/deploy/`. Always run `pnpm program:build` before `pnpm program:test` so mollusk can find the `.so` binary.
 

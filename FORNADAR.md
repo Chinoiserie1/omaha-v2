@@ -206,7 +206,7 @@ Three interrelated bugs:
 - **Zero pubkey validation**: AddOperator and AddFactoryAdmin reject the zero address
 - **Pause checks**: All vault-mutating instructions check is_paused flag
 
-**Scope**: 26 instructions (was 13), 29 error codes (was 16), 154 tests (was 148).
+**Scope**: 26 instructions (was 13), 29 error codes (was 16), 201 tests (60 unit + 141 integration, incl. 27 multi-interaction tests covering sequential deposits/withdrawals, multi-vault flows, full cycles, price changes, fee interactions, pause/unpause, cancel+retry, vault depletion, and mixed flows).
 
 **SDK sync (Mar 2026)**: Updated `packages/omaha-programs-sdk` to match the new program structure — all 26 instruction builders, factory/vault PDA helpers, state deserializers (FactoryState 400B, VaultState 584B, PendingDeposit/Withdraw 88B), error codes, and fee validation. Added `create-vault-onchain` CLI script (`apps/back/src/scripts/create-vault-onchain.ts`) that exposes every on-chain parameter: initialize params (name, symbol, uri, base-mint, share-decimals, share-price), fee configuration (entry/exit/management/performance BPS + receiver), repeatable operator flags, dry-run mode, and devnet-default RPC. All instructions (Initialize + UpdateFees + AddOperator) are bundled into a single atomic transaction with pre-flight checks (factory exists, not paused, vault name not taken).
 
