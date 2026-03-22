@@ -1,9 +1,2 @@
-export interface TradeableAsset {
-  id: string;
-  symbol: string;
-  name: string;
-  mint: string;
-  decimals: number;
-  logoUri: string | null;
-  isActive: boolean;
-}
+// TradeableAsset has been merged into the Token model in @repo/database.
+// Import Token from @repo/database instead.

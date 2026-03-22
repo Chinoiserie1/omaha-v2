@@ -27,7 +27,7 @@ export async function fetchAndStorePrices(
 ): Promise<number> {
   const asset = await findAssetBySymbol(symbol);
   if (!asset) {
-    logger.warn({ symbol }, "Asset not found in TradeableAsset, skipping price fetch");
+    logger.warn({ symbol }, "Token not found, skipping price fetch");
     return 0;
   }
 

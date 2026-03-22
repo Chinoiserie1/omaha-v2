@@ -214,7 +214,7 @@ async function fetchBirdeyeTokens(): Promise<BirdeyeToken[]> {
 }
 
 async function loadVerifiedMints(): Promise<Set<string>> {
-  const assets = await prisma.tradeableAsset.findMany({
+  const assets = await prisma.token.findMany({
     where: { isActive: true },
     select: { mint: true },
   });
@@ -237,7 +237,7 @@ async function sync(): Promise<void> {
   console.log(`Fetched ${birdeyeTokens.length} tokens from Birdeye`);
 
   // Step 3: Load Jupiter verified mints from DB
-  console.log("Loading verified mints from TradeableAsset...");
+  console.log("Loading verified mints from Token...");
   const verifiedMints = await loadVerifiedMints();
   console.log(`Loaded ${verifiedMints.size} verified mints`);
 

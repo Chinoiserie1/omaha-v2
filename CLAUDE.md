@@ -212,7 +212,7 @@ pnpm program:deploy            # Deploy vault program to devnet
 pnpm seed:kols                 # Seed Quant (KOL) data
 pnpm create-vault              # Create vault in database
 pnpm seed-vaults               # Seed vault data
-pnpm sync-tokens               # Sync Jupiter verified tokens to TradeableAsset
+pnpm sync-tokens               # Sync Jupiter verified tokens to Token
 pnpm sync-aliases              # Sync asset aliases (crypto + stock mappings)
 pnpm seed-stocks               # Seed xStock + Ondo GM tokenized stock tokens
 pnpm sync-icons                # Sync token icon URLs from Jupiter

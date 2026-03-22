@@ -14,7 +14,7 @@ import * as classificationRepo from "../store/classification.repository.js";
 import { findActiveQuants, findQuantById } from "../store/quant.repository.js";
 import { buildGlobalKnowledgeContext } from "../data/knowledge/index.js";
 import { mergeAssetGroupAllocations } from "../data/knowledge/asset-groups.js";
-import { getTradeableAssetsMap } from "./jupiter.service.js";
+import { getActiveTokensMap } from "./jupiter.service.js";
 import { getCuratedAssetSymbols } from "../data/curated-assets.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
@@ -441,7 +441,7 @@ async function generateRetroactiveSnapshots(
   allRelevant: ClassificationWithTweet[],
   knowledgeContext?: string,
 ): Promise<boolean> {
-  const tradeableAssets = await getTradeableAssetsMap();
+  const tradeableAssets = await getActiveTokensMap();
 
   // Sort by tweet posted date (not classifiedAt which is bulk classification time)
   const sorted = [...allRelevant].sort(
@@ -549,7 +549,7 @@ async function generateRetroactiveSnapshots(
 export async function synthesizeThesis(
   quantId: string,
 ): Promise<{ updated: boolean; snapshotId?: string }> {
-  const tradeableAssets = await getTradeableAssetsMap();
+  const tradeableAssets = await getActiveTokensMap();
 
   logger.info(
     { quantId, tradeableAssetsCount: tradeableAssets.size },

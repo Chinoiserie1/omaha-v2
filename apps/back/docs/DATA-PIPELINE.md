@@ -109,7 +109,7 @@ For each active KOL:
 
 **Cost**: ~$1.50/month (Haiku) for 10-17 KOLs at current tweet volume.
 
-**Tables read**: `ClassifiedTweet`, `PortfolioSnapshot`, `TradeableAsset`
+**Tables read**: `ClassifiedTweet`, `PortfolioSnapshot`, `Token`
 **Tables written**: `PortfolioSnapshot`, `TweetImpact`, `BacktestPeriod`
 
 ### Step 4: Vault Rebalancing (`CRON_REBALANCE_VAULTS`)
@@ -134,7 +134,7 @@ For each KOL-vault pair:
 
 **DRY_RUN mode**: Configurable — logs deltas without executing swaps.
 
-**Tables read**: `PortfolioSnapshot`, `KolVault`, `TradeableAsset`
+**Tables read**: `PortfolioSnapshot`, `Vault`, `Token`
 **Tables written**: `RebalanceLog`, `VaultHolding`
 
 ### Step 5: Price Fetching (`CRON_FETCH_PRICES`)
@@ -214,9 +214,9 @@ KolVault
   ├── kolId, vaultId, vaultAddress
   └── jupiterEnabled, glamPublicKey
 
-TradeableAsset
+Token
   ├── mint (Solana address), symbol, name, decimals
-  └── isActive, source (jupiter | manual)
+  └── isActive, isVault, logoUri
 
 TokenPrice
   ├── mint, priceUsd, timestamp

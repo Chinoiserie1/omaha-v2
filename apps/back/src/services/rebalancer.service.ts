@@ -5,7 +5,7 @@ import { USDC_MINT } from "../solana/config.js";
 import { getVaultHoldings } from "../solana/vault-holdings.js";
 // allowlistTokensOnVault removed — custom vault has no asset allowlist
 import { executeJupiterSwap } from "./jupiter-swap.service.js";
-import { getTradeableAssetsMap } from "./jupiter.service.js";
+import { getActiveTokensMap } from "./jupiter.service.js";
 import * as vaultRepo from "../store/vault.repository.js";
 import * as rebalanceRepo from "../store/rebalance.repository.js";
 import * as portfolioRepo from "../store/portfolio.repository.js";
@@ -162,8 +162,8 @@ export async function rebalanceVault(
     return null;
   }
 
-  // 6. Resolve mints for allocations from TradeableAsset DB
-  const assetsMap = await getTradeableAssetsMap();
+  // 6. Resolve mints for allocations from Token DB
+  const assetsMap = await getActiveTokensMap();
   const snapshotAllocs = snapshot.allocations as unknown as Allocation[];
   const allocations: Allocation[] = snapshotAllocs.map((a) => ({
     asset: a.asset,

@@ -277,7 +277,7 @@ async function seed(): Promise<void> {
   console.log("Seeding xStocks (63 tokens, decimals=8)...");
   let xCount = 0;
   for (const token of XSTOCKS) {
-    await prisma.tradeableAsset.upsert({
+    await prisma.token.upsert({
       where: { symbol: token.symbol },
       update: { name: token.name, mint: token.mint, decimals: 8, isActive: true },
       create: { symbol: token.symbol, name: token.name, mint: token.mint, decimals: 8 },
@@ -289,7 +289,7 @@ async function seed(): Promise<void> {
   console.log("Seeding Ondo GM tokens (203 tokens, decimals=9)...");
   let oCount = 0;
   for (const token of ONDO_TOKENS) {
-    await prisma.tradeableAsset.upsert({
+    await prisma.token.upsert({
       where: { symbol: token.symbol },
       update: { name: token.name, mint: token.mint, decimals: 9, isActive: true },
       create: { symbol: token.symbol, name: token.name, mint: token.mint, decimals: 9 },

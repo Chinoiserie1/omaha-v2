@@ -204,7 +204,7 @@ Entry point. Called before any period computation to guarantee price data exists
 
 Fetches daily OHLCV from Birdeye for a Solana token.
 
-1. Looks up the token's mint address via `findAssetBySymbol()` (from `TradeableAsset` table)
+1. Looks up the token's mint address via `findAssetBySymbol()` (from `Token` table)
 2. Calls `GET /defi/history_price` with `type=1D`, unix timestamps, and `X-API-KEY` header
 3. On 429 (rate limit): waits 5s and retries once
 4. Stores each day's close price via `priceRepo.upsertDailyPrice()`

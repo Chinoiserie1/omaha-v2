@@ -219,7 +219,7 @@ See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentati
 - **PortfolioSnapshot** — Generated portfolio allocations
 - **Vault** — Tokenized on-chain vault (Omaha Vault program) owned by a Quant
 - **RebalanceEvent** — Vault rebalancing history
-- **TradeableAsset** — Supported tokens (symbol, mint, decimals)
+- **Token** — Supported tokens (symbol, mint, decimals, isActive, isVault) with price history
 - **Follow** — User-to-user follow relationships
 - **TweetImpact** — Per-tweet contribution to portfolio changes
 - **HoldingsSnapshot** — Point-in-time vault holdings record

@@ -1,7 +1,7 @@
 import { prisma } from "@repo/database";
 import { PublicKey } from "@solana/web3.js";
 import { getVaultHoldings } from "../solana/vault-holdings.js";
-import { getTradeableAssetsMap } from "../services/jupiter.service.js";
+import { getActiveTokensMap } from "../services/jupiter.service.js";
 import { rebalanceVault } from "../services/rebalancer.service.js";
 
 const username = process.argv[2];
@@ -41,8 +41,8 @@ async function run(): Promise<void> {
   const statePda = new PublicKey(vault.statePda);
   const { holdings, totalEquityUsd } = await getVaultHoldings(statePda);
 
-  // Enrich symbols from TradeableAsset DB
-  const assetsMap = await getTradeableAssetsMap();
+  // Enrich symbols from Token DB
+  const assetsMap = await getActiveTokensMap();
   const mintToSymbol = new Map<string, string>();
   for (const [symbol, v] of assetsMap) mintToSymbol.set(v.mint, symbol);
 

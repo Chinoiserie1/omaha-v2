@@ -98,7 +98,7 @@ Tweet: "I'm very bullish on NVIDIA long term"
 `curated-assets.ts` is a **DERIVED file**, not an independent source of truth. It is the static materialization of:
 
 1. `asset-aliases.json` targets → defines the symbol universe
-2. `TradeableAsset` DB table → provides mint, decimals, name (currently synced from Jupiter verified list)
+2. `Token` DB table → provides mint, decimals, name (currently synced from Jupiter verified list)
 3. `STOCK_TICKERS` in `sync-asset-aliases.ts` → stock dedup (bestSuffix)
 4. `seed-stock-tokens.ts` → stock mint addresses
 
@@ -115,7 +115,7 @@ Do NOT hand-edit `curated-assets.ts` without checking against these sources.
 
 A crypto token belongs in `curated-assets.ts` if it meets ALL of:
 
-1. **Tradeable on Jupiter**: Must have a valid SPL token mint that Jupiter can route. Jupiter can swap ANY SPL token by mint address — the "verified list" is just what shows up in their default UI. Currently we track verified tokens in the `TradeableAsset` table via `sync-jupiter-tokens.ts`, but unverified tokens can also be traded if we have their mint address (e.g., from Birdeye, which returns addresses during alias sync).
+1. **Tradeable on Jupiter**: Must have a valid SPL token mint that Jupiter can route. Jupiter can swap ANY SPL token by mint address — the "verified list" is just what shows up in their default UI. Currently we track verified tokens in the `Token` table via `sync-jupiter-tokens.ts`, but unverified tokens can also be traded if we have their mint address (e.g., from Birdeye, which returns addresses during alias sync).
 2. **Has a canonical alias**: Must be a target in `asset-aliases.json`. This means it was either in Birdeye top 300 by volume, or was manually added because KOLs discuss it.
 
 That's it. If a token is tradeable on Jupiter AND is an alias target, it should be in the curated list. The Birdeye top 300 filter already excludes truly dead tokens, and manual additions reflect what KOLs actually talk about.
@@ -279,10 +279,10 @@ Per-KOL knowledge (investment style, contextual notes) lives in the `Kol.knowled
 ## Future Improvements
 
 ### `sync-curated-assets.ts` script
-Automate the sync. Read alias targets, query `TradeableAsset` for mints, apply stock dedup, and regenerate `curated-assets.ts`. Same pattern as `sync-asset-aliases.ts`. This eliminates the manual sync prompt and makes `curated-assets.ts` truly derived.
+Automate the sync. Read alias targets, query `Token` for mints, apply stock dedup, and regenerate `curated-assets.ts`. Same pattern as `sync-asset-aliases.ts`. This eliminates the manual sync prompt and makes `curated-assets.ts` truly derived.
 
 ### Expand mint sources beyond Jupiter verified list
-Currently `sync-jupiter-tokens.ts` only imports Jupiter's verified list into `TradeableAsset`. But Jupiter can route ANY SPL token by mint address. The alias sync already fetches Birdeye top 300 which returns mint addresses — store those mints too so tokens that are high-volume on Birdeye but not Jupiter-verified can still be traded.
+Currently `sync-jupiter-tokens.ts` only imports Jupiter's verified list into `Token`. But Jupiter can route ANY SPL token by mint address. The alias sync already fetches Birdeye top 300 which returns mint addresses — store those mints too so tokens that are high-volume on Birdeye but not Jupiter-verified can still be traded.
 
 ### Dynamic alias refresh via cron
 Run `sync-asset-aliases.ts` on a weekly cron instead of manually. Birdeye top 300 changes as volume shifts — new tokens enter, old ones drop out. Automated sync keeps the alias system and curated list current without manual intervention.

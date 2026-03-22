@@ -16,7 +16,7 @@ interface JupiterToken {
   icon?: string;
 }
 
-export async function syncTradeableAssets(): Promise<number> {
+export async function syncTokens(): Promise<number> {
   const response = await axios.get<JupiterToken[]>(JUPITER_TOKENS_URL, {
     headers: { "x-api-key": env.JUPITER_API_KEY },
   });
@@ -48,14 +48,14 @@ export async function syncTradeableAssets(): Promise<number> {
   return upserted;
 }
 
-export async function getTradeableAssetsMap(): Promise<
+export async function getActiveTokensMap(): Promise<
   Map<string, { mint: string; decimals: number }>
 > {
-  const assets = await assetRepo.findAllActiveAssets();
+  const tokens = await assetRepo.findAllActiveAssets();
   const map = new Map<string, { mint: string; decimals: number }>();
 
-  for (const asset of assets) {
-    map.set(asset.symbol, { mint: asset.mint, decimals: asset.decimals });
+  for (const token of tokens) {
+    map.set(token.symbol, { mint: token.mint, decimals: token.decimals });
   }
 
   return map;

@@ -32,7 +32,7 @@ async function sync(): Promise<void> {
 
   let upserted = 0;
   for (const token of tokens) {
-    await prisma.tradeableAsset.upsert({
+    await prisma.token.upsert({
       where: { symbol: token.symbol },
       update: {
         name: token.name,
@@ -53,7 +53,7 @@ async function sync(): Promise<void> {
   }
 
   // Ensure USDC always exists
-  await prisma.tradeableAsset.upsert({
+  await prisma.token.upsert({
     where: { symbol: "USDC" },
     update: { mint: USDC_MINT, isActive: true },
     create: {
@@ -64,7 +64,7 @@ async function sync(): Promise<void> {
     },
   });
 
-  console.log(`Upserted ${upserted} tradeable assets`);
+  console.log(`Upserted ${upserted} tokens`);
 }
 
 sync()
