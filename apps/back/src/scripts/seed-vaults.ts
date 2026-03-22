@@ -18,6 +18,7 @@ interface VaultSeed {
   disclosure: string;
   statePda: string;
   mintAddress: string | null;
+  shareMint?: string;
   dryRun: boolean;
   holdings?: HoldingsSeed;
 }
@@ -65,7 +66,7 @@ const VAULTS: VaultSeed[] = [
     quantUsername: "mert",
     hasTwitter: true,
     vaultName: "Mert",
-    vaultSymbol: "MERT",
+    vaultSymbol: "oMERT",
     about:
       "This vault mirrors the trading thesis of Mert, a well-known voice in the Solana ecosystem. The AI agent analyzes Mert's public posts to extract asset mentions and conviction levels, then constructs a portfolio of Solana-native tokens weighted by signal strength. The vault rebalances automatically when new positions or conviction changes are detected.",
     dataSource:
@@ -74,9 +75,10 @@ const VAULTS: VaultSeed[] = [
       "Vault performance is calculated from the share token price over time. The share price reflects the net asset value (NAV) of the vault divided by total shares outstanding. Price history is recorded at regular intervals and displayed as percentage change over the selected period.",
     disclosure:
       "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
-    statePda: "5jdMWiou4AVzev5HZgsuzpcU8jGW9wztenko5sDVpULX",
+    statePda: "GCpt7MoHjjgF13X8ekKw79rEvo1EhKPzBtQ6nXXQbp4N",
     mintAddress: null,
-    dryRun: true,
+    shareMint: "HGtLrjgTMmeFAnm1oD3BgoccvzKGbTo4g9AujvVnvsyJ",
+    dryRun: false,
     holdings: {
       holdings: [
         {
@@ -157,7 +159,11 @@ async function seedVaults(): Promise<void> {
         dataSource: v.dataSource,
         performanceCalc: v.performanceCalc,
         disclosure: v.disclosure,
+        statePda: v.statePda,
         mintAddress: v.mintAddress,
+        shareMint: v.shareMint ?? null,
+        vaultName: v.vaultName,
+        vaultSymbol: v.vaultSymbol,
         dryRun: v.dryRun,
       },
       create: {
@@ -168,6 +174,7 @@ async function seedVaults(): Promise<void> {
         disclosure: v.disclosure,
         statePda: v.statePda,
         mintAddress: v.mintAddress,
+        shareMint: v.shareMint ?? null,
         vaultName: v.vaultName,
         vaultSymbol: v.vaultSymbol,
         dryRun: v.dryRun,
