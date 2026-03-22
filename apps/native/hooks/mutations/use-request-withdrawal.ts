@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { SOLANA_RPC_URL } from "../../lib/solana";
+import { waitForConfirmation } from "../../lib/confirm-transaction";
 
 interface RequestWithdrawalParams {
   vaultId: string;
@@ -49,13 +50,8 @@ export function useRequestWithdrawal() {
         skipPreflight: true,
       });
 
-      // Step 2.5: Wait for on-chain confirmation before notifying backend
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash("confirmed");
-      await connection.confirmTransaction(
-        { signature, blockhash, lastValidBlockHeight },
-        "confirmed",
-      );
+      // Step 2.5: Poll signature status until confirmed (resilient to devnet drops)
+      await waitForConfirmation(connection, signature);
 
       // Step 3: Confirm the redeem tx with backend → REQUESTED → PROCESSING
       await apiClient.post(

@@ -14,15 +14,22 @@ import { getConnection, getFeePayer, USDC_MINT, USDC_DECIMALS } from "../solana/
 import { logger } from "../utils/logger.js";
 import type { FundSolPlan } from "./fund-sol.service.js";
 
+interface BuiltFundSolTx {
+  readonly transaction: string;
+  readonly blockhash: string;
+  readonly lastValidBlockHeight: number;
+}
+
 export async function buildFundSolTransaction(
   signerPublicKey: string,
   plan: FundSolPlan,
-): Promise<string> {
+): Promise<BuiltFundSolTx> {
   const signer = new PublicKey(signerPublicKey);
   const feePayer = getFeePayer();
   const connection = getConnection();
 
-  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash("confirmed");
 
   const transaction = new Transaction();
 
@@ -111,5 +118,5 @@ export async function buildFundSolTransaction(
     "Fund SOL transaction built",
   );
 
-  return serialized;
+  return { transaction: serialized, blockhash, lastValidBlockHeight };
 }

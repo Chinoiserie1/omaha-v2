@@ -16,13 +16,19 @@ import {
  * User signs alone; shares are escrowed for batch fulfillment.
  * Returns the base64-serialized transaction.
  */
+export interface BuiltTx {
+  readonly transaction: string;
+  readonly blockhash: string;
+  readonly lastValidBlockHeight: number;
+}
+
 export async function buildQueuedWithdrawTx(params: {
   readonly statePda: PublicKey;
   readonly shareMint: PublicKey;
   readonly shares: bigint;
   readonly signerPubkey: PublicKey;
   readonly connection: Connection;
-}): Promise<string> {
+}): Promise<BuiltTx> {
   const { statePda, shareMint, shares, signerPubkey, connection } = params;
 
   const withdrawerShareAta = await getAssociatedTokenAddress(
@@ -41,7 +47,8 @@ export async function buildQueuedWithdrawTx(params: {
     shares,
   });
 
-  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash("confirmed");
 
   const vaultShareAtaInfo = await connection.getAccountInfo(vaultShareAta);
 
@@ -64,7 +71,11 @@ export async function buildQueuedWithdrawTx(params: {
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = signerPubkey;
 
-  return transaction
-    .serialize({ requireAllSignatures: false })
-    .toString("base64");
+  return {
+    transaction: transaction
+      .serialize({ requireAllSignatures: false })
+      .toString("base64"),
+    blockhash,
+    lastValidBlockHeight,
+  };
 }

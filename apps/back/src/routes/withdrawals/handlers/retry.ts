@@ -91,21 +91,14 @@ export async function retryWithdrawal(
 
     const hasSufficientBalance = baseToReturn > 0n && vaultBalance >= baseToReturn;
 
-    let transaction: string;
-    let mode: "instant" | "queued";
-
-    if (hasSufficientBalance) {
-      transaction = await buildInstantWithdrawTx({
-        statePda, shareMint, baseTokenAta: vault.baseTokenAta,
-        shares, sharePrice, signerPubkey, connection,
-      });
-      mode = "instant";
-    } else {
-      transaction = await buildQueuedWithdrawTx({
-        statePda, shareMint, shares, signerPubkey, connection,
-      });
-      mode = "queued";
-    }
+    const [builtTx, mode] = hasSufficientBalance
+      ? [await buildInstantWithdrawTx({
+          statePda, shareMint, baseTokenAta: vault.baseTokenAta,
+          shares, sharePrice, signerPubkey, connection,
+        }), "instant" as const]
+      : [await buildQueuedWithdrawTx({
+          statePda, shareMint, shares, signerPubkey, connection,
+        }), "queued" as const];
 
     // Only transition to REQUESTED after tx is successfully built
     await withdrawalRepo.updateStatus(withdrawalId, "REQUESTED", {
@@ -118,7 +111,13 @@ export async function retryWithdrawal(
 
     return {
       success: true,
-      data: { transaction, withdrawalId, mode },
+      data: {
+        transaction: builtTx.transaction,
+        blockhash: builtTx.blockhash,
+        lastValidBlockHeight: builtTx.lastValidBlockHeight,
+        withdrawalId,
+        mode,
+      },
     };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

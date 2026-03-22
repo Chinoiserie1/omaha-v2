@@ -152,7 +152,8 @@ export async function subscribeToVault(
 
     transaction.add(depositIx);
 
-    const { blockhash } = await connection.getLatestBlockhash("confirmed");
+    const { blockhash, lastValidBlockHeight } =
+      await connection.getLatestBlockhash("confirmed");
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = signerPubkey;
 
@@ -173,7 +174,7 @@ export async function subscribeToVault(
       "DepositWithPrice transaction built (admin partial-signed)",
     );
 
-    return { transaction: serialized };
+    return { transaction: serialized, blockhash, lastValidBlockHeight };
   } catch (err) {
     logger.error({ err, vaultId: id }, "Failed to build deposit transaction");
     return reply.status(500).send({

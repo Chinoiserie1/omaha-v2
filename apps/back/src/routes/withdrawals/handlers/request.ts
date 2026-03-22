@@ -142,21 +142,14 @@ async function buildAndReturnTx(
 
     const hasSufficientBalance = baseToReturn > 0n && vaultBalance >= baseToReturn;
 
-    let transaction: string;
-    let mode: "instant" | "queued";
-
-    if (hasSufficientBalance) {
-      transaction = await buildInstantWithdrawTx({
-        statePda, shareMint, baseTokenAta: vault.baseTokenAta,
-        shares, sharePrice, signerPubkey, connection,
-      });
-      mode = "instant";
-    } else {
-      transaction = await buildQueuedWithdrawTx({
-        statePda, shareMint, shares, signerPubkey, connection,
-      });
-      mode = "queued";
-    }
+    const [builtTx, mode] = hasSufficientBalance
+      ? [await buildInstantWithdrawTx({
+          statePda, shareMint, baseTokenAta: vault.baseTokenAta,
+          shares, sharePrice, signerPubkey, connection,
+        }), "instant" as const]
+      : [await buildQueuedWithdrawTx({
+          statePda, shareMint, shares, signerPubkey, connection,
+        }), "queued" as const];
 
     logger.info(
       { withdrawalId: withdrawal.id, signer: signerPubkey.toBase58(), mode },
@@ -165,7 +158,13 @@ async function buildAndReturnTx(
 
     return reply.status(201).send({
       success: true,
-      data: { transaction, withdrawalId: withdrawal.id, mode },
+      data: {
+        transaction: builtTx.transaction,
+        blockhash: builtTx.blockhash,
+        lastValidBlockHeight: builtTx.lastValidBlockHeight,
+        withdrawalId: withdrawal.id,
+        mode,
+      },
     });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

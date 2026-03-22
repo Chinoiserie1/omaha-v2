@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { SOLANA_RPC_URL } from "../../lib/solana";
+import { waitForConfirmation } from "../../lib/confirm-transaction";
 import Toast from "react-native-toast-message";
 
 interface SubscribeParams {
@@ -58,13 +59,8 @@ export function useSubscribeVault() {
         skipPreflight: true,
       });
 
-      // Step 4: Wait for on-chain confirmation before notifying backend
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash("confirmed");
-      await connection.confirmTransaction(
-        { signature, blockhash, lastValidBlockHeight },
-        "confirmed",
-      );
+      // Step 4: Poll signature status until confirmed (resilient to devnet drops)
+      await waitForConfirmation(connection, signature);
 
       // Step 5: Confirm the deposit with backend → triggers rebalancing
       // On-chain deposit already succeeded, so catch backend errors separately

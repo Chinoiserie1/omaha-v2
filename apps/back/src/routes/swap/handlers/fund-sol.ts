@@ -37,11 +37,11 @@ export async function fundSol(request: FastifyRequest, reply: FastifyReply) {
     }
 
     const plan = await buildFundSolPlan(amountUsd, signerPublicKey);
-    const transaction = await buildFundSolTransaction(signerPublicKey, plan);
+    const builtTx = await buildFundSolTransaction(signerPublicKey, plan);
 
     return {
       success: true,
-      data: { transaction, quote: plan.quote },
+      data: { transaction: builtTx.transaction, quote: plan.quote },
     } satisfies ApiResponse<FundSolResponse>;
   } catch (err) {
     logger.error(

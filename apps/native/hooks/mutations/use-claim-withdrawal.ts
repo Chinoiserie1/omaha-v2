@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { SOLANA_RPC_URL } from "../../lib/solana";
+import { waitForConfirmation } from "../../lib/confirm-transaction";
 
 interface ClaimWithdrawalParams {
   withdrawalId: string;
@@ -50,23 +51,8 @@ export function useClaimWithdrawal() {
         skipPreflight: true,
       });
 
-      // Step 3.5: Wait for on-chain confirmation before notifying backend
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash("confirmed");
-      const confirmation = await connection.confirmTransaction(
-        {
-          signature: result.signature,
-          blockhash,
-          lastValidBlockHeight,
-        },
-        "confirmed",
-      );
-
-      if (confirmation.value.err) {
-        throw new Error(
-          `Claim transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`,
-        );
-      }
+      // Step 3.5: Poll signature status until confirmed (resilient to devnet drops)
+      await waitForConfirmation(connection, result.signature);
 
       // Step 4: Confirm claim on backend
       await apiClient.post(

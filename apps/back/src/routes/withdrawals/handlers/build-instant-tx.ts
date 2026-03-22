@@ -11,11 +11,12 @@ import {
   TOKEN_2022_PROGRAM_ID,
 } from "@repo/omaha-programs-sdk";
 import { getAdmin, USDC_MINT } from "../../../solana/config.js";
+import type { BuiltTx } from "./build-queued-tx.js";
 
 /**
  * Build a WithdrawWithPrice transaction (instant path).
  * Admin partial-signs; user signs on mobile.
- * Returns the base64-serialized transaction.
+ * Returns the base64-serialized transaction with blockhash info.
  */
 export async function buildInstantWithdrawTx(params: {
   readonly statePda: PublicKey;
@@ -25,7 +26,7 @@ export async function buildInstantWithdrawTx(params: {
   readonly sharePrice: bigint;
   readonly signerPubkey: PublicKey;
   readonly connection: Connection;
-}): Promise<string> {
+}): Promise<BuiltTx> {
   const { statePda, shareMint, baseTokenAta, shares, sharePrice, signerPubkey, connection } = params;
   const admin = getAdmin();
 
@@ -58,7 +59,8 @@ export async function buildInstantWithdrawTx(params: {
     sharesToBurn: shares,
   });
 
-  const { blockhash } = await connection.getLatestBlockhash("confirmed");
+  const { blockhash, lastValidBlockHeight } =
+    await connection.getLatestBlockhash("confirmed");
 
   const withdrawerBaseAtaInfo = await connection.getAccountInfo(withdrawerBaseAta);
 
@@ -83,7 +85,11 @@ export async function buildInstantWithdrawTx(params: {
 
   transaction.partialSign(admin);
 
-  return transaction
-    .serialize({ requireAllSignatures: false })
-    .toString("base64");
+  return {
+    transaction: transaction
+      .serialize({ requireAllSignatures: false })
+      .toString("base64"),
+    blockhash,
+    lastValidBlockHeight,
+  };
 }

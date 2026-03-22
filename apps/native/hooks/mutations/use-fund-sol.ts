@@ -4,6 +4,7 @@ import { Buffer } from "buffer";
 import { apiClient } from "../../lib/api-client";
 import { queryKeys } from "../../lib/query-keys";
 import { SOLANA_RPC_URL } from "../../lib/solana";
+import { waitForConfirmation } from "../../lib/confirm-transaction";
 import type { FundSolResponse } from "@repo/shared";
 
 interface FundSolParams {
@@ -45,13 +46,8 @@ export function useFundSol() {
         skipPreflight: true,
       });
 
-      // Step 4: Wait for on-chain confirmation
-      const { blockhash, lastValidBlockHeight } =
-        await connection.getLatestBlockhash("confirmed");
-      await connection.confirmTransaction(
-        { signature, blockhash, lastValidBlockHeight },
-        "confirmed",
-      );
+      // Step 4: Poll signature status until confirmed (resilient to devnet drops)
+      await waitForConfirmation(connection, signature);
 
       return { signature, signerPublicKey, quote };
     },
