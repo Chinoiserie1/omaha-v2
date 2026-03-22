@@ -120,11 +120,11 @@ User (1) ──── (0..1) Quant (1) ──── (0..1) Vault
 
 ### Asset Aliases + Tokenized Stocks (xStocks & Ondo GM) (Mar 2026)
 
-**Problem**: `asset-aliases.json` had only 89 entries mapping text to bare ticker symbols (e.g. `"aapl"` → `"AAPL"`). But `"AAPL"` didn't exist as a `TradeableAsset` — no Solana mint address, so the thesis service couldn't create tradeable allocations. The system could tag tweets but not act on stock mentions.
+**Problem**: `asset-aliases.json` had only 89 entries mapping text to bare ticker symbols (e.g. `"aapl"` → `"AAPL"`). But `"AAPL"` didn't exist as a `Token` — no Solana mint address, so the thesis service couldn't create tradeable allocations. The system could tag tweets but not act on stock mentions.
 
 **Fix** (3 scripts):
 
-1. **`seed-stock-tokens.ts`** — Seeds 63 xStock tokens (Backed Finance, decimals=8) and 203 Ondo GM tokens (decimals=9) into `TradeableAsset` with verified Solana mint addresses.
+1. **`seed-stock-tokens.ts`** — Seeds 63 xStock tokens (Backed Finance, decimals=8) and 203 Ondo GM tokens (decimals=9) into the `Token` table with verified Solana mint addresses.
 
 2. **`sync-asset-aliases.ts`** — Updated to resolve aliases to actual tokenized symbols:
    - For 53 overlapping tickers (both xStock and Ondo exist), Birdeye liquidity was checked for each pair. The bare ticker maps to whichever is more liquid. Result: 27 xStock wins, 26 Ondo wins.
@@ -132,7 +132,7 @@ User (1) ──── (0..1) Quant (1) ──── (0..1) Vault
    - Example: `"aapl"` / `"apple"` → `AAPLx` (xStock, $163k liq), `"msft"` / `"microsoft"` → `MSFTon` (Ondo, $53k liq)
    - Also fetches top 300 Solana tokens from Birdeye, filters via Jupiter verified mints
 
-3. **`sync-jupiter-tokens.ts`** — Existing script, populates `TradeableAsset` with Jupiter verified crypto tokens.
+3. **`sync-jupiter-tokens.ts`** — Existing script, populates the `Token` table with Jupiter verified crypto tokens.
 
 Result: 89 → 493 aliases. 265 stock tokens seeded. Run with `pnpm seed-stocks && pnpm sync-aliases`.
 
@@ -232,11 +232,11 @@ Three interrelated bugs:
 
 10. **Treat tweet threads as atomic units** — When classifying or synthesizing Quant signals, individual thread tweets lack context ("as I said above", "adding more here"). Concatenating the full thread before LLM analysis fixes misclassification and prevents over-weighting. The classifier fetches the full thread (including already-classified tweets) via `findThreadByConversationId` for maximum context, then applies the same classification to all unclassified tweets in the thread. The synthesizer groups by `conversationId` and emits one entry per thread so a multi-tweet thread doesn't inflate signal strength.
 
-11. **Filter external token lists through a verified source** — Birdeye's top 300 includes scam squatters and low-quality tokens. Cross-referencing mint addresses against Jupiter's verified token list (synced to `TradeableAsset`) filters out 80%+ of noise. Always validate external data against a trusted registry.
+11. **Filter external token lists through a verified source** — Birdeye's top 300 includes scam squatters and low-quality tokens. Cross-referencing mint addresses against Jupiter's verified token list (synced to the `Token` table) filters out 80%+ of noise. Always validate external data against a trusted registry.
 
 12. **Rate-limit API pagination with retry** — Birdeye's free tier rate-limits aggressively (429 on second page with 200ms delay). Use 1.5s delays between pages and exponential backoff retry (2s, 4s, 6s) on 429s.
 
-13. **Aliases must resolve to actual TradeableAsset symbols** — Mapping `"aapl"` → `"AAPL"` is useless if `AAPL` doesn't exist in `TradeableAsset` with a mint address. Aliases should resolve to the actual tradeable token symbol (e.g. `AAPLx` or `AAPLon`).
+13. **Aliases must resolve to actual Token symbols** — Mapping `"aapl"` → `"AAPL"` is useless if `AAPL` doesn't exist in the `Token` table with a mint address. Aliases should resolve to the actual tradeable token symbol (e.g. `AAPLx` or `AAPLon`).
 
 14. **When multiple tokenized versions exist, pick by liquidity** — For stocks available on both xStocks (Backed Finance) and Ondo GM, check on-chain liquidity via Birdeye to determine which is more tradeable. The split is roughly 50/50 (27 xStock wins vs 26 Ondo wins as of Mar 2026), not one-sided.
 
@@ -293,7 +293,7 @@ CRON_HEALTH_CHECK=0 */6 * * *    # default: every 6 hours
 3. Removed broken `"fartcoin "` alias (trailing space on key and value)
 4. Added 33 verified crypto tokens to `curated-assets.ts` with mints from `tradeable-assets.csv` (Phase 2)
 5. Skipped 67 non-winning stock suffixes, 14 bare stock redirects, 6 non-tokenized stocks (ARKK, DIA, VOO, NET, RBLX, SQ), BTC (have wrapped variants), WETH (same as ETH)
-6. 24 major L1/DeFi tokens (LINK, DOGE, ONDO, etc.) remain as alias targets but are NOT in curated — not in TradeableAsset DB and mints need external verification
+6. 24 major L1/DeFi tokens (LINK, DOGE, ONDO, etc.) remain as alias targets but are NOT in curated — not in the Token table and mints need external verification
 
 **Result**: 543 alias entries → 287 unique targets. 187 curated assets (110 crypto + 77 stocks). All invariants pass: every curated symbol has ≥1 alias, no duplicate stock tickers.
 

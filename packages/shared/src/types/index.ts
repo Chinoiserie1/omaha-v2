@@ -35,7 +35,6 @@ export * from "./kol.js";
 export * from "./tweet.js";
 export * from "./portfolio.js";
 export * from "./vault.js";
-export * from "./asset.js";
 export * from "./follow.js";
 export * from "./wallet.js";
 export * from "./tweet-impact.js";
