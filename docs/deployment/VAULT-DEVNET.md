@@ -145,7 +145,7 @@ solana-keygen pubkey apps/programs/vault/program-authority-keypair.json
 
 These keypairs are loaded from environment variables at backend startup. They are NOT involved in program deployment but are used at runtime for on-chain operations.
 
-#### 4a. Keeper Keypair
+#### 4a. Admin Keypair
 
 | Property    | Value                                                        |
 | ----------- | ------------------------------------------------------------ |
@@ -205,7 +205,7 @@ ADMIN_PROGRAM_PRIVATE_KEY='WpiYf...'
 │  Program Authority ──► co-signs InitializeFactory tx   │
 │  (factory creation)    (one-time, hardcoded in binary) │
 │                                                       │
-│  Keeper ─────────────► signs vault operations          │
+│  Admin ──────────────► signs vault operations           │
 │  (operator)            (rebalance, fees)              │
 │                                                       │
 │  Fee Payer ──────────► pays gas for Fund SOL flow     │

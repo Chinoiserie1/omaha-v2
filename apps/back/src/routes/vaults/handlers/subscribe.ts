@@ -10,7 +10,7 @@ import {
   createDepositWithPriceInstruction,
   TOKEN_2022_PROGRAM_ID,
 } from "@repo/omaha-programs-sdk";
-import { getConnection, getKeeper, USDC_MINT } from "../../../solana/config.js";
+import { getConnection, getAdmin, USDC_MINT } from "../../../solana/config.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { computeOnChainSharePrice } from "../../../services/share-price-onchain.service.js";
 import { logger } from "../../../utils/logger.js";
@@ -51,7 +51,7 @@ export async function subscribeToVault(
 
   try {
     const connection = getConnection();
-    const keeper = getKeeper();
+    const admin = getAdmin();
 
     // Compute share price (also returns vault state to avoid extra RPC call)
     const { sharePrice, vaultState } =
@@ -128,7 +128,7 @@ export async function subscribeToVault(
 
     // Build DepositWithPrice instruction
     const depositParams = {
-      admin: keeper.publicKey,
+      admin: admin.publicKey,
       depositor: signerPubkey,
       depositorBaseAta,
       vaultBaseAta,
@@ -156,8 +156,8 @@ export async function subscribeToVault(
     transaction.recentBlockhash = blockhash;
     transaction.feePayer = signerPubkey;
 
-    // Keeper partial-signs as vault admin
-    transaction.partialSign(keeper);
+    // Admin partial-signs the transaction
+    transaction.partialSign(admin);
 
     const serialized = transaction
       .serialize({ requireAllSignatures: false })
@@ -170,7 +170,7 @@ export async function subscribeToVault(
         amount,
         sharePrice: sharePrice.toString(),
       },
-      "DepositWithPrice transaction built (keeper partial-signed)",
+      "DepositWithPrice transaction built (admin partial-signed)",
     );
 
     return { transaction: serialized };

@@ -6,7 +6,7 @@ import {
   findShareMintPda,
   findVaultShareAta,
 } from "@repo/omaha-programs-sdk";
-import { getConnection, getKeeper, USDC_MINT } from "../solana/config.js";
+import { getConnection, getAdmin, USDC_MINT } from "../solana/config.js";
 import { computeSharePrice } from "./share-price.service.js";
 import * as withdrawalRepo from "../store/withdrawal.repository.js";
 import * as vaultRepo from "../store/vault.repository.js";
@@ -101,7 +101,7 @@ async function executeFulfillBatch(
   requests: Array<{ id: string; userId: string; amount: number }>,
   newSharePrice: bigint,
 ): Promise<string> {
-  const keeper = getKeeper();
+  const admin = getAdmin();
   const connection = getConnection();
 
   // Derive vault's base token ATA if not provided
@@ -137,7 +137,7 @@ async function executeFulfillBatch(
       );
 
       return createFulfillWithdrawInstruction({
-        admin: keeper.publicKey,
+        admin: admin.publicKey,
         vaultState: statePda,
         pendingWithdraw,
         vaultBaseAta: actualVaultBaseAta,
@@ -164,8 +164,8 @@ async function executeFulfillBatch(
     ...fulfillIxs,
   );
   transaction.recentBlockhash = blockhash;
-  transaction.feePayer = keeper.publicKey;
-  transaction.sign(keeper);
+  transaction.feePayer = admin.publicKey;
+  transaction.sign(admin);
 
   logger.info({ blockhash }, "Fulfill tx signed, sending to network");
 

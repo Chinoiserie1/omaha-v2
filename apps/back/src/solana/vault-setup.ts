@@ -4,7 +4,7 @@ import {
   findVaultStatePda,
   findShareMintPda,
 } from "@repo/omaha-programs-sdk";
-import { getKeeper, USDC_MINT } from "./config.js";
+import { getAdmin, USDC_MINT } from "./config.js";
 import { buildAndSendVersionedTx } from "./tx.js";
 import { logger } from "../utils/logger.js";
 import { getAssociatedTokenAddress } from "@solana/spl-token";
@@ -17,7 +17,7 @@ const INITIAL_SHARE_PRICE = 1_000_000n; // $1.00 in 6-decimal base token
 export async function createQuantVault(
   quantUsername: string
 ): Promise<{ txSig: string; statePda: string; shareMint: string; baseTokenAta: string }> {
-  const keeper = getKeeper();
+  const admin = getAdmin();
 
   const vaultName = `quant-${quantUsername}`;
   const vaultSymbol = `Q-${quantUsername.slice(0, 6).toUpperCase()}`;
@@ -38,7 +38,7 @@ export async function createQuantVault(
     {
       vaultName,
       vaultSymbol,
-      admin: keeper.publicKey.toBase58(),
+      admin: admin.publicKey.toBase58(),
       vaultState: vaultState.toBase58(),
       shareMint: shareMint.toBase58(),
     },
@@ -47,7 +47,7 @@ export async function createQuantVault(
 
   const initIx = createInitializeInstruction({
     factoryState,
-    admin: keeper.publicKey,
+    admin: admin.publicKey,
     vaultState,
     shareMint,
     baseMint: USDC_MINT,

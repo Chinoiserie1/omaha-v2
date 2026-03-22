@@ -60,13 +60,13 @@ function loadKeypair(): Keypair | null {
   return keypairFromEnv(envKey);
 }
 
-const _keeperKeypair = loadKeypair();
+const _adminKeypair = loadKeypair();
 
-export function getKeeper(): Keypair {
-  if (!_keeperKeypair) {
+export function getAdmin(): Keypair {
+  if (!_adminKeypair) {
     throw new Error("ADMIN_PROGRAM_PRIVATE_KEY is not set");
   }
-  return _keeperKeypair;
+  return _adminKeypair;
 }
 
 // ── Fee Payer Keypair ──────────────────────────────────────────

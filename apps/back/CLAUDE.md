@@ -216,7 +216,7 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | GET    | `/api/vaults/:id`                 | Vault details + performance + holdings          |
 | GET    | `/api/vaults/:id/performance`     | Vault returns (7d/30d/all-time)                 |
 | GET    | `/api/vaults/:id/holdings`        | Current vault token holdings                    |
-| POST   | `/api/vaults/:id/subscribe`       | Atomic deposit via DepositWithPrice (keeper co-signs, computes share price from TVL) |
+| POST   | `/api/vaults/:id/subscribe`       | Atomic deposit via DepositWithPrice (admin co-signs, computes share price from TVL) |
 | POST   | `/api/vaults/:id/investor-status` | Check user's investor status                    |
 | POST   | `/api/vaults/:id/redeem`          | Initiate redemption                             |
 

@@ -155,7 +155,7 @@ export function resolveProgramId(
 
 /**
  * Build, sign, send, and confirm a versioned transaction.
- * Standalone — does not depend on the global getKeeper()/getConnection() singletons.
+ * Standalone — does not depend on the global getAdmin()/getConnection() singletons.
  */
 export async function sendTransaction(
   connection: Connection,

@@ -8,7 +8,7 @@ import {
 import { createExecuteInstruction } from "@repo/omaha-programs-sdk";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
-import { getKeeper } from "../solana/config.js";
+import { getAdmin } from "../solana/config.js";
 import { buildAndSendVersionedTx } from "../solana/tx.js";
 
 const JUPITER_API_BASE = "https://api.jup.ag/swap/v1";
@@ -162,7 +162,7 @@ export async function executeJupiterSwap(
   amountLamports: string,
   slippageBps = 50
 ): Promise<string> {
-  const keeper = getKeeper();
+  const admin = getAdmin();
 
   // 1. Get quote
   const quote = await getJupiterQuote(
@@ -188,17 +188,17 @@ export async function executeJupiterSwap(
   // Setup instructions (e.g., create ATAs)
   for (const setupIx of swapIxs.setupInstructions) {
     const ix = deserializeInstruction(setupIx);
-    executeIxs.push(wrapInExecuteCpi(ix, vaultStatePda, keeper.publicKey));
+    executeIxs.push(wrapInExecuteCpi(ix, vaultStatePda, admin.publicKey));
   }
 
   // Main swap instruction
   const mainIx = deserializeInstruction(swapIxs.swapInstruction);
-  executeIxs.push(wrapInExecuteCpi(mainIx, vaultStatePda, keeper.publicKey));
+  executeIxs.push(wrapInExecuteCpi(mainIx, vaultStatePda, admin.publicKey));
 
   // Cleanup instruction (if any)
   if (swapIxs.cleanupInstruction) {
     const cleanupIx = deserializeInstruction(swapIxs.cleanupInstruction);
-    executeIxs.push(wrapInExecuteCpi(cleanupIx, vaultStatePda, keeper.publicKey));
+    executeIxs.push(wrapInExecuteCpi(cleanupIx, vaultStatePda, admin.publicKey));
   }
 
   // 5. Build, sign, and send via versioned tx with ALTs

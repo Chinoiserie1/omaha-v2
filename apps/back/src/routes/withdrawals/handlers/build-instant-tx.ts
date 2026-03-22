@@ -10,11 +10,11 @@ import {
   createWithdrawWithPriceInstruction,
   TOKEN_2022_PROGRAM_ID,
 } from "@repo/omaha-programs-sdk";
-import { getKeeper, USDC_MINT } from "../../../solana/config.js";
+import { getAdmin, USDC_MINT } from "../../../solana/config.js";
 
 /**
  * Build a WithdrawWithPrice transaction (instant path).
- * Keeper partial-signs as vault admin; user signs on mobile.
+ * Admin partial-signs; user signs on mobile.
  * Returns the base64-serialized transaction.
  */
 export async function buildInstantWithdrawTx(params: {
@@ -27,7 +27,7 @@ export async function buildInstantWithdrawTx(params: {
   readonly connection: Connection;
 }): Promise<string> {
   const { statePda, shareMint, baseTokenAta, shares, sharePrice, signerPubkey, connection } = params;
-  const keeper = getKeeper();
+  const admin = getAdmin();
 
   const withdrawerShareAta = getAssociatedTokenAddressSync(
     shareMint, signerPubkey, false,
@@ -47,7 +47,7 @@ export async function buildInstantWithdrawTx(params: {
   );
 
   const withdrawIx = createWithdrawWithPriceInstruction({
-    admin: keeper.publicKey,
+    admin: admin.publicKey,
     withdrawer: signerPubkey,
     withdrawerShareAta,
     shareMint,
@@ -81,7 +81,7 @@ export async function buildInstantWithdrawTx(params: {
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = signerPubkey;
 
-  transaction.partialSign(keeper);
+  transaction.partialSign(admin);
 
   return transaction
     .serialize({ requireAllSignatures: false })

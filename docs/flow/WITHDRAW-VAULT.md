@@ -151,7 +151,7 @@ REQUESTED → PROCESSING → CLAIMED
 │  processFulfillBatch(vaultId):                                │
 │  1. Get ALL PROCESSING withdrawals for this vault            │
 │  2. createFulfillWithdrawInstruction()                       │
-│  3. Sign with keeper keypair (vault manager)                 │
+│  3. Sign with admin keypair (vault manager)                  │
 │  4. Send tx to Solana, confirm on-chain                      │
 │  5. Base tokens transferred directly to each user wallet     │
 │  6. Update ALL statuses: PROCESSING → CLAIMED               │
@@ -193,8 +193,8 @@ Two separate Solana transactions across the flow:
 | --- | --- | --- |
 | 1 | `createFulfillWithdrawInstruction()` | Burn escrowed shares, transfer base tokens to user wallets |
 
-**Signers:** Keeper keypair only (vault manager, signs on backend)
-**Fee payer:** Keeper (platform pays)
+**Signers:** Admin keypair only (vault manager, signs on backend)
+**Fee payer:** Admin (platform pays)
 
 ## Batch Window & Delayed Fulfillment (Deep Dive)
 
@@ -363,7 +363,7 @@ For `FAILED` withdrawals:
 
 | Variable | Required | Default | Description |
 | --- | --- | --- | --- |
-| `FEE_PAYER_PRIVATE_KEY` | Yes | — | Keeper keypair for vault manager signing (fulfill step) |
+| `FEE_PAYER_PRIVATE_KEY` | Yes | — | Admin keypair for vault manager signing (fulfill step) |
 | `SOLANA_RPC_URL` | Yes | — | Solana RPC endpoint |
 | `REDIS_URL` | Yes | — | Redis connection for BullMQ job queue |
 | `WITHDRAWAL_BATCH_WINDOW_MS` | No | `600000` | Batch window for grouping fulfill jobs (10 min) |
@@ -395,7 +395,7 @@ These must be listed in `turbo.json` `globalEnv` for Turborepo to forward them.
 | `apps/back/src/queue/batch-utils.ts` | Batch ID, idempotency key, remaining window calc |
 | `apps/back/src/cron/recovery-withdrawals.ts` | Recovery cron for stuck withdrawals (queued mode) |
 | `apps/back/src/infra/websocket.ts` | WebSocket server for real-time updates |
-| `apps/back/src/solana/config.ts` | Keeper keypair loading, Solana constants |
+| `apps/back/src/solana/config.ts` | Admin keypair loading, Solana constants |
 
 ### Shared
 

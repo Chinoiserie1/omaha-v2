@@ -7,7 +7,7 @@ import {
   TransactionMessage,
   VersionedTransaction,
 } from "@solana/web3.js";
-import { getConnection, getKeeper } from "./config.js";
+import { getConnection, getAdmin } from "./config.js";
 import { logger } from "../utils/logger.js";
 
 /**
@@ -36,7 +36,7 @@ async function resolveAltAccounts(
 
 /**
  * Build a versioned transaction with compute budget and ALT support,
- * sign with keeper, send, and confirm.
+ * sign with admin, send, and confirm.
  */
 export async function buildAndSendVersionedTx(
   instructions: TransactionInstruction[],
@@ -45,7 +45,7 @@ export async function buildAndSendVersionedTx(
   additionalSigners: Keypair[] = [],
 ): Promise<string> {
   const connection = getConnection();
-  const keeper = getKeeper();
+  const admin = getAdmin();
 
   const allIxs = [
     ComputeBudgetProgram.setComputeUnitLimit({ units: 400_000 }),
@@ -57,13 +57,13 @@ export async function buildAndSendVersionedTx(
   const altAccounts = await resolveAltAccounts(altAddresses);
 
   const messageV0 = new TransactionMessage({
-    payerKey: keeper.publicKey,
+    payerKey: admin.publicKey,
     recentBlockhash: blockhash,
     instructions: allIxs,
   }).compileToV0Message(altAccounts.length > 0 ? altAccounts : undefined);
 
   const tx = new VersionedTransaction(messageV0);
-  tx.sign([keeper, ...additionalSigners]);
+  tx.sign([admin, ...additionalSigners]);
 
   logger.info({ description }, "Sending transaction...");
   const sig = await connection.sendTransaction(tx, { skipPreflight: false });
