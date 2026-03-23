@@ -101,27 +101,63 @@ model Vault {
   quantId            String    @unique
   quant              Quant     @relation(...)
   statePda           String    @unique
-  mintAddress        String?   @unique
   shareMint          String?   @unique
   baseTokenAta       String?
   vaultName          String
   vaultSymbol        String
   dryRun             Boolean   @default(true)
   isActive           Boolean   @default(true)
+  shareToken         Token?    # Relation to Token with isVault=true
   ...
 }
 ```
 
+**Note**: `shareMint` is the single source of truth for the vault's share token mint address. Use this field for price queries, portfolio calculations, and holdings snapshots. The optional `shareToken` relation links to the `Token` table for easy access to token metadata (symbol, decimals, logoUri, etc.). The reverse relation on `Token` is `vault: Vault?` with FK `vaultId: String?`.
+
+### Token
+
+Represents a tradeable asset (crypto, stock, etc.) with on-chain metadata.
+
+```prisma
+model Token {
+  id        String       @id @default(cuid())
+  name      String
+  symbol    String       @unique
+  decimals  Int
+  mint      String       @unique
+  logoUri   String?
+  isVault   Boolean      @default(false)
+  isActive  Boolean      @default(true)
+  vaultId   String?      @unique
+  vault     Vault?       @relation(fields: [vaultId], references: [id])
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  prices    TokenPrice[]
+}
+```
+
+**Fields**:
+- `isVault`: Boolean flag. When `true`, this Token represents a vault's share token. When `false`, it's a curated asset (crypto/stock/index/commodity).
+- `vaultId`: Optional FK to Vault. When set, this Token is the share token for that vault. Must be unique — each vault has at most one share token.
+- `vault`: Reverse relation for convenient access to vault metadata from the token.
+
+**Usage**:
+- Query vault share token: `await prisma.token.findUnique({ where: { vaultId } })`
+- Batch vault creation: Create `Token` with `isVault=true` and `vaultId` after on-chain vault initialization
+- Portfolio holdings: Resolve token metadata (decimals, logoUri) via token mint to compute display values
+
 ### Model Relationships
 
 ```
-User (1) ──── (0..1) Quant (1) ──── (0..1) Vault
+User (1) ──── (0..1) Quant (1) ──── (0..1) Vault ──── (1) Token (isVault=true)
                        │                      │
                        ├── Tweet[]            ├── RebalanceEvent[]
                        ├── PortfolioSnapshot[]├── HoldingsSnapshot[]
                        └── TweetImpact[]      ├── WithdrawalRequest[]
                                               └── VaultFavorite[]
 ```
+
+The Token model also holds curated assets (crypto/stock tokens) for portfolio allocations — those have `isVault=false` and `vaultId=null`.
 
 ### User Linking Flow
 

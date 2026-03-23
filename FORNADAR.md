@@ -406,3 +406,30 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 **Pagination limit**: RapidAPI degrades after ~43 pages (~1 tweet/page). This causes the 70-day gap in Mert's backfill.
 
 **Documented in**: `apps/back/docs/TWITTER-API.md`
+
+### Token-Vault Relation & shareMint Tracking Fix (Mar 2026)
+
+**Problem**: The vault module had two mint tracking fields (`Vault.mintAddress` and `Vault.shareMint`) but `mintAddress` was never populated. Throughout the codebase, references to `Vault.mintAddress` were accessing stale/null values while the correct share mint was in `Vault.shareMint`. This caused portfolio performance calculations, vault price queries, and holdings snapshots to fail when trying to resolve token information.
+
+**Root cause**: `mintAddress` was a legacy field that pre-dated the on-chain program update. The actual share token mint is stored on-chain as part of the vault state and synced to the database as `shareMint`, but the codebase hadn't been fully migrated to use it.
+
+**Fix** (database + service layer):
+
+1. **Schema**: Added one-to-one relation from `Token` to `Vault` via optional `vaultId` FK (unique) and reverse `shareToken Token?` on `Vault`. Migration `20260323000000_add_vault_relation_to_token` includes backfill for existing vaults.
+
+2. **All references switched from `Vault.mintAddress` to `Vault.shareMint`**:
+   - `vault-price.service.ts` — getPriceForVault() now uses shareMint
+   - `apps/back/src/routes/vaults/handlers/performance.ts` — vault equity calculation
+   - `apps/back/src/routes/vaults/handlers/list.ts` — vault listing price queries
+   - `apps/back/src/services/portfolio-snapshot.service.ts` — snapshot creation
+   - `apps/back/src/routes/portfolio/handlers/active-theses.ts` — portfolio aggregation
+   - `apps/back/src/routes/wallet/handlers/portfolio.ts` — wallet portfolio summary
+   - `apps/back/src/crons/snapshot-portfolios.cron.ts` — scheduled backtest trigger
+
+3. **Vault creation flow updated** — Both API handler and `seed-vaults` CLI script now create a `Token` record with `isVault=true` and `vaultId` immediately after vault creation on-chain. This establishes the bidirectional link.
+
+4. **Repository**: `upsertVaultToken()` helper now accepts optional `vaultId` parameter for establishing the relation.
+
+**Impact**: Vault performance, holdings snapshots, and portfolio calculations now consistently use the correct share mint. The Token-Vault link also enables efficient querying of vault metadata (symbol, decimals, logo) through the relation.
+
+**Files changed**: `packages/database/prisma/schema.prisma` (migration + schema), `apps/back/src/services/*.ts` (6+ service files), `apps/back/src/routes/**/handlers/*.ts` (4+ handler files), `apps/back/src/crons/*.cron.ts`

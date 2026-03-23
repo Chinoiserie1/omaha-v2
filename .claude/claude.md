@@ -6,7 +6,8 @@ Omaha is a Quant strategy platform for crypto, stocks and commodities that uses 
 
 - **User** — An app user (real or placeholder). Real users authenticate via Privy/Twitter. Placeholder users are created for Quants who haven't signed up yet.
 - **Quant** — A strategy profile linked to a User. Holds pipeline config (isActive, algoEnabled) and owns tweets, portfolio snapshots, and optionally a vault.
-- **Vault** — A tokenized vault on Solana (Omaha Vault program) owned by a Quant. Manages on-chain allocations based on the Quant's strategy.
+- **Vault** — A tokenized vault on Solana (Omaha Vault program) owned by a Quant. Manages on-chain allocations based on the Quant's strategy. Has a 1:1 relation to a `Token` (share token) via `Vault.shareToken`.
+- **Token** — A tradeable asset with on-chain mint address and metadata (decimals, logoUri). When `isVault=true`, it represents a vault's share token; otherwise it's a curated asset for portfolio allocations.
 
 ---
 
