@@ -29,7 +29,6 @@ function formatVaultSummary(
     quantId: vault.quantId,
     statePda: vault.statePda,
     shareMint,
-    mintAddress: shareMint,
     isActive: vault.isActive,
     quantAvatarUrl: vault.quant?.user?.profileImageUrl,
     performancePercent,

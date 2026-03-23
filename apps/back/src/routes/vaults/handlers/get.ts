@@ -37,7 +37,6 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     quantId: vault.quantId,
     statePda: vault.statePda,
     shareMint,
-    mintAddress: shareMint,
     isActive: vault.isActive,
     about: vault.about,
     dataSource: vault.dataSource,
