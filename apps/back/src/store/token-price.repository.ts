@@ -82,16 +82,23 @@ export async function upsertVaultToken(data: {
   symbol: string;
   decimals: number;
   mint: string;
+  vaultId?: string;
 }): Promise<Token> {
+  const { vaultId, ...tokenData } = data;
   return prisma.token.upsert({
-    where: { mint: data.mint },
+    where: { mint: tokenData.mint },
     update: {
-      name: data.name,
-      symbol: data.symbol,
-      decimals: data.decimals,
+      name: tokenData.name,
+      symbol: tokenData.symbol,
+      decimals: tokenData.decimals,
       isVault: true,
+      ...(vaultId ? { vaultId } : {}),
     },
-    create: { ...data, isVault: true },
+    create: {
+      ...tokenData,
+      isVault: true,
+      ...(vaultId ? { vaultId } : {}),
+    },
   });
 }
 

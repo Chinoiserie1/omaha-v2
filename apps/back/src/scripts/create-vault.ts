@@ -1,5 +1,6 @@
 import { prisma } from "@repo/database";
 import { createQuantVault } from "../solana/vault-setup.js";
+import { upsertVaultToken } from "../store/token-price.repository.js";
 
 function parseArgs(args: string[]): {
   quantId: string;
@@ -75,6 +76,15 @@ async function main(): Promise<void> {
       dryRun,
     },
   });
+
+  await upsertVaultToken({
+    name: vaultName,
+    symbol: vaultSymbol,
+    decimals: 9,
+    mint: shareMint,
+    vaultId: vault.id,
+  });
+  console.log(`  Token record created for share mint: ${shareMint}`);
 
   console.log(`  DB record created: ${vault.id}`);
   console.log(`\nVault setup complete for @${username}`);

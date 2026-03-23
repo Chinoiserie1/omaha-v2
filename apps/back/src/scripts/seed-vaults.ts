@@ -1,6 +1,7 @@
 import { prisma } from "@repo/database";
 import type { Prisma } from "@repo/database";
 import type { VaultHoldingWithPct } from "@repo/shared";
+import { upsertVaultToken } from "../store/token-price.repository.js";
 
 interface HoldingsSeed {
   holdings: VaultHoldingWithPct[];
@@ -183,6 +184,18 @@ async function seedVaults(): Promise<void> {
 
     const action = existing ? "Updated" : "Created";
     console.log(`  ${action} vault: ${vault.vaultName} (${vault.id})`);
+
+    // Create Token record for vaults with shareMint
+    if (v.shareMint) {
+      await upsertVaultToken({
+        name: v.vaultName,
+        symbol: v.vaultSymbol,
+        decimals: 9,
+        mint: v.shareMint,
+        vaultId: vault.id,
+      });
+      console.log(`  Upserted share mint token: ${v.shareMint}`);
+    }
 
     // Seed holdings snapshot
     if (v.holdings) {

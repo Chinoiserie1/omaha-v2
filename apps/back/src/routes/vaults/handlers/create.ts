@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import type { ApiResponse } from "@repo/shared";
 import { prisma } from "@repo/database";
 import { createQuantVault } from "../../../solana/vault-setup.js";
+import { upsertVaultToken } from "../../../store/token-price.repository.js";
 import { logger } from "../../../utils/logger.js";
 
 type CreateVaultRequest = FastifyRequest<{
@@ -62,6 +63,14 @@ export async function createVault(
         vaultSymbol,
         dryRun,
       },
+    });
+
+    await upsertVaultToken({
+      name: vaultName,
+      symbol: vaultSymbol,
+      decimals: 9,
+      mint: shareMint,
+      vaultId: vault.id,
     });
 
     logger.info({ vaultId: vault.id, statePda }, "Vault created via API");

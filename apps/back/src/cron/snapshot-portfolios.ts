@@ -34,8 +34,8 @@ export async function snapshotPortfolios(): Promise<void> {
 
   const vaultByMint = new Map(
     vaults
-      .filter((v) => v.mintAddress)
-      .map((v) => [v.mintAddress!, v]),
+      .filter((v) => v.shareMint)
+      .map((v) => [v.shareMint!, v]),
   );
 
   const results = await Promise.allSettled(

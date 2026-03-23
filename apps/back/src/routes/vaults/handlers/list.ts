@@ -65,15 +65,15 @@ export async function listVaults(
   });
 
   const mints = vaults
-    .map((v) => v.mintAddress)
+    .map((v) => v.shareMint)
     .filter((m): m is string => m !== null);
   const perfMap = await tokenPriceRepo.getVaultPerformanceByMints(mints);
 
   const items = await Promise.all(
     vaults.map(async (vault) => {
       const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
-      const perf = vault.mintAddress
-        ? (perfMap.get(vault.mintAddress) ?? null)
+      const perf = vault.shareMint
+        ? (perfMap.get(vault.shareMint) ?? null)
         : null;
       return formatVaultSummary(vault, portfolio, perf);
     })

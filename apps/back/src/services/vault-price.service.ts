@@ -6,7 +6,7 @@ import { computeSharePrice } from "./share-price.service.js";
 
 export async function fetchAndStoreVaultPrices(): Promise<void> {
   const vaults = await vaultRepo.findAllActiveVaults();
-  const eligible = vaults.filter((v) => v.mintAddress);
+  const eligible = vaults.filter((v) => v.shareMint);
 
   const results = await Promise.allSettled(
     eligible.map(async (vault) => {
@@ -14,7 +14,8 @@ export async function fetchAndStoreVaultPrices(): Promise<void> {
         name: vault.vaultName,
         symbol: vault.vaultSymbol,
         decimals: 9,
-        mint: vault.mintAddress!,
+        mint: vault.shareMint!,
+        vaultId: vault.id,
       });
 
       let result;
