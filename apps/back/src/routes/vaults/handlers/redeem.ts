@@ -53,9 +53,9 @@ export async function redeemFromVault(
   const shares = BigInt(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
 
   try {
-    // Derive share mint from vault or PDA
-    const shareMint = vault.shareMint
-      ? new PublicKey(vault.shareMint)
+    // Derive share mint from vault token or PDA
+    const shareMint = vault.shareToken?.mint
+      ? new PublicKey(vault.shareToken.mint)
       : findShareMintPda(statePda)[0];
 
     const withdrawerShareAta = await getAssociatedTokenAddress(

@@ -12,15 +12,15 @@ function formatVaultSummary(
     vaultName: string;
     quantId: string;
     statePda: string;
-    shareMint: string | null;
-    mintAddress: string | null;
     isActive: boolean;
     about: string;
+    shareToken?: { mint: string } | null;
     quant?: { user?: { twitterUsername: string | null; profileImageUrl: string | null } | null } | null;
   },
   portfolio: PortfolioSnapshot | null,
   performancePercent: number | null
 ) {
+  const shareMint = vault.shareToken?.mint ?? null;
   return {
     id: vault.id,
     name: vault.vaultName,
@@ -28,8 +28,8 @@ function formatVaultSummary(
     quantUsername: vault.quant?.user?.twitterUsername,
     quantId: vault.quantId,
     statePda: vault.statePda,
-    shareMint: vault.shareMint,
-    mintAddress: vault.mintAddress,
+    shareMint,
+    mintAddress: shareMint,
     isActive: vault.isActive,
     quantAvatarUrl: vault.quant?.user?.profileImageUrl,
     performancePercent,
@@ -65,15 +65,16 @@ export async function listVaults(
   });
 
   const mints = vaults
-    .map((v) => v.shareMint)
-    .filter((m): m is string => m !== null);
+    .map((v) => v.shareToken?.mint)
+    .filter((m): m is string => m !== undefined);
   const perfMap = await tokenPriceRepo.getVaultPerformanceByMints(mints);
 
   const items = await Promise.all(
     vaults.map(async (vault) => {
       const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
-      const perf = vault.shareMint
-        ? (perfMap.get(vault.shareMint) ?? null)
+      const mint = vault.shareToken?.mint;
+      const perf = mint
+        ? (perfMap.get(mint) ?? null)
         : null;
       return formatVaultSummary(vault, portfolio, perf);
     })

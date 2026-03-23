@@ -28,6 +28,7 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     }));
   }
 
+  const shareMint = vault.shareToken?.mint ?? null;
   return {
     id: vault.id,
     name: vault.vaultName,
@@ -35,8 +36,8 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
     quantUsername: vault.quant?.user?.twitterUsername,
     quantId: vault.quantId,
     statePda: vault.statePda,
-    shareMint: vault.shareMint,
-    mintAddress: vault.mintAddress,
+    shareMint,
+    mintAddress: shareMint,
     isActive: vault.isActive,
     about: vault.about,
     dataSource: vault.dataSource,

@@ -18,7 +18,7 @@ import { formatUsd } from "../../lib/format";
 
 interface VaultInvestmentCardProps {
   vaultId: string;
-  mintAddress: string | null;
+  shareMint: string | null;
   onInvest: () => void;
   onWithdraw: () => void;
 }
@@ -219,7 +219,7 @@ function QueuedWithdrawalState({
 
 export const VaultInvestmentCard = memo(function VaultInvestmentCard({
   vaultId,
-  mintAddress,
+  shareMint,
   onInvest,
   onWithdraw,
 }: VaultInvestmentCardProps) {
@@ -227,7 +227,7 @@ export const VaultInvestmentCard = memo(function VaultInvestmentCard({
   const wallet = wallets?.[0];
 
   const { balance, loading: balanceLoading, refetch: refetchBalance } =
-    useShareBalance(mintAddress, wallet?.address);
+    useShareBalance(shareMint, wallet?.address);
 
   // Refetch share balance when screen regains focus (after invest or withdraw)
   useFocusEffect(

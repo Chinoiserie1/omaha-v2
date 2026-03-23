@@ -5,10 +5,10 @@ import { getConnection, getTokenBalances } from "@repo/solana";
 import { SOLANA_RPC_URL } from "../../lib/solana";
 
 interface VaultPositionProps {
-  mintAddress: string;
+  shareMint: string;
 }
 
-export function VaultPosition({ mintAddress }: VaultPositionProps) {
+export function VaultPosition({ shareMint }: VaultPositionProps) {
   const { wallets } = useEmbeddedSolanaWallet();
   const wallet = wallets?.[0];
 
@@ -21,14 +21,14 @@ export function VaultPosition({ mintAddress }: VaultPositionProps) {
     try {
       const connection = getConnection(SOLANA_RPC_URL);
       const tokens = await getTokenBalances(connection, wallet.address);
-      const share = tokens.find((t) => t.mint === mintAddress);
+      const share = tokens.find((t) => t.mint === shareMint);
       setBalance(share?.uiAmount ?? 0);
     } catch {
       setBalance(null);
     } finally {
       setLoading(false);
     }
-  }, [wallet?.address, mintAddress]);
+  }, [wallet?.address, shareMint]);
 
   useEffect(() => {
     fetchBalance();

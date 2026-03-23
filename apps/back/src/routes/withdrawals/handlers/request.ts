@@ -120,7 +120,7 @@ export async function requestWithdrawal(
 
 async function buildAndReturnTx(
   reply: FastifyReply,
-  vault: { statePda: string; shareMint: string | null; baseTokenAta: string | null },
+  vault: { statePda: string; shareToken?: { mint: string } | null; baseTokenAta: string | null },
   amount: number,
   signerPubkey: PublicKey,
   withdrawal: { id: string },
@@ -131,8 +131,8 @@ async function buildAndReturnTx(
     const shares = BigInt(Math.round(amount * SHARE_TOKEN_MULTIPLIER));
 
     const { sharePrice, vaultState } = await computeOnChainSharePrice(statePda);
-    const shareMint = vault.shareMint
-      ? new PublicKey(vault.shareMint)
+    const shareMint = vault.shareToken?.mint
+      ? new PublicKey(vault.shareToken.mint)
       : vaultState.shareMint;
 
     const vaultBalance = await getVaultBaseBalance(statePda, vault.baseTokenAta);

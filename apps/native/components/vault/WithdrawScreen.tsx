@@ -19,14 +19,14 @@ const MAX_RETRIES = 3;
 interface WithdrawScreenProps {
   vaultId: string;
   vaultName: string;
-  mintAddress: string;
+  shareMint: string;
   onClose: () => void;
 }
 
 export function WithdrawScreen({
   vaultId,
   vaultName,
-  mintAddress,
+  shareMint,
   onClose,
 }: WithdrawScreenProps) {
   const { wallets } = useEmbeddedSolanaWallet();
@@ -38,7 +38,7 @@ export function WithdrawScreen({
   >();
 
   const { balance: shareBalance, loading: loadingBalance } = useShareBalance(
-    mintAddress,
+    shareMint,
     wallet?.address,
   );
 

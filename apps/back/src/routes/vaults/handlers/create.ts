@@ -57,7 +57,6 @@ export async function createVault(
       data: {
         quantId: quant.id,
         statePda,
-        shareMint,
         baseTokenAta,
         vaultName,
         vaultSymbol,

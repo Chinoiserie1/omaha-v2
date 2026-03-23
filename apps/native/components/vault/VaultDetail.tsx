@@ -43,7 +43,6 @@ interface VaultData {
   quantId: string;
   statePda: string;
   shareMint: string | null;
-  mintAddress: string | null;
   isActive: boolean;
   about: string;
   dataSource: string;
@@ -219,7 +218,7 @@ export function VaultDetail({
           content = (
             <VaultInvestmentCard
               vaultId={item.data.id}
-              mintAddress={item.data.mintAddress}
+              shareMint={item.data.shareMint}
               onInvest={onInvest}
               onWithdraw={onWithdraw}
             />

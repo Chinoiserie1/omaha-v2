@@ -46,11 +46,12 @@ The platform has three core identity layers:
 │                        VAULT                                 │
 │                                                              │
 │  id, quantId (unique)                                        │
-│  vaultPda?, statePda, mintAddress?                            │
+│  statePda, baseTokenAta?                                     │
 │  vaultName, vaultSymbol                                      │
-│  dryRun, isActive, jupiterEnabled                            │
+│  dryRun, isActive                                            │
 │                                                              │
 │  Owns:                                                       │
+│    - Token? (shareToken)   (vault share mint via relation)   │
 │    - RebalanceEvent[]      (on-chain swap history)           │
 │    - HoldingsSnapshot[]    (token holdings over time)        │
 │    - WithdrawalRequest[]   (user redemption queue)           │

@@ -162,9 +162,7 @@ model Vault {
   quantId            String              @unique
   quant              Quant               @relation(fields: [quantId], references: [id], onDelete: Cascade)
   statePda           String              @unique
-  shareMint          String?             @unique
   baseTokenAta       String?
-  mintAddress        String?             @unique
   vaultName          String
   vaultSymbol        String
   dryRun             Boolean             @default(true)

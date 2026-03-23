@@ -101,18 +101,17 @@ model Vault {
   quantId            String    @unique
   quant              Quant     @relation(...)
   statePda           String    @unique
-  shareMint          String?   @unique
   baseTokenAta       String?
   vaultName          String
   vaultSymbol        String
   dryRun             Boolean   @default(true)
   isActive           Boolean   @default(true)
-  shareToken         Token?    # Relation to Token with isVault=true
+  shareToken         Token?    # 1:1 relation to Token (isVault=true)
   ...
 }
 ```
 
-**Note**: `shareMint` is the single source of truth for the vault's share token mint address. Use this field for price queries, portfolio calculations, and holdings snapshots. The optional `shareToken` relation links to the `Token` table for easy access to token metadata (symbol, decimals, logoUri, etc.). The reverse relation on `Token` is `vault: Vault?` with FK `vaultId: String?`.
+**Note**: The vault's share mint address is accessed via the `shareToken` relation: `vault.shareToken.mint`. The `Token` model is the single source of truth for mint address, symbol, decimals, and logo. When creating a new vault, create a corresponding Token record with `isVault=true` and `vaultId` pointing back to the vault.
 
 ### Token
 

@@ -18,7 +18,7 @@ interface VaultSeed {
   performanceCalc: string;
   disclosure: string;
   statePda: string;
-  mintAddress: string | null;
+  /** Share mint address — used to create the Token record (not stored on Vault) */
   shareMint?: string;
   dryRun: boolean;
   holdings?: HoldingsSeed;
@@ -39,7 +39,6 @@ const VAULTS: VaultSeed[] = [
     disclosure:
       "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
     statePda: "3A3wmPRdEnMUQ8Za5nVL9KNqJhSFiAUghnqrWp2HTi83",
-    mintAddress: null,
     dryRun: true,
     holdings: {
       holdings: [
@@ -77,7 +76,6 @@ const VAULTS: VaultSeed[] = [
     disclosure:
       "This vault is experimental and provided as-is. Past performance does not guarantee future results. The vault is managed by an AI agent and may execute trades based on publicly available social signals that could be inaccurate or misinterpreted. You may lose some or all of your deposited funds. Only invest what you can afford to lose.",
     statePda: "GCpt7MoHjjgF13X8ekKw79rEvo1EhKPzBtQ6nXXQbp4N",
-    mintAddress: null,
     shareMint: "HGtLrjgTMmeFAnm1oD3BgoccvzKGbTo4g9AujvVnvsyJ",
     dryRun: false,
     holdings: {
@@ -161,8 +159,6 @@ async function seedVaults(): Promise<void> {
         performanceCalc: v.performanceCalc,
         disclosure: v.disclosure,
         statePda: v.statePda,
-        mintAddress: v.mintAddress,
-        shareMint: v.shareMint ?? null,
         vaultName: v.vaultName,
         vaultSymbol: v.vaultSymbol,
         dryRun: v.dryRun,
@@ -174,8 +170,6 @@ async function seedVaults(): Promise<void> {
         performanceCalc: v.performanceCalc,
         disclosure: v.disclosure,
         statePda: v.statePda,
-        mintAddress: v.mintAddress,
-        shareMint: v.shareMint ?? null,
         vaultName: v.vaultName,
         vaultSymbol: v.vaultSymbol,
         dryRun: v.dryRun,

@@ -46,8 +46,8 @@ export async function getActiveTheses(
 
     const vaultByMint = new Map(
       vaults
-        .filter((v) => v.shareMint)
-        .map((v) => [v.shareMint!, v]),
+        .filter((v) => v.shareToken?.mint)
+        .map((v) => [v.shareToken!.mint, v]),
     );
 
     // Filter tokens that match a vault mint

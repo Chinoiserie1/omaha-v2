@@ -7,14 +7,14 @@ import { SOLANA_RPC_URL } from "../lib/solana";
  * Returns balance in UI units (already divided by decimals).
  */
 export function useShareBalance(
-  mintAddress: string | null,
+  shareMint: string | null,
   walletAddress: string | undefined,
 ) {
   const [balance, setBalance] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchBalance = useCallback(async () => {
-    if (!walletAddress || !mintAddress) {
+    if (!walletAddress || !shareMint) {
       setBalance(0);
       setLoading(false);
       return;
@@ -23,14 +23,14 @@ export function useShareBalance(
     try {
       const connection = getConnection(SOLANA_RPC_URL);
       const tokens = await getTokenBalances(connection, walletAddress);
-      const share = tokens.find((t) => t.mint === mintAddress);
+      const share = tokens.find((t) => t.mint === shareMint);
       setBalance(share?.uiAmount ?? 0);
     } catch {
       setBalance(null);
     } finally {
       setLoading(false);
     }
-  }, [walletAddress, mintAddress]);
+  }, [walletAddress, shareMint]);
 
   useEffect(() => {
     fetchBalance();

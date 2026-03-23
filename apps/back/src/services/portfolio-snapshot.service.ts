@@ -41,8 +41,8 @@ export async function fetchLivePortfolio(
 
   const vaultByMint = new Map(
     vaults
-      .filter((v) => v.shareMint)
-      .map((v) => [v.shareMint!, v]),
+      .filter((v) => v.shareToken?.mint)
+      .map((v) => [v.shareToken!.mint, v]),
   );
 
   const holdings: SnapshotHolding[] = [];

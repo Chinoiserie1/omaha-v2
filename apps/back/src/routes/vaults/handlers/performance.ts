@@ -31,11 +31,12 @@ export async function getVaultPerformance(
     return reply.status(404).send({ error: "Vault not found" });
   }
 
-  if (!vault.shareMint) {
+  const shareMint = vault.shareToken?.mint;
+  if (!shareMint) {
     return emptyResponse(reply, "7d");
   }
 
-  const token = await tokenPriceRepo.findTokenByMint(vault.shareMint);
+  const token = await tokenPriceRepo.findTokenByMint(shareMint);
   if (!token) {
     return emptyResponse(reply, "7d");
   }

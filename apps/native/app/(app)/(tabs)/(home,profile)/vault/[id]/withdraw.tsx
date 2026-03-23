@@ -13,7 +13,7 @@ export default function WithdrawRoute() {
       <WithdrawScreen
         vaultId={id}
         vaultName={vault?.name ?? ""}
-        mintAddress={vault?.mintAddress ?? ""}
+        shareMint={vault?.shareMint ?? ""}
         onClose={() => router.back()}
       />
     </View>

@@ -54,8 +54,8 @@ export async function processFulfillBatch(
   }
 
   const statePda = new PublicKey(vault.statePda);
-  const shareMint = vault.shareMint
-    ? new PublicKey(vault.shareMint)
+  const shareMint = vault.shareToken?.mint
+    ? new PublicKey(vault.shareToken.mint)
     : findShareMintPda(statePda)[0];
 
   try {

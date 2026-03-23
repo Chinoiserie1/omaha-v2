@@ -80,8 +80,8 @@ export async function retryWithdrawal(
     const shares = BigInt(Math.round(withdrawal.amount * SHARE_TOKEN_MULTIPLIER));
 
     const { sharePrice, vaultState } = await computeOnChainSharePrice(statePda);
-    const shareMint = vault.shareMint
-      ? new PublicKey(vault.shareMint)
+    const shareMint = vault.shareToken?.mint
+      ? new PublicKey(vault.shareToken.mint)
       : vaultState.shareMint;
 
     const vaultBalance = await getVaultBaseBalance(statePda, vault.baseTokenAta);

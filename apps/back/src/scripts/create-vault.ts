@@ -69,7 +69,6 @@ async function main(): Promise<void> {
     data: {
       quantId: quant.id,
       statePda,
-      shareMint,
       baseTokenAta,
       vaultName,
       vaultSymbol,

@@ -2,9 +2,7 @@ export interface Vault {
   id: string;
   quantId: string;
   statePda: string;
-  shareMint: string | null;
   baseTokenAta: string | null;
-  mintAddress: string | null;
   vaultName: string;
   vaultSymbol: string;
   isActive: boolean;

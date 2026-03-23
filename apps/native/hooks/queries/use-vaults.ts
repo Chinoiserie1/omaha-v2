@@ -45,7 +45,6 @@ interface VaultData {
   quantId: string;
   statePda: string;
   shareMint: string | null;
-  mintAddress: string | null;
   isActive: boolean;
   about: string;
   dataSource: string;
