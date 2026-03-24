@@ -1,17 +1,21 @@
 import type { PublicKey } from "@solana/web3.js";
-import { computeTvl } from "../services/tvl.service.js";
+import { computeTvl, type ComputeTvlOptions } from "../services/tvl.service.js";
 import { computeSharePrice } from "../services/share-price.service.js";
 import type { VaultHolding } from "@repo/shared";
 
 /**
  * Fetch on-chain vault holdings with USD valuations.
  * Reads SPL token accounts owned by the vault PDA + cached DB prices.
+ * Pass `{ livePrices: true }` to fetch fresh prices from Jupiter/Birdeye.
  */
-export async function getVaultHoldings(statePda: PublicKey): Promise<{
+export async function getVaultHoldings(
+  statePda: PublicKey,
+  options?: ComputeTvlOptions,
+): Promise<{
   holdings: VaultHolding[];
   totalEquityUsd: number;
 }> {
-  return computeTvl(statePda);
+  return computeTvl(statePda, options);
 }
 
 /**

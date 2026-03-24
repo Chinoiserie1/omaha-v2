@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { getConnection } from "../solana/config.js";
 import * as tokenPriceRepo from "../store/token-price.repository.js";
+import { fetchLivePrices } from "./live-price.service.js";
 import { logger } from "../utils/logger.js";
 import type { VaultHolding } from "@repo/shared";
 
@@ -11,6 +12,11 @@ export interface ComputeTvlOptions {
    * When omitted, stale/missing prices default to 0 (display-safe).
    */
   readonly maxAgeMs?: number;
+  /**
+   * When true, fetch live prices from Jupiter + Birdeye instead of DB cache.
+   * Used by the rebalancer to ensure fresh pricing data.
+   */
+  readonly livePrices?: boolean;
 }
 
 /**
@@ -42,33 +48,45 @@ export async function computeTvl(
     return { holdings: [], totalEquityUsd: 0 };
   }
 
+  const useLivePrices = options.livePrices === true;
   const strict = options.maxAgeMs !== undefined;
   const now = Date.now();
 
-  // Use dated prices when strict validation is needed
-  const priceMap = strict
-    ? await tokenPriceRepo.getLatestPriceMapWithDates()
-    : null;
-  const simplePriceMap = strict
-    ? null
-    : await tokenPriceRepo.getLatestPriceMap();
+  // Collect all held mints first (needed for live price fetch)
+  const heldAccounts: { mint: string; uiAmount: number }[] = [];
+  for (const account of allAccounts) {
+    const parsed = account.account.data.parsed;
+    if (parsed.type !== "account") continue;
+    const info = parsed.info;
+    const uiAmount: number = info.tokenAmount?.uiAmount ?? 0;
+    if (uiAmount > 0) {
+      heldAccounts.push({ mint: info.mint, uiAmount });
+    }
+  }
+
+  // Resolve price map based on mode
+  let livePriceMap: Map<string, number> | null = null;
+  let priceMap: Map<string, { usdPrice: number; date: Date }> | null = null;
+  let simplePriceMap: Map<string, number> | null = null;
+
+  if (useLivePrices) {
+    const mints = heldAccounts.map((a) => a.mint);
+    livePriceMap = await fetchLivePrices(mints);
+  } else if (strict) {
+    priceMap = await tokenPriceRepo.getLatestPriceMapWithDates();
+  } else {
+    simplePriceMap = await tokenPriceRepo.getLatestPriceMap();
+  }
 
   let totalEquityUsd = 0;
   const holdings: VaultHolding[] = [];
 
-  for (const account of allAccounts) {
-    const parsed = account.account.data.parsed;
-    if (parsed.type !== "account") continue;
-
-    const info = parsed.info;
-    const mint: string = info.mint;
-    const uiAmount: number = info.tokenAmount?.uiAmount ?? 0;
-
-    if (uiAmount <= 0) continue;
-
+  for (const { mint, uiAmount } of heldAccounts) {
     let price: number;
 
-    if (strict && priceMap) {
+    if (useLivePrices && livePriceMap) {
+      price = livePriceMap.get(mint) ?? 0;
+    } else if (strict && priceMap) {
       const entry = priceMap.get(mint);
       if (!entry) {
         throw new Error(
@@ -99,8 +117,10 @@ export async function computeTvl(
   }
 
   logger.debug(
-    { totalEquityUsd, holdingsCount: holdings.length, strict },
-    "TVL computed from on-chain accounts + DB prices",
+    { totalEquityUsd, holdingsCount: holdings.length, strict, useLivePrices },
+    useLivePrices
+      ? "TVL computed from on-chain accounts + live prices (Jupiter/Birdeye)"
+      : "TVL computed from on-chain accounts + DB prices",
   );
 
   return { holdings, totalEquityUsd };

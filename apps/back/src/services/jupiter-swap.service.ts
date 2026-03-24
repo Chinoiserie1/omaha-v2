@@ -56,10 +56,11 @@ export async function getJupiterQuote(
         outputMint,
         amount: amountLamports,
         slippageBps,
-        // Force single-hop routes to stay within vault program's MAX_CPI_ACCS (32).
-        // Multi-hop routes can exceed 40+ accounts, causing CPI truncation panics.
-        // TODO: Increase MAX_CPI_ACCS on-chain to 64, then remove this constraint.
-        onlyDirectRoutes: true,
+        // When JUPITER_MAX_ACCOUNTS > 0, allow multi-hop routes up to that account limit.
+        // Otherwise, force single-hop to stay within vault program's MAX_CPI_ACCS (32).
+        ...(env.JUPITER_MAX_ACCOUNTS > 0
+          ? { maxAccounts: env.JUPITER_MAX_ACCOUNTS }
+          : { onlyDirectRoutes: true }),
       },
       headers: { "x-api-key": env.JUPITER_API_KEY },
     }

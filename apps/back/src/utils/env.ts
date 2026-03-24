@@ -22,6 +22,7 @@ const envSchema = z.object({
 
   // Quant Pipeline — Jupiter
   JUPITER_API_KEY: z.string().min(1),
+  JUPITER_MAX_ACCOUNTS: z.coerce.number().default(0),
 
   // Quant Pipeline — Birdeye (price data)
   BIRDEYE_API_KEY: z.string().min(1),

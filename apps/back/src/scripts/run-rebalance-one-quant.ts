@@ -39,7 +39,7 @@ async function run(): Promise<void> {
   // 3. Pre-flight: fetch and display current on-chain holdings
   console.info("\n── Pre-flight: On-chain holdings ──");
   const statePda = new PublicKey(vault.statePda);
-  const { holdings, totalEquityUsd } = await getVaultHoldings(statePda);
+  const { holdings, totalEquityUsd } = await getVaultHoldings(statePda, { livePrices: true });
 
   // Enrich symbols from Token DB
   const assetsMap = await getActiveTokensMap();
