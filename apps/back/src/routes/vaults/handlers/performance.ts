@@ -1,6 +1,9 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { PublicKey } from "@solana/web3.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as tokenPriceRepo from "../../../store/token-price.repository.js";
+import { computeSharePrice } from "../../../services/share-price.service.js";
+import { logger } from "../../../utils/logger.js";
 import type {
   VaultPerformancePeriod,
   VaultPerformanceResponse,
@@ -58,7 +61,23 @@ export async function getVaultPerformance(
   }));
 
   const startPrice = points.length > 0 ? points[0]!.value : null;
-  const currentPrice = points.length > 0 ? points[points.length - 1]!.value : null;
+  let currentPrice = points.length > 0 ? points[points.length - 1]!.value : null;
+
+  // Override currentPrice with on-chain share price if any DB price is stale/zero
+  if (vault.statePda) {
+    try {
+      const result = await computeSharePrice(new PublicKey(vault.statePda));
+      const onChainPriceUsd = Number(result.onChainPrice) / 1e6;
+
+      if (result.hasStalePrice && onChainPriceUsd > 0) {
+        currentPrice = onChainPriceUsd;
+      } else if (result.computedPriceUsd !== null && result.computedPriceUsd > 0) {
+        currentPrice = result.computedPriceUsd;
+      }
+    } catch {
+      logger.debug("Could not compute live share price for chart");
+    }
+  }
 
   const percentChange =
     startPrice !== null && currentPrice !== null && startPrice > 0

@@ -86,10 +86,17 @@ export async function getInvestorStatus(
     }
   }
 
-  // Compute share price
+  // Share price: use NAV from DB prices when all prices are fresh,
+  // fall back to on-chain price if any holding has a stale/zero price.
   try {
     const result = await computeSharePrice(statePda);
-    sharePrice = result.computedPriceUsd;
+    const onChainPriceUsd = Number(result.onChainPrice) / 1e6;
+
+    if (!result.hasStalePrice && result.computedPriceUsd !== null && result.computedPriceUsd > 0) {
+      sharePrice = result.computedPriceUsd;
+    } else if (onChainPriceUsd > 0) {
+      sharePrice = onChainPriceUsd;
+    }
   } catch {
     logger.debug("Could not compute share price");
   }

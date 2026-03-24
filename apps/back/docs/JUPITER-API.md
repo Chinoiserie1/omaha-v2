@@ -23,7 +23,8 @@ Used by the rebalancer to get quotes before executing on-chain swaps.
 | `outputMint` | Yes | Token mint address |
 | `amount` | Yes | Raw amount in smallest unit (lamports / atomic units) |
 | `slippageBps` | Yes | Acceptable slippage in basis points (50 = 0.5%) |
-| `onlyDirectRoutes` | No | Restrict to single-hop routes |
+| `onlyDirectRoutes` | No | Restrict to single-hop routes. **Required for Execute CPI** — multi-hop routes can exceed 40+ accounts, exceeding the vault program's `MAX_CPI_ACCS` (32) |
+| `maxAccounts` | No | Rough estimate for max accounts (default 64). Not a strict limit — Jupiter may exceed it |
 | `restrictIntermediateTokens` | No | Route only through liquid intermediate tokens |
 
 **Files**: `jupiter-swap.service.ts`, `fund-sol.service.ts`

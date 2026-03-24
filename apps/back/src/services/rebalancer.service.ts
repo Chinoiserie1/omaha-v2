@@ -3,8 +3,8 @@ import { logger } from "../utils/logger.js";
 import { env } from "../utils/env.js";
 import { USDC_MINT } from "../solana/config.js";
 import { getVaultHoldings } from "../solana/vault-holdings.js";
-// allowlistTokensOnVault removed — custom vault has no asset allowlist
 import { executeJupiterSwap } from "./jupiter-swap.service.js";
+import { updateSharePrice } from "./share-price-updater.service.js";
 import { getActiveTokensMap } from "./jupiter.service.js";
 import * as vaultRepo from "../store/vault.repository.js";
 import * as rebalanceRepo from "../store/rebalance.repository.js";
@@ -353,6 +353,16 @@ export async function rebalanceVault(
       logger.error(
         { quantId, error: snapErr instanceof Error ? snapErr.message : snapErr },
         "Failed to create post-rebalance holdings snapshot",
+      );
+    }
+
+    // 16. Update on-chain share price to reflect new TVL
+    try {
+      await updateSharePrice(statePda);
+    } catch (priceErr) {
+      logger.error(
+        { quantId, error: priceErr instanceof Error ? priceErr.message : priceErr },
+        "Failed to update share price after rebalance",
       );
     }
   }

@@ -13,6 +13,8 @@ export interface SharePriceResult {
   totalShareSupply: number;
   /** TVL in USD */
   tvlUsd: number;
+  /** True if any holding has a zero or missing DB price */
+  hasStalePrice: boolean;
 }
 
 /**
@@ -34,12 +36,13 @@ export async function computeSharePrice(
   const shareMint = vaultState.shareMint;
 
   // Get total share supply and TVL in parallel
-  const [supplyResult, { totalEquityUsd }] = await Promise.all([
+  const [supplyResult, { totalEquityUsd, holdings }] = await Promise.all([
     connection.getTokenSupply(shareMint),
     computeTvl(statePda),
   ]);
 
   const totalShareSupply = supplyResult.value.uiAmount ?? 0;
+  const hasStalePrice = holdings.some((h) => h.price <= 0);
 
   const computedPriceUsd =
     totalShareSupply > 0 ? totalEquityUsd / totalShareSupply : null;
@@ -60,5 +63,6 @@ export async function computeSharePrice(
     onChainPrice: vaultState.sharePrice,
     totalShareSupply,
     tvlUsd: totalEquityUsd,
+    hasStalePrice,
   };
 }

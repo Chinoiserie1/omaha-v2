@@ -56,6 +56,10 @@ export async function getJupiterQuote(
         outputMint,
         amount: amountLamports,
         slippageBps,
+        // Force single-hop routes to stay within vault program's MAX_CPI_ACCS (32).
+        // Multi-hop routes can exceed 40+ accounts, causing CPI truncation panics.
+        // TODO: Increase MAX_CPI_ACCS on-chain to 64, then remove this constraint.
+        onlyDirectRoutes: true,
       },
       headers: { "x-api-key": env.JUPITER_API_KEY },
     }
@@ -182,16 +186,25 @@ export async function executeJupiterSwap(
   // 3. Get Jupiter swap instructions (individual instructions, not a transaction)
   const swapIxs = await getJupiterSwapInstructions(quote, vaultStatePda);
 
-  // 4. Wrap each instruction in Execute CPI
+  // 4. Build transaction instructions
   const executeIxs: TransactionInstruction[] = [];
 
-  // Setup instructions (e.g., create ATAs)
+  // Setup instructions (e.g., create ATAs) — execute directly, NOT via Execute CPI.
+  // The vault PDA carries state data so the System program rejects it as a rent payer.
+  // Replace vault PDA (signer) with admin as payer; keep vault PDA as ATA owner.
   for (const setupIx of swapIxs.setupInstructions) {
     const ix = deserializeInstruction(setupIx);
-    executeIxs.push(wrapInExecuteCpi(ix, vaultStatePda, admin.publicKey));
+    const fixedKeys = ix.keys.map((key) =>
+      key.pubkey.equals(vaultStatePda) && key.isSigner
+        ? { ...key, pubkey: admin.publicKey }
+        : key,
+    );
+    executeIxs.push(
+      new TxInstruction({ programId: ix.programId, keys: fixedKeys, data: ix.data }),
+    );
   }
 
-  // Main swap instruction
+  // Main swap instruction — wrapped in Execute CPI (vault PDA signs via invoke_signed)
   const mainIx = deserializeInstruction(swapIxs.swapInstruction);
   executeIxs.push(wrapInExecuteCpi(mainIx, vaultStatePda, admin.publicKey));
 
