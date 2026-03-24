@@ -28,7 +28,8 @@ use crate::state::{VaultState, VAULT_DISCRIMINATOR};
 ///
 /// The vault PDA signs the CPI via invoke_signed. Any account in
 /// remaining_accounts that matches the vault PDA address will be marked
-/// as a signer in the CPI.
+/// as a signer in the CPI. No artificial account cap — the Solana runtime
+/// enforces the transaction-level limit (64 accounts with ALTs).
 pub struct Execute<'a> {
     operator: &'a AccountInfo,
     vault_state: &'a AccountInfo,
@@ -61,10 +62,13 @@ impl<'a> Execute<'a> {
         // Build account metas for the target instruction.
         // If an account's pubkey matches vault_state, mark it as signer
         // (since the vault PDA will sign via invoke_signed).
-        const MAX_CPI_ACCS: usize = 32;
-        let num_remaining = self.remaining_accounts.len().min(MAX_CPI_ACCS);
+        // No artificial cap — Solana runtime limits v0 transactions to 64
+        // accounts total, so remaining_accounts can never exceed ~61.
+        // The stack arrays are sized to 64 (the physical maximum).
+        const MAX_ACCOUNTS: usize = 64;
+        let num_remaining = self.remaining_accounts.len();
 
-        let mut metas_storage: [MaybeUninit<AccountMeta>; MAX_CPI_ACCS] =
+        let mut metas_storage: [MaybeUninit<AccountMeta>; MAX_ACCOUNTS] =
             unsafe { MaybeUninit::uninit().assume_init() };
 
         for i in 0..num_remaining {
@@ -86,7 +90,7 @@ impl<'a> Execute<'a> {
         };
 
         // Build account refs slice
-        let mut refs_storage: [MaybeUninit<&AccountInfo>; MAX_CPI_ACCS] =
+        let mut refs_storage: [MaybeUninit<&AccountInfo>; MAX_ACCOUNTS] =
             unsafe { MaybeUninit::uninit().assume_init() };
         for i in 0..num_remaining {
             refs_storage[i] = MaybeUninit::new(&self.remaining_accounts[i]);
