@@ -278,8 +278,12 @@ Create a `.env` file in the root directory (see `.env.example`). The native app 
 | `ADMIN_PROGRAM_PRIVATE_KEY` | No | Factory owner + vault admin keypair for on-chain operations |
 | `PROGRAM_AUTHORITY_PRIVATE_KEY` | No | Program authority keypair for factory init (remove after) |
 | `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |
-| `JUPITER_API_KEY` | No | Jupiter swap API key |
-| `BIRDEYE_API_KEY` | No | Birdeye price data for backtesting |
+| `JUPITER_API_KEY` | No | Jupiter swap + price API key |
+| `JUPITER_API_KEYS` | No | Comma-separated keys from different Jupiter accounts (price worker multi-account scaling) |
+| `JUPITER_RPM` | No | Jupiter requests/min per key (default: 55 for free tier) |
+| `PRICE_CONCURRENCY` | No | Max concurrent price fetch requests (default: 10) |
+| `PRICE_BATCH_SIZE` | No | Mints per Jupiter price API call (default: 50, max 50) |
+| `BIRDEYE_API_KEY` | No | Birdeye price data for backtesting + fallback pricing |
 | `TELEGRAM_BOT_TOKEN` | No | Telegram health check bot |
 | `TELEGRAM_CHAT_ID` | No | Telegram group chat ID |
 | `NEXT_PUBLIC_API_URL` | No | Backend API URL for web app |

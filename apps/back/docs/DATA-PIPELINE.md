@@ -137,15 +137,33 @@ For each KOL-vault pair:
 **Tables read**: `PortfolioSnapshot`, `Vault`, `Token`
 **Tables written**: `RebalanceLog`, `VaultHolding`
 
-### Step 5: Price Fetching (`CRON_FETCH_PRICES`)
+### Step 5: Price Fetching
 
-**Schedule**: Every minute (env `CRON_FETCH_PRICES`)
-**Entry**: `src/cron/fetch-prices.ts` → `price.service.ts` / `token-price.service.ts`
+Token prices are fetched by two complementary systems:
+
+**A) Standalone Price Worker** (`src/workers/price-worker.ts`)
+- Runs as a separate process: `pnpm --filter @repo/back start:price-worker`
+- Fetches all non-vault token prices from Jupiter Price API v3
+- Supports multi-account scaling via `JUPITER_API_KEYS` (round-robin across keys)
+- Concurrent batch fetching with token-bucket rate limiter per key
+- Bulk inserts all prices with a shared timestamp
+- See [`docs/flow/PRICE-WORKER.md`](../../docs/flow/PRICE-WORKER.md) for full architecture
+
+**B) Main App Cron** (`CRON_FETCH_PRICES`)
+- Schedule: Every minute (env `CRON_FETCH_PRICES`)
+- Entry: `src/cron/fetch-prices.ts`
+- Seeds USDC at $1.00 + computes vault share prices from on-chain TVL
 
 ```
-  1. Fetch SOL price (Birdeye or Jupiter)
-  2. Fetch vault share prices (GLAM SDK)
-  3. Store in TokenPrice table
+  Standalone worker:
+    1. Query all non-vault Token mints
+    2. Batch fetch from Jupiter (50 mints/request, concurrent, rate-limited)
+    3. Bulk insert into TokenPrice
+
+  Main app cron:
+    1. Seed USDC at $1.00
+    2. Compute vault share prices (TVL / supply)
+    3. Store vault share prices in TokenPrice
 ```
 
 **Tables written**: `TokenPrice`
@@ -219,8 +237,8 @@ Token
   └── isActive, isVault, logoUri
 
 TokenPrice
-  ├── mint, priceUsd, timestamp
-  └── source (birdeye | jupiter | glam)
+  ├── tokenId, usdPrice, date
+  └── Indexed on (tokenId, date)
 ```
 
 ## External API Dependencies

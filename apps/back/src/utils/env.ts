@@ -36,9 +36,15 @@ const envSchema = z.object({
   FUND_SOL_FEE_PCT: z.coerce.number().default(2),
   PROGRAM_AUTHORITY_PRIVATE_KEY: z.string().optional(),
 
-  // Price Worker — multi-instance config
+  // Price Worker — multi-instance config (legacy, unused by new auto-scaling worker)
   PRICE_INSTANCE_ID: z.coerce.number().default(0),
   PRICE_TOTAL_INSTANCES: z.coerce.number().default(1),
+
+  // Price Worker — auto-scaling config
+  JUPITER_API_KEYS: z.string().optional(), // Comma-separated keys from different Jupiter accounts
+  JUPITER_RPM: z.coerce.number().default(55), // Requests per minute per key (free tier: 55)
+  PRICE_CONCURRENCY: z.coerce.number().default(10), // Max concurrent in-flight requests
+  PRICE_BATCH_SIZE: z.coerce.number().default(50), // Mints per Jupiter API call (max 50)
 
   // Quant Pipeline — Rebalancing
   REBALANCE_DRY_RUN: z

@@ -3,144 +3,213 @@ import axios from "axios";
 import { prisma } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import { env } from "../utils/env.js";
+import { RateLimiter, Semaphore } from "../utils/rate-limiter.js";
+import { bulkInsertPrices } from "../store/token-price.repository.js";
 
 const JUPITER_PRICE_URL = "https://api.jup.ag/price/v3";
-const BATCH_SIZE = 100;
 const USDC_MINT = "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v";
 
 interface JupiterPriceData {
   [mint: string]: { usdPrice: number; decimals: number } | undefined;
 }
 
-/**
- * Fetch all token mints that need pricing (from Token table + vault holdings).
- */
-async function getMintsToPrice(): Promise<string[]> {
+// ── API Key Setup ─────────────────────────────────────────────
+
+interface ApiKeySlot {
+  readonly key: string;
+  readonly limiter: RateLimiter;
+}
+
+function buildApiKeySlots(): readonly ApiKeySlot[] {
+  const keys = env.JUPITER_API_KEYS
+    ? env.JUPITER_API_KEYS.split(",").map((k) => k.trim()).filter(Boolean)
+    : [env.JUPITER_API_KEY];
+
+  return keys.map((key) => ({
+    key,
+    limiter: new RateLimiter(env.JUPITER_RPM),
+  }));
+}
+
+const apiKeySlots = buildApiKeySlots();
+const semaphore = new Semaphore(env.PRICE_CONCURRENCY);
+
+// ── Mint Fetching ─────────────────────────────────────────────
+
+interface MintData {
+  readonly mints: string[];
+  readonly mintToTokenId: Map<string, string>;
+}
+
+async function getMintsAndIdMap(): Promise<MintData> {
   const tokens = await prisma.token.findMany({
     where: { isVault: false },
-    select: { mint: true },
+    select: { id: true, mint: true },
   });
 
   const mints = tokens.map((t) => t.mint);
-
-  // Always include USDC
   if (!mints.includes(USDC_MINT)) {
     mints.push(USDC_MINT);
   }
 
-  return mints;
+  const mintToTokenId = new Map<string, string>();
+  for (const t of tokens) {
+    mintToTokenId.set(t.mint, t.id);
+  }
+
+  return { mints, mintToTokenId };
 }
 
-/**
- * Filter mints for this instance (round-robin by index).
- */
-function filterMintsForInstance(mints: string[]): string[] {
-  const instanceId = env.PRICE_INSTANCE_ID;
-  const totalInstances = env.PRICE_TOTAL_INSTANCES;
+// ── Batch Fetching ────────────────────────────────────────────
 
-  if (totalInstances <= 1) return mints;
-
-  return mints.filter((_, i) => i % totalInstances === instanceId);
+function splitIntoBatches(mints: readonly string[]): string[][] {
+  const batches: string[][] = [];
+  for (let i = 0; i < mints.length; i += env.PRICE_BATCH_SIZE) {
+    batches.push(mints.slice(i, i + env.PRICE_BATCH_SIZE));
+  }
+  return batches;
 }
 
-/**
- * Fetch prices from Jupiter in batches of 100.
- */
-async function fetchPricesFromJupiter(
-  mints: string[],
+async function fetchBatch(
+  batch: readonly string[],
+  slot: ApiKeySlot,
 ): Promise<Map<string, number>> {
   const prices = new Map<string, number>();
 
-  // USDC is always $1.00
-  prices.set(USDC_MINT, 1.0);
+  await slot.limiter.acquire();
 
-  const nonUsdcMints = mints.filter((m) => m !== USDC_MINT);
+  const { data } = await axios.get<JupiterPriceData>(JUPITER_PRICE_URL, {
+    params: { ids: batch.join(",") },
+    headers: { "x-api-key": slot.key },
+    timeout: 15_000,
+  });
 
-  for (let i = 0; i < nonUsdcMints.length; i += BATCH_SIZE) {
-    const batch = nonUsdcMints.slice(i, i + BATCH_SIZE);
-    const ids = batch.join(",");
-
-    try {
-      const { data } = await axios.get<JupiterPriceData>(JUPITER_PRICE_URL, {
-        params: { ids },
-        headers: { "x-api-key": env.JUPITER_API_KEY },
-        timeout: 10_000,
-      });
-
-      for (const mint of batch) {
-        const priceData = data[mint];
-        if (priceData) {
-          prices.set(mint, priceData.usdPrice);
-        }
-      }
-    } catch (err) {
-      logger.error(
-        { err, batchStart: i, batchSize: batch.length },
-        "Failed to fetch Jupiter prices for batch",
-      );
-    }
-
-    // Rate limit: wait 1.1s between batches to stay under 60 req/min
-    if (i + BATCH_SIZE < nonUsdcMints.length) {
-      await new Promise((resolve) => setTimeout(resolve, 1100));
+  for (const mint of batch) {
+    const entry = data[mint];
+    if (entry) {
+      prices.set(mint, entry.usdPrice);
     }
   }
 
   return prices;
 }
 
-/**
- * Write prices to DB for each token.
- */
-async function storePrices(prices: Map<string, number>): Promise<void> {
-  for (const [mint, usdPrice] of prices) {
+interface FetchResult {
+  readonly prices: Map<string, number>;
+  readonly failedBatches: number;
+}
+
+async function fetchAllPrices(mints: readonly string[]): Promise<FetchResult> {
+  const prices = new Map<string, number>();
+
+  // USDC is always $1.00
+  prices.set(USDC_MINT, 1.0);
+
+  const nonUsdc = mints.filter((m) => m !== USDC_MINT);
+  if (nonUsdc.length === 0) return { prices, failedBatches: 0 };
+
+  const batches = splitIntoBatches(nonUsdc);
+
+  // Round-robin batch assignment across API key slots (static by index)
+  const batchPromises = batches.map(async (batch, index) => {
+    const slot = apiKeySlots[index % apiKeySlots.length]!;
+
+    await semaphore.acquire();
     try {
-      const token = await prisma.token.findUnique({ where: { mint } });
-      if (token) {
-        await prisma.tokenPrice.create({
-          data: { tokenId: token.id, usdPrice },
-        });
-      }
-    } catch (err) {
-      logger.error({ err, mint }, "Failed to store price for token");
+      return await fetchBatch(batch, slot);
+    } finally {
+      semaphore.release();
     }
+  });
+
+  const results = await Promise.allSettled(batchPromises);
+
+  let failedBatches = 0;
+  for (const result of results) {
+    if (result.status === "fulfilled") {
+      for (const [mint, price] of result.value) {
+        prices.set(mint, price);
+      }
+    } else {
+      failedBatches += 1;
+      logger.error(
+        { err: result.reason },
+        "Failed to fetch Jupiter prices for batch",
+      );
+    }
+  }
+
+  return { prices, failedBatches };
+}
+
+// ── Main Cycle ────────────────────────────────────────────────
+
+let running = false;
+
+async function runPriceFetch(): Promise<void> {
+  if (running) {
+    logger.warn("Price fetch cycle still running, skipping this schedule");
+    return;
+  }
+
+  running = true;
+  const startTime = Date.now();
+
+  try {
+    const { mints, mintToTokenId } = await getMintsAndIdMap();
+
+    const nonUsdcCount = mints.filter((m) => m !== USDC_MINT).length;
+    const batchCount = Math.ceil(nonUsdcCount / env.PRICE_BATCH_SIZE);
+
+    logger.info(
+      {
+        totalMints: mints.length,
+        batches: batchCount,
+        apiKeys: apiKeySlots.length,
+        concurrency: env.PRICE_CONCURRENCY,
+        rpm: env.JUPITER_RPM,
+        effectiveRpm: apiKeySlots.length * env.JUPITER_RPM,
+      },
+      "Starting price fetch cycle",
+    );
+
+    const { prices, failedBatches } = await fetchAllPrices(mints);
+    const timestamp = new Date();
+    const inserted = await bulkInsertPrices(prices, mintToTokenId, timestamp);
+
+    const elapsed = Date.now() - startTime;
+    logger.info(
+      {
+        pricesFetched: prices.size,
+        pricesStored: inserted,
+        failedBatches,
+        elapsedMs: elapsed,
+        elapsedSec: Math.round(elapsed / 1000),
+      },
+      "Price fetch cycle complete",
+    );
+
+    if (failedBatches > 0) {
+      logger.warn(
+        { failedBatches, totalBatches: batchCount },
+        "Some price batches failed — stored partial data",
+      );
+    }
+  } finally {
+    running = false;
   }
 }
 
-/**
- * Main price fetch cycle.
- */
-async function runPriceFetch(): Promise<void> {
-  const startTime = Date.now();
+// ── Entrypoint ────────────────────────────────────────────────
 
-  const allMints = await getMintsToPrice();
-  const myMints = filterMintsForInstance(allMints);
-
-  logger.info(
-    {
-      instanceId: env.PRICE_INSTANCE_ID,
-      totalInstances: env.PRICE_TOTAL_INSTANCES,
-      totalMints: allMints.length,
-      myMints: myMints.length,
-    },
-    "Starting price fetch cycle",
-  );
-
-  const prices = await fetchPricesFromJupiter(myMints);
-  await storePrices(prices);
-
-  const elapsed = Date.now() - startTime;
-  logger.info(
-    { pricesStored: prices.size, elapsedMs: elapsed },
-    "Price fetch cycle complete",
-  );
-}
-
-// ── Entrypoint ─────────────────────────────────────────────────
 logger.info(
   {
-    instanceId: env.PRICE_INSTANCE_ID,
-    totalInstances: env.PRICE_TOTAL_INSTANCES,
+    apiKeys: apiKeySlots.length,
+    rpm: env.JUPITER_RPM,
+    effectiveRpm: apiKeySlots.length * env.JUPITER_RPM,
+    concurrency: env.PRICE_CONCURRENCY,
+    batchSize: env.PRICE_BATCH_SIZE,
+    cron: env.CRON_FETCH_PRICES,
   },
   "Price worker starting",
 );
@@ -150,11 +219,17 @@ runPriceFetch().catch((err) => {
   logger.error({ err }, "Initial price fetch failed");
 });
 
-// Then schedule every minute
+// Then schedule on cron
 cron.schedule(env.CRON_FETCH_PRICES, () => {
   runPriceFetch().catch((err) => {
     logger.error({ err }, "Price fetch cron failed");
   });
+});
+
+// Graceful shutdown — clean up rate limiter timers
+process.on("SIGTERM", () => {
+  for (const slot of apiKeySlots) slot.limiter.destroy();
+  process.exit(0);
 });
 
 logger.info("Price worker cron scheduled");

@@ -27,6 +27,37 @@ export async function insertPrice(
   });
 }
 
+/**
+ * Bulk insert prices for all tokens with a shared timestamp.
+ * Returns the number of rows inserted.
+ */
+export async function bulkInsertPrices(
+  prices: Map<string, number>,
+  mintToTokenId: Map<string, string>,
+  timestamp: Date,
+): Promise<number> {
+  const rows: Array<{ tokenId: string; usdPrice: number; date: Date }> = [];
+
+  for (const [mint, usdPrice] of prices) {
+    const tokenId = mintToTokenId.get(mint);
+    if (tokenId) {
+      rows.push({ tokenId, usdPrice, date: timestamp });
+    }
+  }
+
+  if (rows.length === 0) return 0;
+
+  // Chunk to stay under Postgres 65,535 bind-parameter limit (3 fields/row → max ~21k rows)
+  const CHUNK_SIZE = 1_000;
+  let count = 0;
+  for (let i = 0; i < rows.length; i += CHUNK_SIZE) {
+    const chunk = rows.slice(i, i + CHUNK_SIZE);
+    const result = await prisma.tokenPrice.createMany({ data: chunk });
+    count += result.count;
+  }
+  return count;
+}
+
 export async function getLatestPriceMap(): Promise<Map<string, number>> {
   const tokens = await prisma.token.findMany({
     include: {

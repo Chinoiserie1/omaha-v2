@@ -168,7 +168,7 @@ Scheduled tasks run from `src/cron/index.ts`:
 | --------------------- | ---------------- | ---------------------------------------------- |
 | `fetch-tweets`        | Every 15 min     | Fetch new tweets for active Quants              |
 | `run-algo`            | Every 30 min     | Classify tweets + generate theses              |
-| `fetch-prices`        | Every 1 min      | Update token prices from Birdeye               |
+| `fetch-prices`        | Every 1 min      | Seed USDC price + compute vault share prices (token prices fetched by standalone price worker) |
 | `rebalance-vaults`    | Every 6 hours    | Execute on-chain swaps                         |
 | `snapshot-portfolios` | Every 6 hours    | Capture portfolio values for charts (Mar 2026) |
 | `sync-profiles`       | Weekly (Sun 3am) | Refresh Quant Twitter profiles                  |
@@ -357,6 +357,13 @@ return reply.status(400).send({
 
 - `SOLANA_NETWORK` (optional, default: `mainnet`) - Set to `devnet` to auto-select devnet USDC mint
 - `USDC_MINT` (optional) - Override USDC mint address (auto-selected from `SOLANA_NETWORK` if omitted)
+
+### Price Worker (Auto-Scaling)
+
+- `JUPITER_API_KEYS` (optional) - Comma-separated keys from **different** Jupiter accounts for higher throughput
+- `JUPITER_RPM` (optional, default: 55) - Requests/minute per key (free: 55, Pro I: 550)
+- `PRICE_CONCURRENCY` (optional, default: 10) - Max concurrent in-flight Jupiter requests
+- `PRICE_BATCH_SIZE` (optional, default: 50) - Mints per Jupiter API call (max 50)
 
 ### Fund SOL (Swap USDC → SOL)
 
