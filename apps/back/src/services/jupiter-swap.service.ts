@@ -57,7 +57,7 @@ export async function getJupiterQuote(
         amount: amountLamports,
         slippageBps,
         // When JUPITER_MAX_ACCOUNTS > 0, allow multi-hop routes up to that account limit.
-        // Otherwise, force single-hop to stay within vault program's MAX_CPI_ACCS (32).
+        // Otherwise, force single-hop (direct routes only).
         ...(env.JUPITER_MAX_ACCOUNTS > 0
           ? { maxAccounts: env.JUPITER_MAX_ACCOUNTS }
           : { onlyDirectRoutes: true }),
