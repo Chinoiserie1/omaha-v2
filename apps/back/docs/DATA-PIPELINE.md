@@ -256,12 +256,14 @@ TokenPrice
 
 Key cron schedules (all node-cron format):
 ```
-CRON_FETCH_TWEETS=0 */6 * * *      # Every 6 hours
-CRON_RUN_ALGO=*/30 * * * *          # Every 30 minutes
-CRON_REBALANCE_VAULTS=0 */6 * * *   # Every 6 hours
-CRON_FETCH_PRICES=* * * * *          # Every minute
-CRON_SYNC_PROFILES=0 0 * * *        # Daily
-CRON_HEALTH_CHECK=*/5 * * * *        # Every 5 minutes
+CRON_FETCH_TWEETS=*/15 * * * *       # Every 15 minutes
+CRON_RUN_ALGO=*/30 * * * *           # Every 30 minutes
+CRON_REBALANCE_VAULTS=0 */6 * * *    # Every 6 hours
+CRON_FETCH_PRICES=* * * * *           # Every minute
+CRON_SYNC_PROFILES=0 3 * * 0         # Weekly (Sun 3am)
+CRON_HEALTH_CHECK=0 */6 * * *        # Every 6 hours
+CRON_RECOVERY_WITHDRAWALS=*/5 * * * * # Every 5 minutes
+CRON_SNAPSHOT_PORTFOLIOS=0 0 * * 0   # Weekly (Sun midnight)
 ```
 
 ## One-Off Scripts

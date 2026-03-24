@@ -240,6 +240,7 @@ pnpm --filter @repo/back manage-vault-operator add --vault-name <name> --operato
 
 ```bash
 pnpm start:back                # Start backend in production mode
+pnpm --filter @repo/back start:price-worker  # Start standalone price worker
 pnpm native:clean              # Clean native app build artifacts
 
 # Git worktree helpers (parallel branch development)

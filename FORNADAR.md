@@ -250,6 +250,8 @@ Three interrelated bugs:
 
 19. **Database renames need end-to-end sweep** — When renaming a model (Kol → Quant), the blast radius includes: Prisma schema, migrations, all repositories, all services, all route handlers, all scripts, shared type interfaces, shared Zod schemas, DTOs, native app local types, native app component props, and documentation. A grep for the old name across the entire monorepo is essential to catch stragglers.
 
+20. **Price worker: auto-scaling > manual multi-instance** — The original price worker required manually deploying N instances with `PRICE_INSTANCE_ID` / `PRICE_TOTAL_INSTANCES` env vars for round-robin sharding. This was replaced (2026-03-24) with a single self-managing process that uses token-bucket rate limiters, concurrent batch fetching, and multi-account Jupiter support (`JUPITER_API_KEYS`). Jupiter rate limits are per-account (not per-key or per-IP), so scaling requires keys from different accounts. Batch size was also fixed from 100 to 50 (Jupiter Price API v3 max). Bulk insert with a shared timestamp ensures all tokens have entries at approximately the same time.
+
 ## Telegram Health Monitor Bot
 
 The bot sends alerts on cron/API failures and supports an on-demand `/health` command in Telegram.
