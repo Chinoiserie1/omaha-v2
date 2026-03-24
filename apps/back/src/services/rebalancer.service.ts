@@ -15,6 +15,47 @@ import type { Prisma } from "@repo/database";
 
 const USDC_MINT_STR = USDC_MINT.toBase58();
 
+// ── Error Classification ─────────────────────────────────────────
+
+const JUPITER_ERROR_CODES: Record<number, string> = {
+  6024: "SlippageToleranceExceeded",
+  6023: "InvalidReturnData",
+  6022: "InvalidCalculation",
+};
+
+function classifySwapError(err: unknown): { short: string; full: string } {
+  const full = err instanceof Error ? err.message : String(err);
+
+  // Jupiter hex error codes (e.g. 0x1788 = 6024)
+  const hexMatch = full.match(/0x([0-9a-fA-F]+)/);
+  if (hexMatch?.[1]) {
+    const code = parseInt(hexMatch[1], 16);
+    const name = JUPITER_ERROR_CODES[code];
+    if (name) return { short: `Jupiter: ${name} (${code})`, full };
+  }
+
+  // Program panic
+  if (full.includes("SBF program panicked")) {
+    return { short: "ProgramPanicked", full };
+  }
+
+  // Simulation failure — extract inner reason
+  if (full.includes("Simulation failed")) {
+    const reasonMatch = full.match(/Simulation failed[:\s]*(.{0,80})/);
+    const reason = reasonMatch?.[1]?.trim() ?? "unknown reason";
+    return { short: `SimulationFailed: ${reason}`, full };
+  }
+
+  // Known short patterns
+  if (full.includes("Price impact too high")) return { short: "PriceImpactExceeded", full };
+  if (full.includes("No price data")) return { short: "MissingPrice", full };
+  if (full.includes("Swap too large")) return { short: "SwapSizeExceeded", full };
+
+  // Fallback — first 80 chars
+  const short = full.length > 80 ? `${full.slice(0, 80)}…` : full;
+  return { short, full };
+}
+
 // ── Delta Computation ──────────────────────────────────────────
 
 export function computeSwapDeltas(
@@ -154,8 +195,8 @@ export async function rebalanceVault(
     return null;
   }
 
-  // 5. Get on-chain holdings
-  const { holdings, totalEquityUsd } = await getVaultHoldings(statePda);
+  // 5. Get on-chain holdings with live prices (Jupiter + Birdeye)
+  const { holdings, totalEquityUsd } = await getVaultHoldings(statePda, { livePrices: true });
 
   if (totalEquityUsd <= 0) {
     logger.debug({ quantId }, "Vault has no equity, skipping");
@@ -279,10 +320,13 @@ export async function rebalanceVault(
       swapResults.push({ ...sell, txSig });
       logger.info({ txSig, asset: sell.asset, deltaUsd: sell.deltaUsd }, "Sell executed");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      swapResults.push({ ...sell, error: errorMsg });
+      const { short, full } = classifySwapError(err);
+      swapResults.push({ ...sell, error: short });
       failedCount++;
-      logger.error({ asset: sell.asset, error: errorMsg }, "Sell failed");
+      logger.error(
+        { asset: sell.asset, mint: sell.mint, deltaUsd: sell.deltaUsd, reason: short, error: full },
+        `Sell failed: ${short}`,
+      );
     }
   }
 
@@ -303,12 +347,30 @@ export async function rebalanceVault(
       swapResults.push({ ...buy, txSig });
       logger.info({ txSig, asset: buy.asset, deltaUsd: buy.deltaUsd }, "Buy executed");
     } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : String(err);
-      swapResults.push({ ...buy, error: errorMsg });
+      const { short, full } = classifySwapError(err);
+      swapResults.push({ ...buy, error: short });
       failedCount++;
-      logger.error({ asset: buy.asset, error: errorMsg }, "Buy failed");
+      logger.error(
+        { asset: buy.asset, mint: buy.mint, deltaUsd: buy.deltaUsd, reason: short, error: full },
+        `Buy failed: ${short}`,
+      );
     }
   }
+
+  // Swap execution summary
+  logger.info(
+    {
+      summary: swapResults.map((s) => ({
+        asset: s.asset,
+        direction: s.direction,
+        deltaUsd: s.deltaUsd,
+        status: s.txSig ? "OK" : "FAILED",
+        txSig: s.txSig,
+        error: s.error,
+      })),
+    },
+    "Swap execution summary",
+  );
 
   // 13. Update RebalanceEvent
   const finalStatus: RebalanceStatus =
@@ -333,7 +395,7 @@ export async function rebalanceVault(
   // 15. Snapshot post-rebalance holdings
   if (finalStatus === "COMPLETED") {
     try {
-      const postHoldings = await getVaultHoldings(statePda);
+      const postHoldings = await getVaultHoldings(statePda, { livePrices: true });
       const holdingsWithPct: VaultHoldingWithPct[] = postHoldings.holdings.map(
         (h) => ({
           ...h,
