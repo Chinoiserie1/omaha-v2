@@ -39,6 +39,7 @@ CRON_FETCH_PRICES  →  Birdeye/Jupiter  →  TokenPrice table
 | `docs/JUPITER-API.md`                                  | Jupiter API endpoints, auth, token providers (xStocks vs Ondo), tradability rules, liquidity    | `jupiter-swap.service.ts`, `jupiter.service.ts`, `compare-liquidity.ts`, `rebalancer.service.ts`                 |
 | `docs/LST-HANDLING.md`                                 | LST equivalence groups, double-counting prevention, synthesis pipeline steps                    | `asset-groups.ts`, `thesis.service.ts`                                                                           |
 | `docs/Quant_thesis_algo.md`                            | Algorithm design intent: why LLM, rolling thesis model, classification schema, conviction decay | `classifier.service.ts`, `thesis.service.ts`, `backtest.service.ts`                                              |
+| [`docs/flow/PRICE-WORKER.md`](../../docs/flow/PRICE-WORKER.md) | Price worker architecture, Jupiter/Birdeye fetching, multi-instance scaling, vault share pricing | `price-worker.ts`, `live-price.service.ts`, `token-price.service.ts`, `vault-price.service.ts`, `tvl.service.ts` |
 
 ## Tech Stack
 

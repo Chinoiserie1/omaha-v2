@@ -11,6 +11,7 @@ This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native
 - [User / Quant / Vault Architecture](./docs/flow/USER-QUANT-VAULT.md) — User types, Quant profiles, vault ownership, and account linking
 - [Fund SOL (USDC → SOL for gas fees)](./docs/flow/FUND-SOL.md) — Full transaction flow from mobile UI to on-chain swap
 - [Withdraw from Vault](./docs/flow/WITHDRAW-VAULT.md) — Multi-step withdrawal flow (redeem → fulfill → claim)
+- [Price Worker](./docs/flow/PRICE-WORKER.md) — Token price fetching, multi-instance scaling, and vault share pricing
 
 ### Deployment
 
