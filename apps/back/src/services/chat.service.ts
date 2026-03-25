@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
-import { createChatMessage, getChatHistory } from "../store/chat.repository.js";
+import { createChatMessage, getSessionMessages } from "../store/chat.repository.js";
 
 const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
 
@@ -19,6 +19,7 @@ Keep responses concise and actionable. When discussing specific assets, mention 
 const MAX_CONTEXT_MESSAGES = 20;
 
 export async function streamChat(
+  sessionId: string,
   userId: string,
   userMessage: string,
   onChunk: (text: string) => void,
@@ -27,10 +28,10 @@ export async function streamChat(
 ): Promise<void> {
   try {
     // Save user message
-    await createChatMessage(userId, "user", userMessage);
+    await createChatMessage(sessionId, userId, "user", userMessage);
 
-    // Load conversation context
-    const history = await getChatHistory(userId, MAX_CONTEXT_MESSAGES);
+    // Load conversation context scoped to session
+    const history = await getSessionMessages(sessionId, MAX_CONTEXT_MESSAGES);
     const messages = history
       .reverse()
       .map((msg) => ({
@@ -55,7 +56,7 @@ export async function streamChat(
 
     stream.on("end", async () => {
       try {
-        const saved = await createChatMessage(userId, "assistant", fullText);
+        const saved = await createChatMessage(sessionId, userId, "assistant", fullText);
         onDone(fullText, saved.id);
       } catch (err) {
         logger.error({ err }, "Failed to save assistant message");

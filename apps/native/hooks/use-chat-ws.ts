@@ -31,10 +31,12 @@ interface UseChatWsReturn {
   streamingContent: string;
   isStreaming: boolean;
   isConnected: boolean;
+  sessionId: string | null;
   pendingProposal: PortfolioProposal | null;
   pendingVaultDeploy: VaultDeployAction | null;
   sendMessage: (content: string) => void;
   setMessages: React.Dispatch<React.SetStateAction<ChatMessage[]>>;
+  createNewSession: () => void;
   clearProposal: () => void;
   clearVaultDeploy: () => void;
 }
@@ -48,6 +50,7 @@ export function useChatWs(): UseChatWsReturn {
   const [streamingContent, setStreamingContent] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
+  const [sessionId, setSessionId] = useState<string | null>(null);
   const [pendingProposal, setPendingProposal] =
     useState<PortfolioProposal | null>(null);
   const [pendingVaultDeploy, setPendingVaultDeploy] =
@@ -72,6 +75,7 @@ export function useChatWs(): UseChatWsReturn {
               content?: string;
               messageId?: string;
               error?: string;
+              sessionId?: string;
               thesisSummary?: string;
               allocations?: PortfolioProposal["allocations"];
               changes?: string[];
@@ -80,6 +84,21 @@ export function useChatWs(): UseChatWsReturn {
           };
 
           switch (msg.event) {
+            case "chat:session":
+              if (msg.data.sessionId) {
+                setSessionId(msg.data.sessionId);
+              }
+              break;
+
+            case "chat:session_created":
+              if (msg.data.sessionId) {
+                setSessionId(msg.data.sessionId);
+                setMessages([]);
+                setPendingProposal(null);
+                setPendingVaultDeploy(null);
+              }
+              break;
+
             case "chat:chunk":
               setStreamingContent((prev) => prev + (msg.data.content ?? ""));
               break;
@@ -179,6 +198,15 @@ export function useChatWs(): UseChatWsReturn {
     [isStreaming],
   );
 
+  const createNewSession = useCallback(() => {
+    if (!wsRef.current || wsRef.current.readyState !== WebSocket.OPEN) return;
+    if (isStreaming) return;
+
+    wsRef.current.send(
+      JSON.stringify({ event: "chat:new_session", data: {} }),
+    );
+  }, [isStreaming]);
+
   const clearProposal = useCallback(() => {
     setPendingProposal(null);
   }, []);
@@ -192,10 +220,12 @@ export function useChatWs(): UseChatWsReturn {
     streamingContent,
     isStreaming,
     isConnected,
+    sessionId,
     pendingProposal,
     pendingVaultDeploy,
     sendMessage,
     setMessages,
+    createNewSession,
     clearProposal,
     clearVaultDeploy,
   };

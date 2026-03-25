@@ -3,6 +3,7 @@ import { prisma } from "@repo/database";
 import { verifyPrivyTokenRaw } from "../middleware/auth-utils.js";
 import { logger } from "../utils/logger.js";
 import { streamChat } from "../services/chat.service.js";
+import { createSession, getLatestSession } from "../store/chat.repository.js";
 import {
   streamPortfolioChat,
   parsePortfolioProposal,
@@ -40,7 +41,20 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
       const userId = user.id;
       const quantId = user.quant?.id ?? null;
 
-      logger.info({ userId, quantId }, "Chat WebSocket connected");
+      // Resolve latest session for this user
+      let currentSession = await getLatestSession(userId);
+
+      logger.info({ userId, quantId, sessionId: currentSession.id }, "Chat WebSocket connected");
+
+      // Send current session id to client
+      if (socket.readyState === socket.OPEN) {
+        socket.send(
+          JSON.stringify({
+            event: "chat:session",
+            data: { sessionId: currentSession.id },
+          }),
+        );
+      }
 
       let isStreaming = false;
 
@@ -57,6 +71,32 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
             event: string;
             data: { content?: string };
           };
+
+          // Handle new session creation
+          if (msg.event === "chat:new_session") {
+            if (isStreaming) {
+              socket.send(
+                JSON.stringify({
+                  event: "chat:error",
+                  data: { error: "Cannot create session while streaming." },
+                }),
+              );
+              return;
+            }
+
+            currentSession = await createSession(userId);
+            logger.info({ userId, sessionId: currentSession.id }, "New chat session created via WS");
+
+            if (socket.readyState === socket.OPEN) {
+              socket.send(
+                JSON.stringify({
+                  event: "chat:session_created",
+                  data: { sessionId: currentSession.id },
+                }),
+              );
+            }
+            return;
+          }
 
           if (msg.event !== "chat:message" || !msg.data.content?.trim()) {
             return;
@@ -132,6 +172,7 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
 
           if (quantId) {
             await streamPortfolioChat(
+              currentSession.id,
               userId,
               quantId,
               msg.data.content.trim(),
@@ -141,6 +182,7 @@ export async function registerChatWebSocket(app: FastifyInstance): Promise<void>
             );
           } else {
             await streamChat(
+              currentSession.id,
               userId,
               msg.data.content.trim(),
               onChunk,

@@ -2,7 +2,7 @@ import Anthropic from "@anthropic-ai/sdk";
 import { prisma } from "@repo/database";
 import { env } from "../utils/env.js";
 import { logger } from "../utils/logger.js";
-import { createChatMessage, getChatHistory } from "../store/chat.repository.js";
+import { createChatMessage, getSessionMessages } from "../store/chat.repository.js";
 import * as portfolioRepo from "../store/portfolio.repository.js";
 import { getCuratedAssetSymbols } from "../data/curated-assets.js";
 
@@ -137,6 +137,7 @@ export function stripVaultDeployBlock(text: string): string {
 }
 
 export async function streamPortfolioChat(
+  sessionId: string,
   userId: string,
   quantId: string,
   userMessage: string,
@@ -145,10 +146,10 @@ export async function streamPortfolioChat(
   onError: (error: string) => void,
 ): Promise<void> {
   try {
-    await createChatMessage(userId, "user", userMessage);
+    await createChatMessage(sessionId, userId, "user", userMessage);
 
     const [history, snapshot, vault] = await Promise.all([
-      getChatHistory(userId, MAX_CONTEXT_MESSAGES),
+      getSessionMessages(sessionId, MAX_CONTEXT_MESSAGES),
       portfolioRepo.findLatestSnapshot(quantId),
       prisma.vault.findUnique({ where: { quantId }, select: { id: true } }),
     ]);
@@ -194,7 +195,7 @@ export async function streamPortfolioChat(
 
     stream.on("end", async () => {
       try {
-        const saved = await createChatMessage(userId, "assistant", fullText);
+        const saved = await createChatMessage(sessionId, userId, "assistant", fullText);
         onDone(fullText, saved.id);
       } catch (err) {
         logger.error({ err }, "Failed to save assistant message");

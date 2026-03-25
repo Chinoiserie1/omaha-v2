@@ -9,10 +9,20 @@ export interface ChatMessageData {
   createdAt: string;
 }
 
-export function useChatHistory() {
+interface ChatHistoryResponse {
+  sessionId: string;
+  messages: ChatMessageData[];
+}
+
+export function useChatHistory(sessionId: string | null) {
   return useQuery({
-    queryKey: queryKeys.chat.history(),
-    queryFn: () =>
-      apiClient.get<ChatMessageData[]>("/api/chat/history?limit=50"),
+    queryKey: queryKeys.chat.history(sessionId),
+    queryFn: () => {
+      const params = sessionId
+        ? `?limit=50&sessionId=${sessionId}`
+        : "?limit=50";
+      return apiClient.get<ChatHistoryResponse>(`/api/chat/history${params}`);
+    },
+    enabled: sessionId !== null,
   });
 }

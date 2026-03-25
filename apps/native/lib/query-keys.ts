@@ -37,7 +37,8 @@ export const queryKeys = {
     status: (userId: string) => ["follows", "status", userId] as const,
   },
   chat: {
-    history: () => ["chat", "history"] as const,
+    history: (sessionId?: string | null) =>
+      ["chat", "history", sessionId ?? "latest"] as const,
   },
   quant: {
     portfolio: (quantId: string) => ["quant", quantId, "portfolio"] as const,

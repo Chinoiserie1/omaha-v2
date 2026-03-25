@@ -12,6 +12,7 @@ import { ChatTypingIndicator } from "./ChatTypingIndicator";
 import { ChatEmptyState } from "./ChatEmptyState";
 import { PortfolioProposalCard } from "./PortfolioProposalCard";
 import { VaultDeployCard } from "./VaultDeployCard";
+import { useOnNewSessionRequest } from "@/hooks/use-chat-new-session";
 
 export function ChatScreen() {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
@@ -32,34 +33,45 @@ export function ChatScreen() {
 }
 
 function ChatConversation() {
-  const { data: history } = useChatHistory();
   const {
     messages,
     streamingContent,
     isStreaming,
+    sessionId,
     sendMessage,
     setMessages,
+    createNewSession,
     pendingProposal,
     clearProposal,
     pendingVaultDeploy,
     clearVaultDeploy,
   } = useChatWs();
+
+  // Listen for "new chat" button press from header
+  useOnNewSessionRequest(createNewSession);
+  const { data: historyData } = useChatHistory(sessionId);
   const flatListRef = useRef<FlatList<ChatMessage>>(null);
   const hasLoadedHistory = useRef(false);
+  const loadedSessionId = useRef<string | null>(null);
 
-  // Load history into local state once
+  // Load history into local state when session changes or history arrives
   useEffect(() => {
-    if (history && !hasLoadedHistory.current) {
+    if (
+      historyData?.messages &&
+      sessionId &&
+      loadedSessionId.current !== sessionId
+    ) {
+      loadedSessionId.current = sessionId;
       hasLoadedHistory.current = true;
       // History comes newest-first from API, reverse for display
       setMessages(
-        [...history].reverse().map((m) => ({
+        [...historyData.messages].reverse().map((m) => ({
           ...m,
           role: m.role as "user" | "assistant",
         })),
       );
     }
-  }, [history, setMessages]);
+  }, [historyData, sessionId, setMessages]);
 
   // Auto-scroll on new messages or streaming content
   useEffect(() => {

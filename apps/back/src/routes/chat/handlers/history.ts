@@ -1,10 +1,12 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
 import { prisma } from "@repo/database";
 import type { ApiResponse } from "@repo/shared";
+import { getLatestSession, getSessionMessages } from "../../../store/chat.repository.js";
 
 interface ChatHistoryQuery {
   limit?: string;
   cursor?: string;
+  sessionId?: string;
 }
 
 interface ChatMessageResponse {
@@ -14,10 +16,15 @@ interface ChatMessageResponse {
   createdAt: string;
 }
 
+interface ChatHistoryResponse {
+  sessionId: string;
+  messages: ChatMessageResponse[];
+}
+
 export async function getChatHistoryHandler(
   request: FastifyRequest,
   reply: FastifyReply,
-): Promise<ApiResponse<ChatMessageResponse[]> | ApiResponse<never>> {
+): Promise<ApiResponse<ChatHistoryResponse> | ApiResponse<never>> {
   const user = await prisma.user.findUnique({
     where: { privyId: request.privyUserId },
   });
@@ -33,24 +40,26 @@ export async function getChatHistoryHandler(
   const limit = Math.min(Number(query.limit) || 50, 100);
   const cursor = query.cursor;
 
-  const messages = await prisma.chatMessage.findMany({
-    where: { userId: user.id },
-    orderBy: { createdAt: "desc" },
-    take: limit,
-    ...(cursor ? { skip: 1, cursor: { id: cursor } } : {}),
-    select: {
-      id: true,
-      role: true,
-      content: true,
-      createdAt: true,
-    },
-  });
+  // Resolve session: use provided sessionId or fall back to latest
+  let sessionId = query.sessionId;
+
+  if (!sessionId) {
+    const session = await getLatestSession(user.id);
+    sessionId = session.id;
+  }
+
+  const messages = await getSessionMessages(sessionId, limit, cursor);
 
   return {
     success: true,
-    data: messages.map((m) => ({
-      ...m,
-      createdAt: m.createdAt.toISOString(),
-    })),
+    data: {
+      sessionId,
+      messages: messages.map((m) => ({
+        id: m.id,
+        role: m.role,
+        content: m.content,
+        createdAt: m.createdAt.toISOString(),
+      })),
+    },
   };
 }
