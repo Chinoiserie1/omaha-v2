@@ -145,15 +145,46 @@ model Token {
 - Batch vault creation: Create `Token` with `isVault=true` and `vaultId` after on-chain vault initialization
 - Portfolio holdings: Resolve token metadata (decimals, logoUri) via token mint to compute display values
 
+### ChatSession & ChatMessage
+
+Multi-session chat with isolated LLM context per session.
+
+```prisma
+model ChatSession {
+  id        String        @id @default(cuid())
+  userId    String
+  user      User          @relation(...)
+  title     String?       # Optional, for future session naming
+  createdAt DateTime      @default(now())
+  messages  ChatMessage[]
+}
+
+model ChatMessage {
+  id        String       @id @default(cuid())
+  sessionId String
+  session   ChatSession  @relation(...)
+  userId    String
+  user      User         @relation(...)
+  role      String       # "user" | "assistant"
+  content   String
+  createdAt DateTime     @default(now())
+}
+```
+
+- Each user can have multiple sessions; the latest is auto-resolved
+- Messages are scoped to a session — deleting a session cascades to its messages
+- See [`docs/flow/CHAT.md`](../../docs/flow/CHAT.md) for the full chat flow
+
 ### Model Relationships
 
 ```
 User (1) ──── (0..1) Quant (1) ──── (0..1) Vault ──── (1) Token (isVault=true)
-                       │                      │
-                       ├── Tweet[]            ├── RebalanceEvent[]
-                       ├── PortfolioSnapshot[]├── HoldingsSnapshot[]
-                       └── TweetImpact[]      ├── WithdrawalRequest[]
-                                              └── VaultFavorite[]
+  │                    │                      │
+  │                    ├── Tweet[]            ├── RebalanceEvent[]
+  │                    ├── PortfolioSnapshot[]├── HoldingsSnapshot[]
+  │                    └── TweetImpact[]      ├── WithdrawalRequest[]
+  │                                           └── VaultFavorite[]
+  └──── ChatSession[] ──── ChatMessage[]
 ```
 
 The Token model also holds curated assets (crypto/stock tokens) for portfolio allocations — those have `isVault=false` and `vaultId=null`.

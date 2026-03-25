@@ -149,6 +149,8 @@ Uses `@repo/config-eslint/node` which includes:
 - **FundSolTxBuilder** - Builds funded swap transactions with fee payer partial signing
 - **SharePriceOnChainService** - Computes share price from TVL/supply for atomic deposit (DepositWithPrice); enforces 2-min price freshness
 - **TvlService** - Computes vault TVL from on-chain token accounts + cached DB prices; supports strict `maxAgeMs` freshness validation
+- **ChatService** - General crypto/DeFi chat streaming via Claude Haiku (session-scoped context)
+- **PortfolioChatService** - Portfolio strategist chat with structured proposal/vault-deploy outputs (session-scoped context)
 
 ## Key Repositories
 
@@ -159,6 +161,7 @@ Uses `@repo/config-eslint/node` which includes:
 - **PortfolioSnapshotRepository** - Historical portfolio values (March 2026)
 - **PriceRepository** - Token pricing data
 - **PerformanceRepository** - Vault performance metrics
+- **ChatRepository** - Chat session and message persistence (session-scoped queries)
 
 ## Cron Jobs
 
@@ -267,6 +270,31 @@ All payloads include `withdrawalId`, `status`, and `timestamp`.
 - `src/routes/withdrawals/handlers/confirm-redeem.ts` — Sends PROCESSING
 - `src/routes/withdrawals/handlers/confirm-claim.ts` — Sends CLAIMED
 - `src/services/withdrawal.service.ts` — Sends PROCESSING / FAILED
+
+### Chat
+
+> Full flow documentation: [`docs/flow/CHAT.md`](../../docs/flow/CHAT.md)
+
+| Method | Endpoint              | Description                                   |
+| ------ | --------------------- | --------------------------------------------- |
+| GET    | `/api/chat/history`   | Get messages for a session (default: latest)  |
+| POST   | `/api/chat/sessions`  | Create a new chat session                     |
+
+| Protocol | Endpoint    | Description                                                  |
+| -------- | ----------- | ------------------------------------------------------------ |
+| WS       | `/ws/chat`  | Real-time chat streaming with session management             |
+
+**Chat WebSocket events** (server → client): `chat:session`, `chat:session_created`, `chat:chunk`, `chat:done`, `chat:portfolio_proposal`, `chat:vault_deploy`, `chat:error`
+
+**Chat WebSocket events** (client → server): `chat:message`, `chat:new_session`
+
+**Source files**:
+
+- `src/infra/chat-websocket.ts` — WebSocket server, session resolution, event routing
+- `src/services/chat.service.ts` — General chat streaming
+- `src/services/portfolio-chat.service.ts` — Portfolio chat streaming + structured output parsing
+- `src/store/chat.repository.ts` — Session and message persistence
+- `src/routes/chat/` — REST endpoints (history, create-session)
 
 ### Swap & Fund SOL
 

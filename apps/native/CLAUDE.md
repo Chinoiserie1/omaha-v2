@@ -121,6 +121,28 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
   - `FundSolSuccess.tsx` - Success confirmation screen
 - **Features**: Quick USDC→SOL swaps, platform fee display (2%), transaction builder + signing flow
 
+### Chat Screen (Multi-Session)
+
+> Full flow documentation: [`docs/flow/CHAT.md`](../../docs/flow/CHAT.md)
+
+- **Route**: `app/(app)/(chat)/index.tsx`
+- **Layout**: `app/(app)/(chat)/_layout.tsx` — Stack with back button + "New Chat" header icon
+- **Components**: `components/chat/`
+  - `ChatScreen.tsx` - Main container (Quant gate, session management, history loading)
+  - `ChatInput.tsx` - Text input + send (max 2000 chars)
+  - `ChatMessageBubble.tsx` - User/assistant message display
+  - `ChatEmptyState.tsx` - Suggestion chips for empty sessions
+  - `ChatTypingIndicator.tsx` - Animated dots during streaming
+  - `PortfolioProposalCard.tsx` - Accept/reject portfolio proposals
+  - `VaultDeployCard.tsx` - Vault deployment confirmation
+  - `BecomeQuantScreen.tsx` - CTA for non-Quant users
+  - `ChatBottomAccessory.tsx` - "Manage Portfolio" navigation button
+- **Hooks**:
+  - `use-chat-ws.ts` - WebSocket connection, messages, sessions
+  - `use-chat-history.ts` - REST query for session messages
+  - `use-chat-new-session.ts` - Event bridge (header → ChatScreen via DeviceEventEmitter)
+- **Features**: Multiple isolated sessions, streaming AI responses, portfolio proposals, vault deploy actions, auto-scroll, reconnect on disconnect
+
 ### Vault Detail Screen
 
 - **Route**: `app/(app)/(tabs)/(home)/vault/[id].tsx`
