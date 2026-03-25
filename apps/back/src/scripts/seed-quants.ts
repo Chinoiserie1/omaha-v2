@@ -20,7 +20,6 @@ const QUANTS: { username: string; hasTwitter?: boolean; knowledge?: Prisma.Input
   { username: "PenisVentures" },
   { username: "LynAldenContact" },
   { username: "jussy_world" },
-  { username: "SBC7H7La", hasTwitter: false },
   { username: "Citrini7" },
   { username: "NancyPelosiTracker", hasTwitter: false },
   {
