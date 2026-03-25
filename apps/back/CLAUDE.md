@@ -170,7 +170,7 @@ Scheduled tasks run from `src/cron/index.ts`:
 | `run-algo`            | Every 30 min     | Classify tweets + generate theses              |
 | `fetch-prices`        | Every 1 min      | Seed USDC price + compute vault share prices (token prices fetched by standalone price worker) |
 | `rebalance-vaults`    | Every 6 hours    | Execute on-chain swaps                         |
-| `snapshot-portfolios` | Every 6 hours    | Capture portfolio values for charts (Mar 2026) |
+| `snapshot-portfolios` | Weekly (Sun midnight) | Capture portfolio values for charts (Mar 2026) |
 | `sync-profiles`       | Weekly (Sun 3am) | Refresh Quant Twitter profiles                  |
 | `health-check`        | Every 6 hours    | Monitor API health                             |
 

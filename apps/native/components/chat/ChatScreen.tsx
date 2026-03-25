@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
 import { View, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/ui/text";
 import { useMyProfile } from "@/hooks/queries/use-profile";
 import { useChatHistory } from "@/hooks/queries/use-chat-history";
 import { useChatWs, type ChatMessage } from "@/hooks/use-chat-ws";
-import { useChatSearchFilter } from "@/hooks/use-chat-search-filter";
 import { BecomeQuantScreen } from "./BecomeQuantScreen";
 import { ChatMessageBubble } from "./ChatMessageBubble";
 import { ChatInput } from "./ChatInput";
@@ -13,11 +13,7 @@ import { ChatEmptyState } from "./ChatEmptyState";
 import { PortfolioProposalCard } from "./PortfolioProposalCard";
 import { VaultDeployCard } from "./VaultDeployCard";
 
-interface ChatScreenProps {
-  searchText: string;
-}
-
-export function ChatScreen({ searchText }: ChatScreenProps) {
+export function ChatScreen() {
   const { data: profile, isLoading: profileLoading } = useMyProfile();
 
   if (profileLoading) {
@@ -32,10 +28,10 @@ export function ChatScreen({ searchText }: ChatScreenProps) {
     return <BecomeQuantScreen />;
   }
 
-  return <ChatConversation searchText={searchText} />;
+  return <ChatConversation />;
 }
 
-function ChatConversation({ searchText }: ChatScreenProps) {
+function ChatConversation() {
   const { data: history } = useChatHistory();
   const {
     messages,
@@ -88,13 +84,7 @@ function ChatConversation({ searchText }: ChatScreenProps) {
     ? [...messages, streamingBubble]
     : messages;
 
-  const { filteredMessages, isSearchActive } = useChatSearchFilter(
-    displayMessages,
-    searchText,
-  );
-
-  const showEmptyState =
-    filteredMessages.length === 0 && !isStreaming && !isSearchActive;
+  const showEmptyState = displayMessages.length === 0 && !isStreaming;
 
   const isIOS = Platform.OS === "ios";
 
@@ -113,46 +103,48 @@ function ChatConversation({ searchText }: ChatScreenProps) {
   };
 
   return (
-    <KeyboardAvoidingView
-      style={styles.flex}
-      behavior={isIOS ? "padding" : undefined}
-      keyboardVerticalOffset={isIOS ? 0 : 0}
-    >
-      {showEmptyState ? (
-        <ChatEmptyState onSuggestion={sendMessage} />
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={filteredMessages}
-          keyExtractor={(item) => item.id}
-          renderItem={({ item }) => <ChatMessageBubble message={item} />}
-          contentContainerStyle={styles.listContent}
-          contentInsetAdjustmentBehavior={isIOS ? "automatic" : undefined}
-          ListFooterComponent={
-            <>
-              {isStreaming && !streamingContent ? (
-                <ChatTypingIndicator />
-              ) : null}
-              {pendingProposal && !isStreaming ? (
-                <PortfolioProposalCard
-                  proposal={pendingProposal}
-                  onAccepted={clearProposal}
-                  onRejected={handleRejectProposal}
-                />
-              ) : null}
-              {pendingVaultDeploy && !isStreaming ? (
-                <VaultDeployCard
-                  onDeployed={handleVaultDeployed}
-                  onCancelled={handleVaultDeployCancelled}
-                />
-              ) : null}
-            </>
-          }
-        />
-      )}
+    <SafeAreaView style={styles.flex} edges={["bottom"]}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={isIOS ? "padding" : undefined}
+        keyboardVerticalOffset={isIOS ? 0 : 0}
+      >
+        {showEmptyState ? (
+          <ChatEmptyState onSuggestion={sendMessage} />
+        ) : (
+          <FlatList
+            ref={flatListRef}
+            data={displayMessages}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => <ChatMessageBubble message={item} />}
+            contentContainerStyle={styles.listContent}
+            contentInsetAdjustmentBehavior={isIOS ? "automatic" : undefined}
+            ListFooterComponent={
+              <>
+                {isStreaming && !streamingContent ? (
+                  <ChatTypingIndicator />
+                ) : null}
+                {pendingProposal && !isStreaming ? (
+                  <PortfolioProposalCard
+                    proposal={pendingProposal}
+                    onAccepted={clearProposal}
+                    onRejected={handleRejectProposal}
+                  />
+                ) : null}
+                {pendingVaultDeploy && !isStreaming ? (
+                  <VaultDeployCard
+                    onDeployed={handleVaultDeployed}
+                    onCancelled={handleVaultDeployCancelled}
+                  />
+                ) : null}
+              </>
+            }
+          />
+        )}
 
-      <ChatInput onSend={sendMessage} disabled={isStreaming} />
-    </KeyboardAvoidingView>
+        <ChatInput onSend={sendMessage} disabled={isStreaming} />
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 }
 

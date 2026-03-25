@@ -83,6 +83,10 @@ export default function AppLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen
+          name="(chat)"
+          options={{ animation: "slide_from_bottom" }}
+        />
       </Stack>
     </TabBarVisibilityProvider>
   );

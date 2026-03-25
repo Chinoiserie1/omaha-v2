@@ -5,3 +5,4 @@ export { ChatInput } from "./ChatInput";
 export { ChatTypingIndicator } from "./ChatTypingIndicator";
 export { ChatEmptyState } from "./ChatEmptyState";
 export { PortfolioProposalCard } from "./PortfolioProposalCard";
+export { ChatBottomAccessory } from "./ChatBottomAccessory";

@@ -12,6 +12,7 @@ This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native
 - [Fund SOL (USDC → SOL for gas fees)](./docs/flow/FUND-SOL.md) — Full transaction flow from mobile UI to on-chain swap
 - [Withdraw from Vault](./docs/flow/WITHDRAW-VAULT.md) — Multi-step withdrawal flow (redeem → fulfill → claim)
 - [Price Worker](./docs/flow/PRICE-WORKER.md) — Token price fetching, multi-instance scaling, and vault share pricing
+- [Tweet Embed Rendering](./docs/TWEET-EMBED-RENDERING.md) — Two-tier tweet display in React Native (text-first, embed on demand)
 
 ### Deployment
 
@@ -207,6 +208,14 @@ pnpm program:test              # Run vault program unit tests
 pnpm program:deploy            # Deploy vault program to devnet
 ```
 
+### Vault Integration Tests
+
+```bash
+pnpm test:vault:memo           # Test vault memo CPI
+pnpm test:vault:transfer       # Test vault token transfer CPI
+pnpm test:vault:swap           # Test vault swap CPI (Jupiter)
+```
+
 ### Data & Seed Scripts
 
 ```bash
@@ -261,15 +270,26 @@ Create a `.env` file in the root directory (see `.env.example`). The native app 
 
 | Variable | Required | Description |
 |----------|----------|-------------|
+| **Core** | | |
 | `DATABASE_URL` | Yes | PostgreSQL connection string (`postgresql://user:password@localhost:5456/autopilot`) |
 | `REDIS_URL` | Yes | Redis connection string (`redis://localhost:6380`) |
 | `NODE_ENV` | Yes | Environment (`development` / `production`) |
+| **Auth & Analytics** | | |
 | `EXPO_PUBLIC_PRIVY_APP_ID` | Yes | Privy app ID (from dashboard.privy.io) |
 | `EXPO_PUBLIC_PRIVY_CLIENT_ID` | Yes | Privy client ID |
 | `PRIVY_APP_SECRET` | Yes | Privy app secret (backend only) |
 | `EXPO_PUBLIC_POSTHOG_API_KEY` | No | PostHog analytics key (EU cloud) |
+| **API URLs** | | |
+| `EXPO_PUBLIC_API_URL` | No | Backend API URL for native app (default: `http://localhost:4001`) |
+| `EXPO_PUBLIC_API_URL_PRD` | No | Production backend API URL for native app |
+| `NEXT_PUBLIC_API_URL` | No | Backend API URL for web app |
+| `NEXT_PUBLIC_MAKE_WEBHOOK_URL` | No | Make.com webhook for waitlist |
+| **KOL Pipeline** | | |
 | `RAPIDAPI_KEY` | No | Twitter API via RapidAPI |
+| `RAPIDAPI_HOST` | No | RapidAPI host (default: `twitter241.p.rapidapi.com`) |
+| `FETCH_DELAY_MS` | No | Delay between RapidAPI calls in ms (default: 1500) |
 | `ANTHROPIC_API_KEY` | No | Anthropic API for signal analysis |
+| **Solana & On-Chain** | | |
 | `SOLANA_NETWORK` | No | `mainnet` or `devnet` (default: mainnet) — selects USDC mint |
 | `SOLANA_RPC_URL` | No | Solana RPC endpoint (backend) |
 | `USDC_MINT` | No | Override USDC mint address (auto-selected from `SOLANA_NETWORK`) |
@@ -278,17 +298,39 @@ Create a `.env` file in the root directory (see `.env.example`). The native app 
 | `EXPO_PUBLIC_USDC_MINT` | No | Override USDC mint address (native app) |
 | `ADMIN_PROGRAM_PRIVATE_KEY` | No | Factory owner + vault admin keypair for on-chain operations |
 | `PROGRAM_AUTHORITY_PRIVATE_KEY` | No | Program authority keypair for factory init (remove after) |
-| `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |
+| `GLAM_PROGRAM_ID` | No | GLAM Protocol program ID |
+| **Jupiter & Pricing** | | |
 | `JUPITER_API_KEY` | No | Jupiter swap + price API key |
 | `JUPITER_API_KEYS` | No | Comma-separated keys from different Jupiter accounts (price worker multi-account scaling) |
 | `JUPITER_RPM` | No | Jupiter requests/min per key (default: 55 for free tier) |
+| `JUPITER_MAX_ACCOUNTS` | No | Jupiter routing: 0 = onlyDirectRoutes, >0 = maxAccounts for multi-hop (default: 0) |
 | `PRICE_CONCURRENCY` | No | Max concurrent price fetch requests (default: 10) |
 | `PRICE_BATCH_SIZE` | No | Mints per Jupiter price API call (default: 50, max 50) |
 | `BIRDEYE_API_KEY` | No | Birdeye price data for backtesting + fallback pricing |
+| **Fund SOL** | | |
+| `FEE_PAYER_PRIVATE_KEY` | No | Fee payer for Fund SOL transactions |
+| `FUND_SOL_FEE_PCT` | No | Platform fee percentage for USDC→SOL swaps (default: 2) |
+| **Rebalancing** | | |
+| `REBALANCE_DRY_RUN` | No | Dry run mode — log swaps without executing (default: true) |
+| `MAX_PRICE_IMPACT_BPS` | No | Max acceptable price impact in basis points (default: 100) |
+| `MIN_SWAP_USD` | No | Minimum swap amount in USD (default: 5) |
+| `MAX_SWAP_EQUITY_PCT` | No | Max single swap as % of vault equity (default: 25) |
+| `SNAPSHOT_STALENESS_H` | No | Hours before portfolio snapshot is stale (default: 24) |
+| **Withdrawal Queue** | | |
+| `WITHDRAWAL_BATCH_WINDOW_MS` | No | Batch window for queued withdrawals in ms (default: 600000) |
+| `WITHDRAWAL_MAX_RETRIES` | No | Max retry attempts for failed withdrawals (default: 3) |
+| **Cron Schedules** | | |
+| `CRON_FETCH_TWEETS` | No | Tweet fetch schedule (default: `*/15 * * * *`) |
+| `CRON_RUN_ALGO` | No | Algo run schedule (default: `*/30 * * * *`) |
+| `CRON_FETCH_PRICES` | No | Price fetch schedule (default: `* * * * *`) |
+| `CRON_REBALANCE_VAULTS` | No | Vault rebalance schedule (default: `0 */6 * * *`) |
+| `CRON_SNAPSHOT_PORTFOLIOS` | No | Portfolio snapshot schedule (default: `0 0 * * 0` — weekly Sun midnight) |
+| `CRON_SYNC_PROFILES` | No | Profile sync schedule (default: `0 3 * * 0` — weekly Sun 3am) |
+| `CRON_HEALTH_CHECK` | No | Health check schedule (default: `0 */6 * * *`) |
+| `CRON_RECOVERY_WITHDRAWALS` | No | Recovery withdrawal schedule (default: `*/5 * * * *`) |
+| **Notifications** | | |
 | `TELEGRAM_BOT_TOKEN` | No | Telegram health check bot |
 | `TELEGRAM_CHAT_ID` | No | Telegram group chat ID |
-| `NEXT_PUBLIC_API_URL` | No | Backend API URL for web app |
-| `NEXT_PUBLIC_MAKE_WEBHOOK_URL` | No | Make.com webhook for waitlist |
 
 <!-- /AUTO-GENERATED -->
 

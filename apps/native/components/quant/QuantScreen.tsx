@@ -16,7 +16,6 @@ import { NoStrategyState } from "./NoStrategyState";
 import { SetupLoadingState } from "./SetupLoadingState";
 import { VaultOverview } from "./VaultOverview";
 import { QuantHeader } from "./QuantHeader";
-import { FixedChatButton } from "./FixedChatButton";
 import type { Allocation } from "@repo/shared";
 
 interface PortfolioData {
@@ -100,7 +99,7 @@ function StrategyContent({
   vault: VaultData | null;
 }) {
   const handleSparklesPress = useCallback(() => {
-    router.push("/(app)/(tabs)/(chat)");
+    router.push("/(app)/(chat)");
   }, []);
 
   const sections = useMemo(
@@ -296,7 +295,6 @@ export function QuantScreen() {
         portfolio={portfolio}
         vault={vault ?? null}
       />
-      <FixedChatButton />
     </View>
   );
 }

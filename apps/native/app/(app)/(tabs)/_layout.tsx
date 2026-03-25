@@ -1,57 +1,60 @@
 import { Platform } from "react-native";
-import { Tabs } from "expo-router";
-import { NativeTabs, Icon, Label } from "expo-router/unstable-native-tabs";
+import { Tabs, withLayoutContext } from "expo-router";
+import { createNativeBottomTabNavigator } from "@react-navigation/bottom-tabs/unstable";
 import { Ionicons } from "@expo/vector-icons";
 import { FloatingGlassTabBar } from "@/components/navigation/FloatingGlassTabBar";
-import { ChatSearchProvider } from "@/contexts/chat-search";
-import { ActiveTabProvider, useActiveTab } from "@/contexts/active-tab";
+import { ChatBottomAccessory } from "@/components/chat/ChatBottomAccessory";
+
+const NativeTab = withLayoutContext(
+  createNativeBottomTabNavigator().Navigator,
+);
 
 export default function TabsLayout() {
   if (Platform.OS === "ios") {
-    return (
-      <ActiveTabProvider>
-        <ChatSearchProvider>
-          <IOSTabs />
-        </ChatSearchProvider>
-      </ActiveTabProvider>
-    );
+    return <IOSTabs />;
   }
 
   return <AndroidTabs />;
 }
 
 function IOSTabs() {
-  const { activeTab } = useActiveTab();
-  const chatVisible = activeTab === "(quant)" || activeTab === "(chat)";
-
   return (
-    <NativeTabs>
-      <NativeTabs.Trigger name="(home)">
-        <Icon sf="waveform.path.ecg" />
-        <Label>Tracker</Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="(explore)">
-        <Icon sf="magnifyingglass" />
-        <Label>Explore</Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger name="(quant)">
-        <Icon sf="chart.line.uptrend.xyaxis" />
-        <Label>Quant</Label>
-      </NativeTabs.Trigger>
-
-      <NativeTabs.Trigger
-        name="(chat)"
-        role="search"
-        hidden={!chatVisible}
+    <NativeTab>
+      <NativeTab.Screen
+        name="(home)"
+        options={{
+          title: "Tracker",
+          tabBarIcon: { type: "sfSymbol", name: "waveform.path.ecg" },
+        }}
       />
-
-      <NativeTabs.Trigger name="(profile)">
-        <Icon sf="person" />
-        <Label>Profile</Label>
-      </NativeTabs.Trigger>
-    </NativeTabs>
+      <NativeTab.Screen
+        name="(explore)"
+        options={{
+          title: "Explore",
+          tabBarIcon: { type: "sfSymbol", name: "magnifyingglass" },
+        }}
+      />
+      <NativeTab.Screen
+        name="(quant)"
+        options={{
+          title: "Quant",
+          tabBarIcon: {
+            type: "sfSymbol",
+            name: "chart.line.uptrend.xyaxis",
+          },
+          bottomAccessory: ({ placement }: { placement: "regular" | "inline" }) => (
+            <ChatBottomAccessory placement={placement} />
+          ),
+        }}
+      />
+      <NativeTab.Screen
+        name="(profile)"
+        options={{
+          title: "Profile",
+          tabBarIcon: { type: "sfSymbol", name: "person" },
+        }}
+      />
+    </NativeTab>
   );
 }
 
@@ -103,13 +106,6 @@ function AndroidTabs() {
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="person-outline" size={size} color={color} />
           ),
-        }}
-      />
-      <Tabs.Screen
-        name="(chat)"
-        options={{
-          href: null,
-          headerShown: false,
         }}
       />
     </Tabs>

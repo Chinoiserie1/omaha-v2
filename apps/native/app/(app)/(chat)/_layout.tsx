@@ -1,12 +1,6 @@
-import { Pressable } from "react-native";
-import {
-  Platform,
-  type NativeSyntheticEvent,
-  type TextInputFocusEventData,
-} from "react-native";
+import { Pressable, Platform } from "react-native";
 import { Stack, useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { useChatSearch } from "@/contexts/chat-search";
 
 export default function ChatStack() {
   if (Platform.OS === "ios") {
@@ -33,10 +27,7 @@ function AndroidChatStack() {
           headerTintColor: "#FAFAFA",
           headerShadowVisible: false,
           headerLeft: () => (
-            <Pressable
-              onPress={() => router.navigate("/(app)/(tabs)/(quant)")}
-              hitSlop={8}
-            >
+            <Pressable onPress={() => router.back()} hitSlop={8}>
               <Ionicons name="arrow-back" size={24} color="#FAFAFA" />
             </Pressable>
           ),
@@ -47,7 +38,7 @@ function AndroidChatStack() {
 }
 
 function IOSChatStack() {
-  const { setSearchText } = useChatSearch();
+  const router = useRouter();
 
   return (
     <Stack
@@ -63,24 +54,12 @@ function IOSChatStack() {
           title: "Chat",
           headerStyle: { backgroundColor: "#0F172A" },
           headerTintColor: "#FAFAFA",
-          headerLargeTitleEnabled: true,
-          headerLargeTitleStyle: {
-            color: "#FAFAFA",
-            fontWeight: "700",
-          },
-          headerLargeStyle: { backgroundColor: "#0F172A" },
           headerShadowVisible: false,
-          headerSearchBarOptions: {
-            placeholder: "Search messages...",
-            textColor: "#FAFAFA",
-            tintColor: "#FAFAFA",
-            barTintColor: "rgba(255,255,255,0.08)",
-            hideWhenScrolling: false,
-            onChangeText: (
-              e: NativeSyntheticEvent<TextInputFocusEventData>,
-            ) => setSearchText(e.nativeEvent.text),
-            onCancelButtonPress: () => setSearchText(""),
-          },
+          headerLeft: () => (
+            <Pressable onPress={() => router.back()} hitSlop={8}>
+              <Ionicons name="chevron-down" size={24} color="#FAFAFA" />
+            </Pressable>
+          ),
         }}
       />
     </Stack>
