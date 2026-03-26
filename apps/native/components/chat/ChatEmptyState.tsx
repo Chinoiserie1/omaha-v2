@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import { View, StyleSheet, Pressable } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui/text";
+import { GlassView } from "@/components/ui/glass";
 
 interface ChatEmptyStateProps {
   onSuggestion: (text: string) => void;
@@ -50,13 +51,14 @@ export function ChatEmptyState({ onSuggestion }: ChatEmptyStateProps) {
       </Text>
       <View style={styles.suggestions}>
         {suggestions.map((text) => (
-          <Pressable
-            key={text}
-            style={styles.chip}
-            onPress={() => onSuggestion(text)}
-          >
-            <Text style={styles.chipText}>{text}</Text>
-          </Pressable>
+          <GlassView key={text} interactive style={styles.chip}>
+            <Pressable
+              style={styles.chipInner}
+              onPress={() => onSuggestion(text)}
+            >
+              <Text style={styles.chipText}>{text}</Text>
+            </Pressable>
+          </GlassView>
         ))}
       </View>
     </View>
@@ -93,12 +95,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   chip: {
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 20,
+  },
+  chipInner: {
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
   },
   chipText: {
     color: "#E2E8F0",

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { View, StyleSheet, Pressable, ActivityIndicator } from "react-native";
 import { Text } from "@/components/ui/text";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "@/components/ui/glass";
 import type { PortfolioProposal } from "@/hooks/use-chat-ws";
 import { useAcceptProposal } from "@/hooks/mutations/use-accept-proposal";
 import { useMyProfile } from "@/hooks/queries/use-profile";
@@ -48,71 +49,79 @@ export function PortfolioProposalCard({
 
   if (accepted) {
     return (
-      <View style={[styles.card, styles.cardAccepted]}>
-        <View style={styles.headerRow}>
-          <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
-          <Text style={styles.acceptedText}>Portfolio updated</Text>
+      <GlassView tintColor="#22C55E" style={styles.card}>
+        <View style={styles.cardInner}>
+          <View style={styles.headerRow}>
+            <Ionicons name="checkmark-circle" size={20} color="#22C55E" />
+            <Text style={styles.acceptedText}>Portfolio updated</Text>
+          </View>
         </View>
-      </View>
+      </GlassView>
     );
   }
 
   return (
-    <View style={styles.card}>
-      <View style={styles.headerRow}>
-        <Ionicons name="pie-chart-outline" size={18} color="#3B82F6" />
-        <Text style={styles.headerText}>Portfolio Proposal</Text>
-      </View>
-
-      <Text style={styles.thesis} numberOfLines={2}>
-        {proposal.thesisSummary}
-      </Text>
-
-      <View style={styles.allocations}>
-        {proposal.allocations.slice(0, 5).map((a) => (
-          <View key={a.asset} style={styles.allocationRow}>
-            <Text style={styles.assetName}>{a.asset}</Text>
-            <Text style={styles.percentage}>{a.percentage}%</Text>
-          </View>
-        ))}
-        {proposal.allocations.length > 5 && (
-          <Text style={styles.moreText}>
-            +{proposal.allocations.length - 5} more
-          </Text>
-        )}
-      </View>
-
-      {proposal.changes.length > 0 && (
-        <View style={styles.changes}>
-          {proposal.changes.map((change, i) => (
-            <Text key={i} style={styles.changeText}>
-              {change}
-            </Text>
-          ))}
+    <GlassView style={styles.card}>
+      <View style={styles.cardInner}>
+        <View style={styles.headerRow}>
+          <Ionicons name="pie-chart-outline" size={18} color="#3B82F6" />
+          <Text style={styles.headerText}>Portfolio Proposal</Text>
         </View>
-      )}
 
-      <View style={styles.actions}>
-        <Pressable
-          style={[styles.button, styles.rejectButton]}
-          onPress={onRejected}
-          disabled={isPending}
-        >
-          <Text style={styles.rejectText}>Reject</Text>
-        </Pressable>
-        <Pressable
-          style={[styles.button, styles.acceptButton]}
-          onPress={handleAccept}
-          disabled={isPending}
-        >
-          {isPending ? (
-            <ActivityIndicator size="small" color="#FFF" />
-          ) : (
-            <Text style={styles.acceptText}>Accept</Text>
+        <Text style={styles.thesis} numberOfLines={2}>
+          {proposal.thesisSummary}
+        </Text>
+
+        <View style={styles.allocations}>
+          {proposal.allocations.slice(0, 5).map((a) => (
+            <View key={a.asset} style={styles.allocationRow}>
+              <Text style={styles.assetName}>{a.asset}</Text>
+              <Text style={styles.percentage}>{a.percentage}%</Text>
+            </View>
+          ))}
+          {proposal.allocations.length > 5 && (
+            <Text style={styles.moreText}>
+              +{proposal.allocations.length - 5} more
+            </Text>
           )}
-        </Pressable>
+        </View>
+
+        {proposal.changes.length > 0 && (
+          <View style={styles.changes}>
+            {proposal.changes.map((change, i) => (
+              <Text key={i} style={styles.changeText}>
+                {change}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        <View style={styles.actions}>
+          <GlassView interactive style={styles.buttonGlass}>
+            <Pressable
+              style={styles.buttonInner}
+              onPress={onRejected}
+              disabled={isPending}
+            >
+              <Text style={styles.rejectText}>Reject</Text>
+            </Pressable>
+          </GlassView>
+          <GlassView tintColor="#22C55E" interactive style={styles.buttonGlass}>
+            <Pressable
+              style={styles.buttonInner}
+              onPress={handleAccept}
+              disabled={isPending}
+            >
+              {isPending ? (
+                <ActivityIndicator size="small" color="#FFF" />
+              ) : (
+                <Text style={styles.acceptText}>Accept</Text>
+              )}
+            </Pressable>
+          </GlassView>
+        </View>
       </View>
-    </View>
+    </GlassView>
   );
 }
 
@@ -120,16 +129,11 @@ const styles = StyleSheet.create({
   card: {
     marginHorizontal: 16,
     marginVertical: 8,
-    padding: 16,
-    backgroundColor: "rgba(59, 130, 246, 0.08)",
     borderRadius: 16,
-    borderWidth: 1,
-    borderColor: "rgba(59, 130, 246, 0.2)",
-    gap: 12,
   },
-  cardAccepted: {
-    backgroundColor: "rgba(34, 197, 94, 0.08)",
-    borderColor: "rgba(34, 197, 94, 0.2)",
+  cardInner: {
+    padding: 16,
+    gap: 12,
   },
   headerRow: {
     flexDirection: "row",
@@ -186,19 +190,14 @@ const styles = StyleSheet.create({
     gap: 12,
     marginTop: 4,
   },
-  button: {
+  buttonGlass: {
     flex: 1,
-    paddingVertical: 10,
     borderRadius: 10,
+  },
+  buttonInner: {
+    paddingVertical: 10,
     alignItems: "center",
     justifyContent: "center",
-  },
-  rejectButton: {
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.15)",
-  },
-  acceptButton: {
-    backgroundColor: "#22C55E",
   },
   rejectText: {
     fontSize: 14,
