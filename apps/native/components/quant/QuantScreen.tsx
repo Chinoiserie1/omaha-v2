@@ -11,7 +11,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "@/lib/query-keys";
 import { VaultThesis } from "@/components/vault/VaultThesis";
 import { VaultAllocationCard } from "@/components/vault/VaultAllocationCard";
-import { NotQuantState } from "./NotQuantState";
+import { QuantOnboarding } from "./onboarding";
 import { NoStrategyState } from "./NoStrategyState";
 import { SetupLoadingState } from "./SetupLoadingState";
 import { VaultOverview } from "./VaultOverview";
@@ -255,7 +255,7 @@ export function QuantScreen() {
   if (!quantId) {
     return (
       <View className="flex-1">
-        <NotQuantState onSetupStarted={() => { hasInvalidated.current = false; setIsSettingUp(true); }} />
+        <QuantOnboarding onSetupStarted={() => { hasInvalidated.current = false; setIsSettingUp(true); }} />
       </View>
     );
   }

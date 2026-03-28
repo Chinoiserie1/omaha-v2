@@ -9,6 +9,7 @@ import { useAuth } from "../../contexts/auth-context";
 import { useWithdrawalWebSocket } from "../../hooks/use-withdrawal-ws";
 import { usePushNotifications } from "../../hooks/use-push-notifications";
 import { TabBarVisibilityProvider } from "../../contexts/tab-bar-visibility";
+import { QuantOnboardingProvider } from "../../contexts/quant-onboarding";
 
 export default function AppLayout() {
   const { status } = useAuth();
@@ -75,19 +76,21 @@ export default function AppLayout() {
   }
 
   return (
-    <TabBarVisibilityProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: "#0F172A" },
-        }}
-      >
-        <Stack.Screen name="(tabs)" />
-        <Stack.Screen
-          name="(chat)"
-          options={{ animation: "slide_from_bottom" }}
-        />
-      </Stack>
-    </TabBarVisibilityProvider>
+    <QuantOnboardingProvider>
+      <TabBarVisibilityProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: "#0F172A" },
+          }}
+        >
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen
+            name="(chat)"
+            options={{ animation: "slide_from_bottom" }}
+          />
+        </Stack>
+      </TabBarVisibilityProvider>
+    </QuantOnboardingProvider>
   );
 }
