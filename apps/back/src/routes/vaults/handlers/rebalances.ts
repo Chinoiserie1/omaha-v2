@@ -1,28 +1,35 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { paginationSchema, type PaginatedResponse } from "@repo/shared";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as rebalanceRepo from "../../../store/rebalance.repository.js";
-import { logger } from "../../../utils/logger.js";
-
-type GetRebalancesRequest = FastifyRequest<{
-  Params: { id: string };
-  Querystring: { limit?: string };
-}>;
 
 export async function getRebalances(
-  request: GetRebalancesRequest,
+  request: FastifyRequest<{ Params: { id: string } }>,
   reply: FastifyReply,
 ) {
-  logger.info("AAA");
   const vault = await vaultRepo.findVaultById(request.params.id);
   if (!vault) {
     return reply.status(404).send({ error: "Vault not found" });
   }
 
-  const limit = Math.min(Math.max(1, Number(request.query.limit) || 10), 50);
+  const parsed = paginationSchema.safeParse(request.query);
+  if (!parsed.success) {
+    return reply.status(400).send({
+      success: false,
+      error: parsed.error.errors.map((e) => e.message).join(", "),
+    });
+  }
 
-  const events = await rebalanceRepo.findByVaultWithSnapshots(vault.id, limit);
+  const { page, pageSize } = parsed.data;
+  const skip = (page - 1) * pageSize;
 
-  return events.map((event) => {
+  const { events, total } = await rebalanceRepo.findByVaultWithSnapshotsPaginated(
+    vault.id,
+    skip,
+    pageSize,
+  );
+
+  const items = events.map((event) => {
     const topImpact = event.snapshot.tweetImpacts[0] ?? null;
 
     return {
@@ -53,4 +60,14 @@ export async function getRebalances(
       },
     };
   });
+
+  const response: PaginatedResponse<(typeof items)[number]> = {
+    items,
+    total,
+    page,
+    pageSize,
+    totalPages: Math.ceil(total / pageSize),
+  };
+
+  return response;
 }

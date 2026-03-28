@@ -85,3 +85,51 @@ export async function findByVaultWithSnapshots(
     },
   });
 }
+
+const snapshotInclude = {
+  snapshot: {
+    select: {
+      id: true,
+      thesisSummary: true,
+      changes: true,
+      createdAt: true,
+      tweetImpacts: {
+        orderBy: { significanceScore: "desc" as const },
+        take: 1,
+        include: {
+          tweet: {
+            select: {
+              tweetId: true,
+              fullText: true,
+              postedAt: true,
+              favoriteCount: true,
+              retweetCount: true,
+              replyCount: true,
+              bookmarkCount: true,
+              viewsCount: true,
+            },
+          },
+        },
+      },
+    },
+  },
+};
+
+export async function findByVaultWithSnapshotsPaginated(
+  vaultId: string,
+  skip: number,
+  take: number,
+) {
+  const where = { vaultId };
+  const [events, total] = await Promise.all([
+    prisma.rebalanceEvent.findMany({
+      where,
+      orderBy: { startedAt: "desc" },
+      skip,
+      take,
+      include: snapshotInclude,
+    }),
+    prisma.rebalanceEvent.count({ where }),
+  ]);
+  return { events, total };
+}

@@ -30,6 +30,9 @@ export default function VaultScreen() {
       onWithdraw={() =>
         router.push(`/(app)/(tabs)/${tabSegment}/vault/${id}/withdraw` as never)
       }
+      onViewAllUpdates={() =>
+        router.push(`/(app)/(tabs)/${tabSegment}/vault/${id}/strategy-updates` as never)
+      }
     />
   );
 }

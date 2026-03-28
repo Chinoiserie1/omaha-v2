@@ -23,6 +23,7 @@ export default function VaultLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="invest" options={sheetOptions} />
       <Stack.Screen name="withdraw" options={sheetOptions} />
+      <Stack.Screen name="strategy-updates" />
     </Stack>
   );
 }

@@ -83,6 +83,7 @@ interface VaultDetailProps {
   onBack: () => void;
   onInvest: () => void;
   onWithdraw: () => void;
+  onViewAllUpdates: () => void;
 }
 
 function buildSections(
@@ -161,13 +162,12 @@ export function VaultDetail({
   onBack,
   onInvest,
   onWithdraw,
+  onViewAllUpdates,
 }: VaultDetailProps) {
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
   const { data: rebalances } = useVaultRebalances(vaultId);
   const queryClient = useQueryClient();
   const iconColor = "#F8FAFC";
-
-  console.log("rebalance events", rebalances);
 
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -267,7 +267,7 @@ export function VaultDetail({
           );
           break;
         case "changes":
-          content = <VaultChanges {...item.data} />;
+          content = <VaultChanges {...item.data} onViewAll={onViewAllUpdates} />;
           break;
         case "about":
         case "data-source":
@@ -286,7 +286,7 @@ export function VaultDetail({
 
       return <View className="mb-4">{content}</View>;
     },
-    [onInvest, onWithdraw],
+    [onInvest, onWithdraw, onViewAllUpdates],
   );
 
   const getItemType = useCallback((item: VaultSection) => item.type, []);

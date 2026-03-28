@@ -43,13 +43,22 @@ export interface RebalanceWithSnapshot {
   snapshot: RebalanceSnapshot;
 }
 
-export function useVaultRebalances(vaultId: string, limit = 10) {
+export interface PaginatedRebalances {
+  items: RebalanceWithSnapshot[];
+  total: number;
+  page: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export function useVaultRebalances(vaultId: string, pageSize = 10) {
   return useQuery({
     queryKey: queryKeys.vaults.rebalances(vaultId),
     queryFn: () =>
-      apiClient.get<RebalanceWithSnapshot[]>(
-        `/api/vaults/${vaultId}/rebalances?limit=${limit}`,
+      apiClient.get<PaginatedRebalances>(
+        `/api/vaults/${vaultId}/rebalances?page=1&pageSize=${pageSize}`,
       ),
     enabled: !!vaultId,
+    select: (data) => data.items,
   });
 }
