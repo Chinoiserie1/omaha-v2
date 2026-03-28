@@ -34,7 +34,6 @@ export default function VaultScreen() {
       message: vault?.name
         ? `Check out ${vault.name} on Omaha: ${url}`
         : `Check out this vault on Omaha: ${url}`,
-      url,
     });
   };
 
