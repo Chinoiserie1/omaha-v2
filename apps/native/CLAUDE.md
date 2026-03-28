@@ -146,8 +146,16 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 ### Vault Detail Screen
 
 - **Route**: `app/(app)/(tabs)/(home)/vault/[id].tsx`
-- **Components**: `components/vault/VaultDetail.tsx`, `VaultHeader.tsx`, `VaultThesis.tsx`, `VaultAllocationCard.tsx`
-- **Features**: Investment thesis, allocations, performance chart, subscribe/redeem buttons
+- **Components**: `components/vault/VaultDetail.tsx`, `VaultHeader.tsx`, `VaultThesis.tsx`, `VaultAllocationCard.tsx`, `VaultChanges.tsx` (collapsed rebalances)
+- **Features**: Investment thesis, allocations, performance chart, subscribe/redeem buttons, strategy updates section
+- **Strategy Updates Behavior**: Shows 3 most recent rebalance events in collapsed form with "Show More" button for additional items, plus "View All" link to full-screen paginated list
+
+### Strategy Updates Screen (Full-Screen - March 2026)
+
+- **Route**: `app/(app)/(tabs)/(home)/vault/[id]/strategy-updates.tsx`
+- **Components**: `components/vault/StrategyUpdatesList.tsx` (FlashList container), `RebalanceItem.tsx`, `RebalanceTweetCard.tsx`, `RebalanceBadge.tsx`
+- **Hooks**: `use-infinite-vault-rebalances.ts` (useInfiniteQuery for paginated rebalances)
+- **Features**: Full-screen pagination with infinite scroll, pull-to-refresh, 10 items per page, empty state handling, loading indicators
 
 ### Withdrawal Flow (Multi-Step - March 2026)
 
@@ -203,13 +211,17 @@ components/
 │   │   ├── FundSolSuccess.tsx
 │   │   └── index.ts
 │   └── WithdrawForm.tsx
-├── vault/                   # Vault detail page
-│   ├── VaultDetail.tsx
+├── vault/                   # Vault detail page & strategy updates
+│   ├── VaultDetail.tsx      # Main vault page (orchestration)
 │   ├── VaultHeader.tsx
 │   ├── VaultThesis.tsx
 │   ├── VaultAllocationCard.tsx
 │   ├── VaultPerformanceChart.tsx
-│   └── VaultChanges.tsx
+│   ├── VaultChanges.tsx     # Collapsed rebalances (3 items + show more)
+│   ├── RebalanceBadge.tsx   # Status badge for rebalance events
+│   ├── RebalanceItem.tsx    # Individual rebalance display with timeline
+│   ├── RebalanceTweetCard.tsx # Top tweet display with impact metrics
+│   └── StrategyUpdatesList.tsx # Full-screen infinite scroll for all rebalances
 ├── ui/                      # Reusable UI components
 │   ├── glass/               # Glass UI (platform-specific)
 │   │   ├── GlassView.ios.tsx

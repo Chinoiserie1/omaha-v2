@@ -157,6 +157,7 @@ Uses `@repo/config-eslint/node` which includes:
 - **QuantRepository** - Quant data access (with `algoEnabled` flag support)
 - **TweetRepository** - Tweet storage & queries
 - **VaultRepository** - Vault data & performance
+- **RebalanceRepository** - Rebalance events with snapshot joins (`findByVaultWithSnapshotsPaginated` for paginated results)
 - **PortfolioRepository** - Portfolio snapshots & history
 - **PortfolioSnapshotRepository** - Historical portfolio values (March 2026)
 - **PriceRepository** - Token pricing data
@@ -220,6 +221,7 @@ Response: { status: "ok", timestamp: "2024-01-01T00:00:00.000Z" }
 | GET    | `/api/vaults/:id`                 | Vault details + performance + holdings          |
 | GET    | `/api/vaults/:id/performance`     | Vault returns (7d/30d/all-time)                 |
 | GET    | `/api/vaults/:id/holdings`        | Current vault token holdings                    |
+| GET    | `/api/vaults/:id/rebalances`      | Paginated rebalance history with snapshots (query: `page`, `pageSize`) |
 | POST   | `/api/vaults/:id/subscribe`       | Atomic deposit via DepositWithPrice (admin co-signs, computes share price from TVL) |
 | POST   | `/api/vaults/:id/investor-status` | Check user's investor status                    |
 | POST   | `/api/vaults/:id/redeem`          | Initiate redemption                             |

@@ -435,3 +435,29 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 **Impact**: Vault performance, holdings snapshots, and portfolio calculations now consistently use the correct share mint. The Token-Vault link also enables efficient querying of vault metadata (symbol, decimals, logo) through the relation.
 
 **Files changed**: `packages/database/prisma/schema.prisma` (migration + schema), `apps/back/src/services/*.ts` (6+ service files), `apps/back/src/routes/**/handlers/*.ts` (4+ handler files), `apps/back/src/crons/*.cron.ts`
+
+### Expandable Strategy Updates Feature (Mar 2026)
+
+**Feature**: Vault detail screen now shows strategy updates (rebalance events) with two display modes:
+1. **Collapsed mode** (VaultChanges) — Shows 3 most recent rebalances with "Show More" (+3) button for inline expansion, and "View All" arrow for full-screen navigation
+2. **Full-screen mode** (StrategyUpdatesList) — Infinite scroll pagination with FlashList, 10 items per page, pull-to-refresh, loading indicators
+
+**Backend changes**:
+- `apps/back/src/routes/vaults/handlers/rebalances.ts` — New endpoint `GET /api/vaults/:id/rebalances` accepts `page` and `pageSize` query params, returns `PaginatedResponse<T>` envelope with `items`, `total`, `page`, `pageSize`, `totalPages`
+- `apps/back/src/store/rebalance.repository.ts` — Added `findByVaultWithSnapshotsPaginated(vaultId, skip, take)` method with optimized snapshot selection (single top tweet per rebalance, keyed by significanceScore)
+
+**Frontend changes (Native App)**:
+- New route: `app/(app)/(tabs)/(home)/vault/[id]/strategy-updates.tsx` — Screen wrapper
+- New component: `components/vault/StrategyUpdatesList.tsx` — FlashList with useInfiniteQuery
+- New hook: `hooks/queries/use-infinite-vault-rebalances.ts` — useInfiniteQuery wrapper for paginated endpoint
+- Updated component: `components/vault/VaultChanges.tsx` — Collapsed view with show-more and view-all actions
+- Extracted components: `RebalanceBadge.tsx`, `RebalanceTweetCard.tsx`, `RebalanceItem.tsx` — Shared UI pieces
+- Updated hook: `hooks/queries/use-vault-rebalances.ts` — Now expects `PaginatedResponse` envelope
+- Updated component: `components/vault/VaultDetail.tsx` — Passes `onViewAllUpdates` callback to VaultChanges
+- Updated layout: `app/(app)/(tabs)/(home)/vault/[id]/_layout.tsx` — Registered strategy-updates screen in Stack
+
+**Data structures**:
+- `RebalanceWithSnapshot` — Combines rebalance event with snapshot details (thesis summary, changes, top tweet with impact metrics)
+- `PaginatedRebalances` — Response envelope with items, pagination metadata (total, page, pageSize, totalPages)
+
+**Files changed**: `apps/back/src/routes/vaults/handlers/rebalances.ts`, `apps/back/src/store/rebalance.repository.ts`, `apps/native/app/[id]/strategy-updates.tsx`, `apps/native/components/vault/` (4 new/updated files), `apps/native/hooks/queries/use-*vault-rebalances*.ts` (2 files), `apps/native/CLAUDE.md`, `apps/back/CLAUDE.md`
