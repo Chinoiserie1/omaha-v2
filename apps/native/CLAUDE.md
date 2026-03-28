@@ -147,7 +147,9 @@ Platform files: `GlassView.ios.tsx`, `GlassView.android.tsx`, `GlassView.tsx` (f
 
 - **Route**: `app/(app)/(tabs)/(home)/vault/[id].tsx`
 - **Components**: `components/vault/VaultDetail.tsx`, `VaultHeader.tsx`, `VaultThesis.tsx`, `VaultAllocationCard.tsx`, `VaultChanges.tsx` (collapsed rebalances)
-- **Features**: Investment thesis, allocations, performance chart, subscribe/redeem buttons, strategy updates section
+- **Features**: Investment thesis, allocations, performance chart, subscribe/redeem buttons, strategy updates section, share vault via native share sheet
+- **Header Menu**: Native iOS context menu (`unstable_headerRightItems`) with Invest, Withdraw, and Share actions
+- **Share**: Opens native share sheet with `https://omaha.sh/vault/{id}` URL — clickable in all messaging apps, opens vault directly via Universal Links
 - **Strategy Updates Behavior**: Shows 3 most recent rebalance events in collapsed form with "Show More" button for additional items, plus "View All" link to full-screen paginated list
 
 ### Strategy Updates Screen (Full-Screen - March 2026)
@@ -303,9 +305,13 @@ pnpm --filter @repo/native lint
 
 Key settings:
 
-- `scheme: "autopilot"` - Deep linking scheme
+- `scheme: "autopilot"` - Custom URL scheme for deep links
+- `ios.associatedDomains: ["applinks:omaha.sh"]` - iOS Universal Links
+- `android.intentFilters` - Android App Links for `https://omaha.sh/vault/*`
 - `newArchEnabled: true` - React Native New Architecture
 - `experiments.typedRoutes: true` - Type-safe routing
+
+> See [docs/flow/SHARE-DEEP-LINKING.md](../../docs/flow/SHARE-DEEP-LINKING.md) for full deep linking setup and production checklist.
 
 ### Metro Config
 

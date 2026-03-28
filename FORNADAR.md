@@ -461,3 +461,23 @@ Also extracted the LLM call → parse → validate → save logic into `synthesi
 - `PaginatedRebalances` — Response envelope with items, pagination metadata (total, page, pageSize, totalPages)
 
 **Files changed**: `apps/back/src/routes/vaults/handlers/rebalances.ts`, `apps/back/src/store/rebalance.repository.ts`, `apps/native/app/[id]/strategy-updates.tsx`, `apps/native/components/vault/` (4 new/updated files), `apps/native/hooks/queries/use-*vault-rebalances*.ts` (2 files), `apps/native/CLAUDE.md`, `apps/back/CLAUDE.md`
+
+### Share & Deep Linking (March 2026)
+
+**Feature**: Vault sharing via universal links with deep link routing into the native app.
+
+**How it works**:
+- Vault detail header menu includes a "Share" action (SF Symbol: `square.and.arrow.up`)
+- Shares `https://omaha.sh/vault/{id}` URL via React Native's `Share.share()` API
+- iOS Universal Links (`associatedDomains`) and Android App Links (`intentFilters`) route the URL directly into the app
+- Expo Router auto-resolves the URL to the vault detail screen (group segments like `(app)`, `(tabs)`, `(home)` are stripped)
+- Web fallback page at `apps/web/app/vault/[id]/page.tsx` handles users without the app (auto-redirect + "Open in App" button)
+- Domain verification files (`.well-known/apple-app-site-association` and `.well-known/assetlinks.json`) hosted on the Next.js web app
+
+**Production requirements**:
+- Apple Developer Team ID in AASA file
+- Android SHA256 signing fingerprint in assetlinks.json
+- Web app deployed with `.well-known` files accessible at `https://omaha.sh`
+- New EAS build required (deep link config is embedded in native binary)
+
+**Files changed**: `apps/native/app.json`, `apps/native/app/(app)/(tabs)/(home,profile)/vault/[id]/index.tsx`, `apps/web/public/.well-known/apple-app-site-association`, `apps/web/public/.well-known/assetlinks.json`, `apps/web/app/vault/[id]/page.tsx`, `apps/web/next.config.ts`

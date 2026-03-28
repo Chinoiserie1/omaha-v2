@@ -13,6 +13,7 @@ This is a **Turborepo monorepo** built with Next.js, Fastify, Expo (React Native
 - [Withdraw from Vault](./docs/flow/WITHDRAW-VAULT.md) — Multi-step withdrawal flow (redeem → fulfill → claim)
 - [Price Worker](./docs/flow/PRICE-WORKER.md) — Token price fetching, multi-instance scaling, and vault share pricing
 - [Chat](./docs/flow/CHAT.md) — Multi-session AI chat with portfolio proposals and vault deployment actions
+- [Share & Deep Linking](./docs/flow/SHARE-DEEP-LINKING.md) — Vault sharing via universal links, deep link configuration, and web fallback
 - [Tweet Embed Rendering](./docs/TWEET-EMBED-RENDERING.md) — Two-tier tweet display in React Native (text-first, embed on demand)
 
 ### Deployment

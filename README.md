@@ -210,6 +210,18 @@ Users need SOL to pay Solana transaction fees. The Fund SOL flow lets them swap 
 
 See [docs/flow/FUND-SOL.md](docs/flow/FUND-SOL.md) for the full flow documentation.
 
+### Share & Deep Linking
+
+Users can share vault links (`https://omaha.sh/vault/{id}`) from the vault detail screen. Links are clickable in all messaging apps and open the vault directly in the native app via iOS Universal Links / Android App Links. A web fallback page handles users without the app installed.
+
+**Production setup** requires:
+1. Replace `TEAMID` in `apps/web/public/.well-known/apple-app-site-association` with your Apple Developer Team ID
+2. Replace SHA256 fingerprint in `apps/web/public/.well-known/assetlinks.json` (run `eas credentials -p android`)
+3. Deploy web app so `.well-known` files are served at `https://omaha.sh/.well-known/`
+4. Create a new EAS build (`eas build`) — deep link config is embedded in the native binary
+
+See [docs/flow/SHARE-DEEP-LINKING.md](docs/flow/SHARE-DEEP-LINKING.md) for the full setup guide.
+
 ### Database Models
 
 - **User** — Identity anchor (REAL via Privy auth, or PLACEHOLDER for Quants not yet signed up)

@@ -5,7 +5,7 @@ import {
   useSegments,
 } from "expo-router";
 import { useMemo } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Share, Text, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { VaultDetail } from "../../../../../../components/vault/VaultDetail";
 import { FavoriteHeaderButton } from "../../../../../../components/vault/FavoriteHeaderButton";
@@ -27,6 +27,16 @@ export default function VaultScreen() {
 
   const handleWithdraw = () =>
     router.push(`/(app)/(tabs)/${tabSegment}/vault/${id}/withdraw` as never);
+
+  const handleShare = async () => {
+    const url = `https://omaha.sh/vault/${id}`;
+    await Share.share({
+      message: vault?.name
+        ? `Check out ${vault.name} on Omaha: ${url}`
+        : `Check out this vault on Omaha: ${url}`,
+      url,
+    });
+  };
 
   return (
     <>
@@ -88,6 +98,15 @@ export default function VaultScreen() {
                             name: "arrow.down.circle",
                           },
                           onPress: handleWithdraw,
+                        },
+                        {
+                          type: "action" as const,
+                          label: "Share",
+                          icon: {
+                            type: "sfSymbol" as const,
+                            name: "square.and.arrow.up",
+                          },
+                          onPress: handleShare,
                         },
                       ],
                     },
