@@ -20,7 +20,18 @@ export default function VaultLayout() {
         contentStyle: { backgroundColor: "#0F172A" },
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen
+        name="index"
+        options={{
+          headerShown: true,
+          headerTransparent: true,
+          headerStyle: { backgroundColor: "transparent" },
+          headerTintColor: "#F8FAFC",
+          headerShadowVisible: false,
+          headerBackButtonDisplayMode: "minimal",
+          headerTitle: "",
+        }}
+      />
       <Stack.Screen name="invest" options={sheetOptions} />
       <Stack.Screen name="withdraw" options={sheetOptions} />
       <Stack.Screen name="strategy-updates" />

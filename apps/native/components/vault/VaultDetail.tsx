@@ -6,8 +6,7 @@ import {
   RefreshControl,
 } from "react-native";
 import { FlashList } from "@shopify/flash-list";
-import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from "@expo/vector-icons";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { useCallback, useMemo, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../../lib/query-keys";
@@ -17,8 +16,6 @@ import { VaultAllocationCard } from "./VaultAllocationCard";
 import { VaultChanges } from "./VaultChanges";
 import { VaultInvestmentCard } from "./VaultInvestmentCard";
 import { VaultPerformanceChart } from "./VaultPerformanceChart";
-import { InvestHeaderButton } from "./InvestHeaderButton";
-import { FavoriteHeaderButton } from "./FavoriteHeaderButton";
 import { VaultTextSection } from "./VaultTextSection";
 import { useVault } from "../../hooks/queries/use-vaults";
 import { useVaultRebalances } from "../../hooks/queries/use-vault-rebalances";
@@ -80,7 +77,6 @@ type VaultSection =
 
 interface VaultDetailProps {
   vaultId: string;
-  onBack: () => void;
   onInvest: () => void;
   onWithdraw: () => void;
   onViewAllUpdates: () => void;
@@ -159,7 +155,6 @@ function buildSections(
 
 export function VaultDetail({
   vaultId,
-  onBack,
   onInvest,
   onWithdraw,
   onViewAllUpdates,
@@ -167,6 +162,7 @@ export function VaultDetail({
   const { data: vault, isLoading, error, refetch } = useVault(vaultId);
   const { data: rebalances } = useVaultRebalances(vaultId);
   const queryClient = useQueryClient();
+  const headerHeight = useHeaderHeight();
   const iconColor = "#F8FAFC";
 
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -296,26 +292,7 @@ export function VaultDetail({
   );
 
   return (
-    <SafeAreaView className="flex-1 bg-background" edges={["top"]}>
-      <View className="flex-row items-center px-4 py-3">
-        <Pressable
-          onPress={onBack}
-          className="justify-center items-center w-10 h-10 rounded-full bg-card active:bg-secondary"
-        >
-          <Ionicons name="chevron-back" size={20} color={iconColor} />
-        </Pressable>
-        <View className="flex-row flex-1 items-center ml-3">
-          <Text
-            className="text-base font-semibold shrink text-foreground"
-            numberOfLines={1}
-          >
-            {vault?.name ?? ""}
-          </Text>
-          {vault && <FavoriteHeaderButton vaultId={vaultId} />}
-        </View>
-        {vault && <InvestHeaderButton onPress={onInvest} />}
-      </View>
-
+    <View className="flex-1 bg-background">
       {isLoading ? (
         <View className="flex-1 justify-center items-center">
           <ActivityIndicator size="large" color={iconColor} />
@@ -338,13 +315,13 @@ export function VaultDetail({
           renderItem={renderItem}
           getItemType={getItemType}
           keyExtractor={keyExtractor}
-          contentContainerStyle={{ paddingBottom: 120 }}
+          contentContainerStyle={{ paddingTop: headerHeight, paddingBottom: 120 }}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
           }
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
