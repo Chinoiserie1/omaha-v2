@@ -118,6 +118,7 @@ export function VaultList({ search }: VaultListProps) {
       ListHeaderComponent={ListHeader}
       ListFooterComponent={ListFooter}
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
+      contentInsetAdjustmentBehavior="automatic"
       showsVerticalScrollIndicator={false}
     />
   );

@@ -7,6 +7,8 @@ export default function ExploreStack() {
         headerShown: false,
         contentStyle: { backgroundColor: "#0F172A" },
       }}
-    />
+    >
+      <Stack.Screen name="index" options={{ headerShown: true }} />
+    </Stack>
   );
 }

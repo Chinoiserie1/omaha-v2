@@ -7,6 +7,8 @@ export default function HomeStack() {
         headerShown: false,
         contentStyle: { backgroundColor: "#0F172A" },
       }}
-    />
+    >
+      <Stack.Screen name="index" options={{ headerShown: true }} />
+    </Stack>
   );
 }

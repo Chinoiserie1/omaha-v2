@@ -1,7 +1,13 @@
 import "../global.css";
-import { ActivityIndicator, AppState, type AppStateStatus, View } from "react-native";
+import {
+  ActivityIndicator,
+  AppState,
+  type AppStateStatus,
+  View,
+} from "react-native";
 import { useEffect, useRef } from "react";
 import { Stack, useNavigationContainerRef } from "expo-router";
+import { ThemeProvider, DarkTheme } from "@react-navigation/native";
 import { StatusBar } from "expo-status-bar";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { PrivyProvider } from "@privy-io/expo";
@@ -27,6 +33,18 @@ import {
 
 // Set native root background to dark before React mounts (prevents white flash)
 SystemUI.setBackgroundColorAsync("#0F172A");
+
+const appTheme = {
+  ...DarkTheme,
+  colors: {
+    ...DarkTheme.colors,
+    primary: "#F8FAFC",
+    background: "#0F172A",
+    card: "#0F172A",
+    text: "#F8FAFC",
+    border: "#334155",
+  },
+};
 
 const PRIVY_APP_ID =
   Constants.expoConfig?.extra?.privyAppId ??
@@ -129,7 +147,14 @@ export default function RootLayout() {
 
   if (!fontsLoaded) {
     return (
-      <View style={{ flex: 1, backgroundColor: "#0F172A", alignItems: "center", justifyContent: "center" }}>
+      <View
+        style={{
+          flex: 1,
+          backgroundColor: "#0F172A",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
         <ActivityIndicator size="large" color="#3B82F6" />
       </View>
     );
@@ -153,7 +178,9 @@ export default function RootLayout() {
             >
               <FlushOnBackground />
               <AuthProvider>
-                <RootNavigator />
+                <ThemeProvider value={appTheme}>
+                  <RootNavigator />
+                </ThemeProvider>
               </AuthProvider>
             </PrivyProvider>
           </QueryClientProvider>

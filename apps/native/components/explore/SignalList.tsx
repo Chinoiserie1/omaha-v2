@@ -68,6 +68,7 @@ export function SignalList({ asset }: SignalListProps) {
       keyExtractor={keyExtractor}
       refreshing={isRefetching}
       onRefresh={() => refetch()}
+      contentInsetAdjustmentBehavior="automatic"
       contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}
       showsVerticalScrollIndicator={false}
     />

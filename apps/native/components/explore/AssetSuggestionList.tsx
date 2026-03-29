@@ -22,11 +22,12 @@ export function AssetSuggestionList({
   if (suggestions.length === 0) return null;
 
   return (
-    <View className="absolute left-0 right-0 top-full z-50 mt-1 rounded-xl border border-border bg-secondary">
+    <View className="flex-1">
       <FlatList
         data={suggestions}
         keyExtractor={(item) => item.symbol}
         keyboardShouldPersistTaps="handled"
+        contentInsetAdjustmentBehavior="automatic"
         renderItem={({ item }) => (
           <TouchableOpacity
             className="flex-row items-center justify-between px-4 py-3"

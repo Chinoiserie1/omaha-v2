@@ -52,6 +52,7 @@ export default function ProfileScreen() {
       <ScrollView
         className="flex-1 px-5"
         showsVerticalScrollIndicator={false}
+        contentInsetAdjustmentBehavior="automatic"
         contentContainerStyle={{ paddingBottom: 100 }}
       >
         <PortfolioHeader

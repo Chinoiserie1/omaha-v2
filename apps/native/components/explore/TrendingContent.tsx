@@ -45,7 +45,7 @@ export function TrendingContent({ onSelectAsset }: TrendingContentProps) {
   }
 
   return (
-    <ScrollView className="flex-1" showsVerticalScrollIndicator={false}>
+    <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentInsetAdjustmentBehavior="automatic">
       {trendingAssets.length > 0 && (
         <View className="mb-4">
           <Text className="mb-2 px-5 text-lg font-bold text-foreground">
