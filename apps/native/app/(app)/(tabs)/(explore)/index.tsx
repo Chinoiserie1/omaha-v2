@@ -1,11 +1,13 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import { Keyboard } from "react-native";
 import { Stack } from "expo-router";
+import type { SearchBarCommands } from "react-native-screens";
 import { ExploreContent } from "../../../../components/explore/ExploreContent";
 import { useDebouncedValue } from "../../../../hooks/use-debounced-value";
 import { useAssetAutocomplete } from "../../../../hooks/queries/use-explore-search";
 
 export default function ExploreRoute() {
+  const searchBarRef = useRef<SearchBarCommands>(null) as React.RefObject<SearchBarCommands>;
   const [inputText, setInputText] = useState("");
   const [selectedAsset, setSelectedAsset] = useState<string | null>(null);
 
@@ -19,13 +21,15 @@ export default function ExploreRoute() {
 
   const handleSelect = useCallback((symbol: string) => {
     setSelectedAsset(symbol);
-    setInputText("");
+    setInputText(symbol);
+    searchBarRef.current?.setText(symbol);
     Keyboard.dismiss();
   }, []);
 
   const handleClear = useCallback(() => {
     setSelectedAsset(null);
     setInputText("");
+    searchBarRef.current?.setText("");
   }, []);
 
   return (
@@ -40,6 +44,7 @@ export default function ExploreRoute() {
           headerTintColor: "#F8FAFC",
           headerLargeTitleStyle: { color: "#F8FAFC" },
           headerSearchBarOptions: {
+            ref: searchBarRef,
             placeholder: "Search assets (SOL, BTC, ETH...)",
             onChangeText: (e) => {
               const text = e.nativeEvent.text;
