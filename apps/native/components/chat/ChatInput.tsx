@@ -7,6 +7,7 @@ import {
   Platform,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { GlassView } from "@/components/ui/glass";
 
 interface ChatInputProps {
   onSend: (text: string) => void;
@@ -29,7 +30,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.inputRow}>
+      <GlassView style={styles.inputRow}>
         <TextInput
           ref={inputRef}
           style={styles.input}
@@ -55,7 +56,7 @@ export function ChatInput({ onSend, disabled = false }: ChatInputProps) {
             color={canSend ? "#FAFAFA" : "#71717A"}
           />
         </Pressable>
-      </View>
+      </GlassView>
     </View>
   );
 }
@@ -69,10 +70,7 @@ const styles = StyleSheet.create({
   inputRow: {
     flexDirection: "row",
     alignItems: "flex-end",
-    backgroundColor: "rgba(255, 255, 255, 0.08)",
     borderRadius: 24,
-    borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.12)",
     paddingLeft: 16,
     paddingRight: 6,
     paddingVertical: 6,

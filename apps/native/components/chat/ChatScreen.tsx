@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
-import { View, FlatList, KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
+import { View, FlatList, Keyboard, KeyboardAvoidingView, Platform, Pressable, StyleSheet } from "react-native";
+import { useHeaderHeight } from "@react-navigation/elements";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Text } from "@/components/ui/text";
 import { useMyProfile } from "@/hooks/queries/use-profile";
@@ -33,6 +34,7 @@ export function ChatScreen() {
 }
 
 function ChatConversation() {
+  const headerHeight = useHeaderHeight();
   const {
     messages,
     streamingContent,
@@ -119,14 +121,18 @@ function ChatConversation() {
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={isIOS ? "padding" : undefined}
-        keyboardVerticalOffset={isIOS ? 0 : 0}
+        keyboardVerticalOffset={isIOS ? headerHeight : 0}
       >
         {showEmptyState ? (
-          <ChatEmptyState onSuggestion={sendMessage} />
+          <Pressable style={styles.flex} onPress={Keyboard.dismiss}>
+            <ChatEmptyState />
+          </Pressable>
         ) : (
           <FlatList
             ref={flatListRef}
             data={displayMessages}
+            keyboardDismissMode="interactive"
+            keyboardShouldPersistTaps="handled"
             keyExtractor={(item) => item.id}
             renderItem={({ item }) => <ChatMessageBubble message={item} />}
             contentContainerStyle={styles.listContent}
