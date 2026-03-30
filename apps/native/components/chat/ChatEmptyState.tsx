@@ -1,12 +1,8 @@
 import { useMemo } from "react";
-import { View, StyleSheet, Pressable } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { Text } from "@/components/ui/text";
 import { GlassView } from "@/components/ui/glass";
-
-interface ChatEmptyStateProps {
-  onSuggestion: (text: string) => void;
-}
 
 const THESIS_PROMPTS = [
   "I want 50% SOL because I think Solana will lead this cycle, 30% JUP for the DEX dominance, and 20% USDC as dry powder",
@@ -34,7 +30,7 @@ function pickRandom(items: string[], count: number): string[] {
   return shuffled.slice(0, count);
 }
 
-export function ChatEmptyState({ onSuggestion }: ChatEmptyStateProps) {
+export function ChatEmptyState() {
   const suggestions = useMemo(
     () => pickRandom(THESIS_PROMPTS, DISPLAY_COUNT),
     [],
@@ -51,13 +47,10 @@ export function ChatEmptyState({ onSuggestion }: ChatEmptyStateProps) {
       </Text>
       <View style={styles.suggestions}>
         {suggestions.map((text) => (
-          <GlassView key={text} interactive style={styles.chip}>
-            <Pressable
-              style={styles.chipInner}
-              onPress={() => onSuggestion(text)}
-            >
+          <GlassView key={text} style={styles.chip}>
+            <View style={styles.chipInner}>
               <Text style={styles.chipText}>{text}</Text>
-            </Pressable>
+            </View>
           </GlassView>
         ))}
       </View>
