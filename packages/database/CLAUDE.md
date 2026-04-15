@@ -145,6 +145,55 @@ model Token {
 - Batch vault creation: Create `Token` with `isVault=true` and `vaultId` after on-chain vault initialization
 - Portfolio holdings: Resolve token metadata (decimals, logoUri) via token mint to compute display values
 
+### SnapshotAllocation
+
+Relational child of `PortfolioSnapshot`. Each row represents one asset allocation within a portfolio snapshot. Replaces the previous `allocations Json` blob.
+
+```prisma
+model SnapshotAllocation {
+  id         String            @id @default(cuid())
+  snapshotId String
+  snapshot   PortfolioSnapshot @relation(...)
+  tokenId    String?
+  token      Token?            @relation(...)
+  asset      String            // symbol: "SOL", "BTC"
+  mint       String?           // on-chain mint (nullable before resolution)
+  percentage Float
+  conviction String            // "low" | "medium" | "high" | "stale"
+  reasoning  String
+  since      String            // ISO date string
+  lastSignal String            // ISO date string
+}
+```
+
+**Usage**:
+- Query all tokens used by active vaults: `prisma.snapshotAllocation.findMany({ where: { snapshot: { quant: { vault: { isActive: true } } } }, distinct: ['mint'] })`
+- Load a snapshot with allocations: `prisma.portfolioSnapshot.findFirst({ include: { allocationRows: true } })`
+
+### SnapshotHolding
+
+Relational child of `HoldingsSnapshot`. Each row represents one token held by a vault at snapshot time. Replaces the previous `holdings Json` blob.
+
+```prisma
+model SnapshotHolding {
+  id         String           @id @default(cuid())
+  snapshotId String
+  snapshot   HoldingsSnapshot @relation(...)
+  tokenId    String?
+  token      Token?           @relation(...)
+  mint       String
+  symbol     String
+  uiAmount   Float
+  price      Float            // price at snapshot time
+  valueUsd   Float
+  percentage Float
+}
+```
+
+**Usage**:
+- Load current vault holdings: `prisma.holdingsSnapshot.findFirst({ where: { vaultId, endDate: null }, include: { holdingRows: true } })`
+- Query all tokens held by active vaults: `prisma.snapshotHolding.findMany({ where: { snapshot: { vault: { isActive: true }, endDate: null } }, distinct: ['mint'] })`
+
 ### ChatSession & ChatMessage
 
 Multi-session chat with isolated LLM context per session.
@@ -182,12 +231,16 @@ User (1) ──── (0..1) Quant (1) ──── (0..1) Vault ──── (1
   │                    │                      │
   │                    ├── Tweet[]            ├── RebalanceEvent[]
   │                    ├── PortfolioSnapshot[]├── HoldingsSnapshot[]
-  │                    └── TweetImpact[]      ├── WithdrawalRequest[]
+  │                    └── TweetImpact[]      │   └── SnapshotHolding[] ──→ Token?
+  │                         │                 ├── WithdrawalRequest[]
+  │                         └── SnapshotAllocation[] ──→ Token?
   │                                           └── VaultFavorite[]
   └──── ChatSession[] ──── ChatMessage[]
 ```
 
-The Token model also holds curated assets (crypto/stock tokens) for portfolio allocations — those have `isVault=false` and `vaultId=null`.
+- `PortfolioSnapshot` → `SnapshotAllocation[]`: each allocation is a row with optional FK to `Token` (via `tokenId`)
+- `HoldingsSnapshot` → `SnapshotHolding[]`: each holding is a row with optional FK to `Token` (via `tokenId`)
+- The `Token` model also holds curated assets (crypto/stock tokens) for portfolio allocations — those have `isVault=false` and `vaultId=null`.
 
 ### User Linking Flow
 

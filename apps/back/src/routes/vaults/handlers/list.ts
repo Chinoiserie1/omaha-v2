@@ -1,10 +1,11 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import type { PortfolioSnapshot } from "@repo/database";
 import { vaultListQuerySchema } from "@repo/shared";
 import type { PaginatedResponse } from "@repo/shared";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
+import type { PortfolioSnapshotWithAllocations } from "../../../store/portfolio.repository.js";
 import * as tokenPriceRepo from "../../../store/token-price.repository.js";
+import { allocationRowsToAllocations } from "../../../utils/snapshot-converters.js";
 
 function formatVaultSummary(
   vault: {
@@ -15,10 +16,15 @@ function formatVaultSummary(
     isActive: boolean;
     about: string;
     shareToken?: { mint: string } | null;
-    quant?: { user?: { twitterUsername: string | null; profileImageUrl: string | null } | null } | null;
+    quant?: {
+      user?: {
+        twitterUsername: string | null;
+        profileImageUrl: string | null;
+      } | null;
+    } | null;
   },
-  portfolio: PortfolioSnapshot | null,
-  performancePercent: number | null
+  portfolio: PortfolioSnapshotWithAllocations | null,
+  performancePercent: number | null,
 ) {
   const shareMint = vault.shareToken?.mint ?? null;
   return {
@@ -35,7 +41,7 @@ function formatVaultSummary(
     portfolio: portfolio
       ? {
           thesisSummary: portfolio.thesisSummary,
-          allocations: portfolio.allocations as Record<string, unknown>,
+          allocations: allocationRowsToAllocations(portfolio.allocationRows),
           updatedAt: portfolio.createdAt,
         }
       : null,
@@ -44,7 +50,7 @@ function formatVaultSummary(
 
 export async function listVaults(
   request: FastifyRequest,
-  reply: FastifyReply
+  reply: FastifyReply,
 ) {
   const parsed = vaultListQuerySchema.safeParse(request.query);
   if (!parsed.success) {
@@ -72,11 +78,9 @@ export async function listVaults(
     vaults.map(async (vault) => {
       const portfolio = await portfolioRepo.findLatestSnapshot(vault.quantId);
       const mint = vault.shareToken?.mint;
-      const perf = mint
-        ? (perfMap.get(mint) ?? null)
-        : null;
+      const perf = mint ? (perfMap.get(mint) ?? null) : null;
       return formatVaultSummary(vault, portfolio, perf);
-    })
+    }),
   );
 
   const response: PaginatedResponse<ReturnType<typeof formatVaultSummary>> = {

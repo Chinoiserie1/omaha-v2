@@ -65,13 +65,13 @@ async function run(): Promise<void> {
   const snapshot = await prisma.portfolioSnapshot.findFirst({
     where: { quantId: quant.id },
     orderBy: { createdAt: "desc" },
+    include: { allocationRows: true },
   });
   if (snapshot) {
     const ageH = (Date.now() - snapshot.createdAt.getTime()) / 3600000;
     console.info(`\nLatest snapshot: ${snapshot.createdAt.toISOString()} (${ageH.toFixed(1)}h ago)`);
-    const allocs = snapshot.allocations as unknown as { asset: string; percentage: number; mint?: string }[];
     console.info("Target allocations:");
-    for (const a of allocs) {
+    for (const a of snapshot.allocationRows) {
       const deltaUsd = (a.percentage / 100) * totalEquityUsd;
       console.info(`  ${a.asset.padEnd(12)} ${String(a.percentage).padStart(5)}%  → $${deltaUsd.toFixed(2).padStart(8)}  ${a.mint ? a.mint.slice(0, 12) + "..." : "(no mint)"}`);
     }

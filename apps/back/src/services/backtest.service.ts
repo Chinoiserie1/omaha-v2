@@ -1,6 +1,7 @@
-import type { PortfolioSnapshot, Prisma } from "@repo/database";
+import type { Prisma } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import * as portfolioRepo from "../store/portfolio.repository.js";
+import type { PortfolioSnapshotWithAllocations } from "../store/portfolio.repository.js";
 import * as perfRepo from "../store/performance.repository.js";
 import { ensurePricesForSymbols, getPriceOnDate } from "./price.service.js";
 
@@ -29,10 +30,13 @@ export interface BacktestResult {
   latestCumulativeValue: number;
 }
 
-function parseAllocations(snapshot: PortfolioSnapshot): Allocation[] {
-  const raw = snapshot.allocations;
-  if (Array.isArray(raw)) return raw as Allocation[];
-  return [];
+function parseAllocations(
+  snapshot: PortfolioSnapshotWithAllocations,
+): Allocation[] {
+  return snapshot.allocationRows.map((r) => ({
+    asset: r.asset,
+    percentage: r.percentage,
+  }));
 }
 
 function daysBetween(a: Date, b: Date): number {
@@ -43,8 +47,10 @@ function toDateKey(d: Date): string {
   return d.toISOString().slice(0, 10);
 }
 
-function deduplicateByDay(snapshots: PortfolioSnapshot[]): PortfolioSnapshot[] {
-  const byDay = new Map<string, PortfolioSnapshot>();
+function deduplicateByDay(
+  snapshots: PortfolioSnapshotWithAllocations[],
+): PortfolioSnapshotWithAllocations[] {
+  const byDay = new Map<string, PortfolioSnapshotWithAllocations>();
   for (const snap of snapshots) {
     byDay.set(toDateKey(snap.createdAt), snap); // last snapshot of the day wins
   }
@@ -56,9 +62,9 @@ function deduplicateByDay(snapshots: PortfolioSnapshot[]): PortfolioSnapshot[] {
  * Uses the "from" snapshot's allocations and prices at both dates.
  */
 async function computePeriod(
-  current: PortfolioSnapshot,
-  next: PortfolioSnapshot,
-  prevCumulativeValue: number
+  current: PortfolioSnapshotWithAllocations,
+  next: PortfolioSnapshotWithAllocations,
+  prevCumulativeValue: number,
 ): Promise<PeriodResult> {
   const allocations = parseAllocations(current);
   const fromDate = current.createdAt;

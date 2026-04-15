@@ -1,6 +1,7 @@
 import { prisma } from "@repo/database";
 import type { Prisma } from "@repo/database";
 import type { VaultHoldingWithPct } from "@repo/shared";
+
 import { upsertVaultToken } from "../store/token-price.repository.js";
 
 interface HoldingsSeed {
@@ -166,8 +167,17 @@ async function seedVaults(): Promise<void> {
         await prisma.holdingsSnapshot.create({
           data: {
             vaultId: vault.id,
-            holdings: v.holdings.holdings as unknown as Prisma.InputJsonValue,
             totalEquityUsd: v.holdings.totalEquityUsd,
+            holdingRows: {
+              create: v.holdings.holdings.map((h) => ({
+                mint: h.mint,
+                symbol: h.symbol,
+                uiAmount: h.uiAmount,
+                price: h.price,
+                valueUsd: h.valueUsd,
+                percentage: h.percentage,
+              })),
+            },
           },
         });
         console.log(`  Created holdings snapshot for ${vault.vaultName}`);
@@ -202,7 +212,15 @@ interface RebalanceSeed {
   }[];
   snapshots: {
     thesisSummary: string;
-    allocations: Prisma.InputJsonValue;
+    allocations: Array<{
+      asset: string;
+      mint?: string;
+      percentage: number;
+      conviction: string;
+      reasoning: string;
+      since: string;
+      lastSignal: string;
+    }>;
     changes: string[];
     sourceTweetIds: string[];
     impacts: {
@@ -567,9 +585,19 @@ async function seedRebalanceData(): Promise<void> {
         data: {
           quantId: quant.id,
           thesisSummary: snap.thesisSummary,
-          allocations: snap.allocations,
           changes: snap.changes,
           sourceTweetIds: sourceTweetDbIds,
+          allocationRows: {
+            create: snap.allocations.map((a) => ({
+              asset: a.asset,
+              mint: a.mint ?? null,
+              percentage: a.percentage,
+              conviction: a.conviction,
+              reasoning: a.reasoning,
+              since: a.since,
+              lastSignal: a.lastSignal,
+            })),
+          },
         },
       });
       console.log(`  Created snapshot: ${snapshot.id}`);

@@ -84,10 +84,7 @@ export async function getActiveTheses(
             : valueUsd;
         const pnlAmount = valueUsd - entryValue;
 
-        const allocations = snapshot?.allocations;
-        const assetCount = Array.isArray(allocations)
-          ? allocations.length
-          : 0;
+        const assetCount = snapshot?.allocationRows?.length ?? 0;
 
         return {
           vaultId: vault.id,

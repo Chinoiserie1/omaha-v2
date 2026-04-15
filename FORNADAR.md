@@ -210,6 +210,18 @@ Three interrelated bugs:
 
 **SDK sync (Mar 2026)**: Updated `packages/omaha-programs-sdk` to match the new program structure — all 26 instruction builders, factory/vault PDA helpers, state deserializers (FactoryState 400B, VaultState 584B, PendingDeposit/Withdraw 88B), error codes, and fee validation. Added `create-vault-onchain` CLI script (`apps/back/src/scripts/create-vault-onchain.ts`) that exposes every on-chain parameter: initialize params (name, symbol, uri, base-mint, share-decimals, share-price), fee configuration (entry/exit/management/performance BPS + receiver), repeatable operator flags, dry-run mode, and devnet-default RPC. All instructions (Initialize + UpdateFees + AddOperator) are bundled into a single atomic transaction with pre-flight checks (factory exists, not paused, vault name not taken).
 
+### Allocations & Holdings JSON → Relational Refactor (Apr 2026)
+
+**Problem**: `PortfolioSnapshot.allocations` and `HoldingsSnapshot.holdings` were stored as `Json` blobs in Prisma. Every read required `as unknown as Allocation[]` casts, and querying "which tokens are used in vaults" was impossible without parsing JSON in application code. The price worker fetched prices for all ~155 curated tokens every minute, even though most were unused.
+
+**Fix**: Created two relational child tables:
+1. **`SnapshotAllocation`** — child of `PortfolioSnapshot` with optional FK to `Token` (via `tokenId`). Fields: `asset`, `mint`, `percentage`, `conviction`, `reasoning`, `since`, `lastSignal`.
+2. **`SnapshotHolding`** — child of `HoldingsSnapshot` with optional FK to `Token`. Fields: `mint`, `symbol`, `uiAmount`, `price`, `valueUsd`, `percentage`.
+
+**Scope**: Removed `allocations Json` and `holdings Json` columns. Updated 17 backend files (2 repositories, 4 services, 7 route handlers, 2 scripts, 1 worker, 1 converter util). Zero frontend changes — API response shape preserved by handler serialization layer. Created data migration script (`migrate-json-to-relational.ts`) to backfill existing JSON rows into relational rows using raw SQL reads.
+
+**Price worker optimization**: `getMintsAndIdMap()` now queries `SnapshotAllocation` + `SnapshotHolding` for active vaults instead of all tokens. Reduced from ~155 tokens / 3 Jupiter API batches per minute to ~10-30 tokens / 1 batch.
+
 ## Lessons Learned & Best Practices
 
 1. **Never touch root mobile dependencies** — `expo`, `react@18.3.1`, `react-native` in root `package.json` are sacred. Changing them breaks the mobile app.
@@ -233,6 +245,8 @@ Three interrelated bugs:
 10. **Treat tweet threads as atomic units** — When classifying or synthesizing Quant signals, individual thread tweets lack context ("as I said above", "adding more here"). Concatenating the full thread before LLM analysis fixes misclassification and prevents over-weighting. The classifier fetches the full thread (including already-classified tweets) via `findThreadByConversationId` for maximum context, then applies the same classification to all unclassified tweets in the thread. The synthesizer groups by `conversationId` and emits one entry per thread so a multi-tweet thread doesn't inflate signal strength.
 
 11. **Filter external token lists through a verified source** — Birdeye's top 300 includes scam squatters and low-quality tokens. Cross-referencing mint addresses against Jupiter's verified token list (synced to the `Token` table) filters out 80%+ of noise. Always validate external data against a trusted registry.
+
+12. **Avoid JSON blobs for queryable data** — `PortfolioSnapshot.allocations` was a Json blob that required `as unknown as Allocation[]` casts on every read and made cross-table queries impossible. Converting to relational `SnapshotAllocation` rows enabled the price worker to query active vault tokens with a simple Prisma `distinct` query instead of parsing JSON in application code. If you'll ever need to filter, join, or aggregate the data — use a relational table from the start.
 
 12. **Rate-limit API pagination with retry** — Birdeye's free tier rate-limits aggressively (429 on second page with 200ms delay). Use 1.5s delays between pages and exponential backoff retry (2s, 4s, 6s) on 429s.
 

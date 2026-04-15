@@ -33,7 +33,7 @@ Each app has its own detailed CLAUDE.md file:
 
   - See [apps/back/CLAUDE.md](./apps/back/CLAUDE.md)
 
-- **`apps/native/`** - Expo SDK 54 React Native application
+- **`apps/native/`** - Expo SDK 55 React Native application
   - See [apps/native/CLAUDE.md](./apps/native/CLAUDE.md)
 
 - **`apps/programs/vault/`** - Solana on-chain tokenized vault program (Rust/Pinocchio)
@@ -346,7 +346,7 @@ Full variable list with defaults and cron schedules: see `.env.example`. Variabl
 | ------------ | ------------------- | ----------------- |
 | Monorepo     | Turborepo           | 2.7.x             |
 | Web Frontend | Next.js             | 15.x              |
-| Mobile       | Expo / React Native | SDK 54            |
+| Mobile       | Expo / React Native | SDK 55            |
 | Backend      | Fastify             | 5.x               |
 | Database     | PostgreSQL + Prisma | 6.x               |
 | Validation   | Zod                 | 3.x               |

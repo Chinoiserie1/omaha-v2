@@ -34,6 +34,73 @@ function buildApiKeySlots(): readonly ApiKeySlot[] {
 const apiKeySlots = buildApiKeySlots();
 const semaphore = new Semaphore(env.PRICE_CONCURRENCY);
 
+// ── Active Vault Mints ───────────────────────────────────────
+
+async function getActiveVaultMints(): Promise<Set<string>> {
+  const mints = new Set<string>();
+
+  // Get mints from latest allocation of each active vault
+  const allocationMints = await prisma.snapshotAllocation.findMany({
+    where: {
+      mint: { not: null },
+      snapshot: {
+        quant: {
+          vault: { isActive: true },
+        },
+      },
+    },
+    distinct: ["mint"],
+    select: { mint: true },
+  });
+
+  for (const row of allocationMints) {
+    if (row.mint) mints.add(row.mint);
+  }
+
+  // Get mints from current holdings of each active vault
+  const holdingMints = await prisma.snapshotHolding.findMany({
+    where: {
+      snapshot: {
+        vault: { isActive: true },
+        endDate: null,
+      },
+    },
+    distinct: ["mint"],
+    select: { mint: true },
+  });
+
+  for (const row of holdingMints) {
+    mints.add(row.mint);
+  }
+
+  // Resolve unresolved allocation symbols to mints
+  const unresolvedSymbols = await prisma.snapshotAllocation.findMany({
+    where: {
+      mint: null,
+      snapshot: {
+        quant: {
+          vault: { isActive: true },
+        },
+      },
+    },
+    distinct: ["asset"],
+    select: { asset: true },
+  });
+
+  if (unresolvedSymbols.length > 0) {
+    const symbols = unresolvedSymbols.map((r) => r.asset);
+    const resolved = await prisma.token.findMany({
+      where: { symbol: { in: symbols } },
+      select: { mint: true },
+    });
+    for (const t of resolved) {
+      mints.add(t.mint);
+    }
+  }
+
+  return mints;
+}
+
 // ── Mint Fetching ─────────────────────────────────────────────
 
 interface MintData {
@@ -42,12 +109,23 @@ interface MintData {
 }
 
 async function getMintsAndIdMap(): Promise<MintData> {
+  const activeMints = await getActiveVaultMints();
+  activeMints.add(USDC_MINT);
+
   const tokens = await prisma.token.findMany({
-    where: { isVault: false },
+    where: { mint: { in: [...activeMints] } },
     select: { id: true, mint: true },
   });
 
   const mints = tokens.map((t) => t.mint);
+
+  // Include any active mints that may not have Token records yet
+  for (const m of activeMints) {
+    if (!mints.includes(m)) {
+      mints.push(m);
+    }
+  }
+
   if (!mints.includes(USDC_MINT)) {
     mints.push(USDC_MINT);
   }

@@ -13,7 +13,7 @@ The price worker is a **standalone process** (not embedded in the Fastify app) t
 │  Entrypoint: apps/back/src/workers/price-worker.ts               │
 │  Script:     pnpm --filter @repo/back start:price-worker         │
 │                                                                  │
-│  1. Query Token table (isVault=false) → list of mints            │
+│  1. Query active vault allocations + holdings → list of mints    │
 │  2. Split into batches of PRICE_BATCH_SIZE (default: 50)         │
 │  3. Distribute batches round-robin across API keys               │
 │  4. Fire concurrently through token-bucket rate limiters         │
@@ -65,7 +65,7 @@ Each cycle runs these steps:
 
 | Step | Action | Details |
 |------|--------|---------|
-| 1 | Query mints | `SELECT mint FROM Token WHERE isVault = false` + always include USDC |
+| 1 | Query mints | Collect unique mints from `SnapshotAllocation` (active vaults) + `SnapshotHolding` (current holdings) + always include USDC |
 | 2 | Hardcode USDC | Set `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` → $1.00 |
 | 3 | Split into batches | Groups of `PRICE_BATCH_SIZE` mints (default: 50, Jupiter max) |
 | 4 | Distribute batches | Round-robin across API keys (batch 0 → key 0, batch 1 → key 1, …) |
@@ -146,7 +146,7 @@ These are registered in `turbo.json` under `globalEnv`.
 
 ### Token
 
-Stores token metadata. The worker queries all rows where `isVault = false` to get mints for pricing.
+Stores token metadata. The worker queries only mints that appear in active vault allocations (`SnapshotAllocation`) or current holdings (`SnapshotHolding`), plus USDC. This avoids pricing unused tokens.
 
 | Field | Type | Description |
 |-------|------|-------------|
