@@ -206,31 +206,47 @@ User initiates withdrawal
 ## Database Schema (Key Tables)
 
 ```
-Kol
-  ├── id, username, displayName, hasTwitter, algoEnabled
-  └── avatarUrl, bio, followersCount
+Quant
+  ├── id, userId, isActive, algoEnabled
+  └── knowledge (JSON), lastFetchedAt
 
 Tweet
-  ├── id, kolId, tweetId (Twitter ID), fullText, postedAt
+  ├── id, quantId, tweetId (Twitter ID), fullText, postedAt
   └── conversationId (for thread grouping), isRetweet, metrics
 
 ClassifiedTweet
-  ├── id, tweetId (FK), kolId
+  ├── id, tweetId (FK)
   ├── category (market_analysis | trade_signal | portfolio_update | macro_thesis | noise)
   ├── assets[] (normalized symbols, e.g. ["NVDAx", "AAPLx"])
   ├── sentiment (bullish | bearish | neutral)
   └── conviction (high | medium | low)
 
 PortfolioSnapshot
-  ├── id, kolId, createdAt
+  ├── id, quantId, createdAt
   ├── thesisSummary (text)
-  ├── allocations (JSON array of Allocation objects)
-  ├── changes (JSON array of Change objects)
-  └── sourceTweetIds[]
+  ├── changes[], sourceTweetIds[]
+  └── allocationRows → SnapshotAllocation[]
 
-KolVault
-  ├── kolId, vaultId, vaultAddress
-  └── jupiterEnabled, glamPublicKey
+SnapshotAllocation (relational child of PortfolioSnapshot)
+  ├── id, snapshotId (FK), tokenId (FK → Token, optional)
+  ├── asset (symbol), mint (on-chain address, nullable)
+  ├── percentage, conviction, reasoning
+  └── since, lastSignal
+
+Vault
+  ├── id, quantId, statePda, vaultName, vaultSymbol
+  ├── isActive, dryRun
+  └── shareToken → Token (isVault=true)
+
+HoldingsSnapshot
+  ├── id, vaultId, totalEquityUsd
+  ├── startDate, endDate (null = current)
+  └── holdingRows → SnapshotHolding[]
+
+SnapshotHolding (relational child of HoldingsSnapshot)
+  ├── id, snapshotId (FK), tokenId (FK → Token, optional)
+  ├── mint, symbol, uiAmount, price
+  └── valueUsd, percentage
 
 Token
   ├── mint (Solana address), symbol, name, decimals

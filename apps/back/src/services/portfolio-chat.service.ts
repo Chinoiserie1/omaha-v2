@@ -162,11 +162,11 @@ export async function streamPortfolioChat(
     const availableAssets = getCuratedAssetSymbols();
 
     const thesisSummary = snapshot?.thesisSummary ?? "No portfolio configured yet.";
-    const allocations = (snapshot?.allocations as Array<{
-      asset: string;
-      percentage: number;
-      conviction: string;
-    }>) ?? [];
+    const allocations = snapshot?.allocationRows.map((r) => ({
+      asset: r.asset,
+      percentage: r.percentage,
+      conviction: r.conviction,
+    })) ?? [];
     const allocationsText =
       allocations.length > 0
         ? formatAllocations(allocations)

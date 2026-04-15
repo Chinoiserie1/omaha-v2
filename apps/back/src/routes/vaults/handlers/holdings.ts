@@ -2,6 +2,7 @@ import { PublicKey } from "@solana/web3.js";
 import type { FastifyReply, FastifyRequest } from "fastify";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as holdingsRepo from "../../../store/holdings.repository.js";
+import type { HoldingsSnapshotWithHoldings } from "../../../store/holdings.repository.js";
 import {
   getVaultHoldings,
   holdingsToAllocationPcts,
@@ -11,12 +12,12 @@ import type {
   VaultHoldingWithPct,
   VaultHoldingsResponse,
 } from "@repo/shared";
-import type { Prisma } from "@repo/database";
+import {
+  holdingRowsToHoldings,
+  holdingsToCreateInputs,
+} from "../../../utils/snapshot-converters.js";
 
 type GetHoldingsRequest = FastifyRequest<{ Params: { id: string } }>;
-type HoldingsSnapshot = Awaited<
-  ReturnType<typeof holdingsRepo.findCurrentByVault>
->;
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -25,10 +26,10 @@ function isFresh(startDate: Date): boolean {
 }
 
 function snapshotToResponse(
-  snapshot: NonNullable<HoldingsSnapshot>,
+  snapshot: HoldingsSnapshotWithHoldings,
 ): VaultHoldingsResponse {
   return {
-    holdings: snapshot.holdings as unknown as VaultHoldingWithPct[],
+    holdings: holdingRowsToHoldings(snapshot.holdingRows),
     totalEquityUsd: snapshot.totalEquityUsd,
     snapshotId: snapshot.id,
     snapshotDate: snapshot.startDate.toISOString(),
@@ -73,7 +74,7 @@ export async function getVaultHoldingsHandler(
 
     const snapshot = await holdingsRepo.createSnapshot({
       vaultId: vault.id,
-      holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
+      holdings: holdingsToCreateInputs(holdingsWithPct),
       totalEquityUsd,
     });
 

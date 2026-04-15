@@ -1,4 +1,3 @@
-import type { PortfolioSnapshot, Prisma } from "@repo/database";
 import { logger } from "../utils/logger.js";
 import { llmComplete } from "../utils/llm.js";
 import { extractJson } from "../utils/extract-json.js";
@@ -10,12 +9,17 @@ import {
   type KolKnowledge,
 } from "@repo/shared";
 import * as portfolioRepo from "../store/portfolio.repository.js";
+import type { PortfolioSnapshotWithAllocations } from "../store/portfolio.repository.js";
 import * as classificationRepo from "../store/classification.repository.js";
 import { findActiveQuants, findQuantById } from "../store/quant.repository.js";
 import { buildGlobalKnowledgeContext } from "../data/knowledge/index.js";
 import { mergeAssetGroupAllocations } from "../data/knowledge/asset-groups.js";
 import { getActiveTokensMap } from "./jupiter.service.js";
 import { getCuratedAssetSymbols } from "../data/curated-assets.js";
+import {
+  allocationRowsToAllocations,
+  allocationsToCreateInputs,
+} from "../utils/snapshot-converters.js";
 import { readFileSync } from "node:fs";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -176,7 +180,7 @@ async function buildDirectAllocationSnapshot(
   await portfolioRepo.createSnapshot({
     quantId,
     thesisSummary: "Portfolio directly specified by quant.",
-    allocations: allocations as unknown as Prisma.InputJsonValue,
+    allocations: allocationsToCreateInputs(allocations),
     changes: ["Direct allocation override"],
     sourceTweetIds: [],
   });
@@ -196,7 +200,7 @@ interface SingleSnapshotInput {
   quantId: string;
   userContent: string;
   sourceTweetIds: string[];
-  previousSnapshot: PortfolioSnapshot | null;
+  previousSnapshot: PortfolioSnapshotWithAllocations | null;
   createdAt?: Date;
   decayReferenceDate?: Date;
   knowledgeContext?: string;
@@ -205,7 +209,7 @@ interface SingleSnapshotInput {
 async function synthesizeSingleSnapshot(
   input: SingleSnapshotInput,
   tradeableAssets: Map<string, { mint: string; decimals: number }>,
-): Promise<{ snapshot: PortfolioSnapshot; allocations: Allocation[] } | null> {
+): Promise<{ snapshot: PortfolioSnapshotWithAllocations; allocations: Allocation[] } | null> {
   const {
     quantId,
     userContent,
@@ -343,7 +347,7 @@ async function synthesizeSingleSnapshot(
   const savedSnapshot = await portfolioRepo.createSnapshot({
     quantId,
     thesisSummary: portfolio.thesisSummary,
-    allocations: decayedAllocations as unknown as Prisma.InputJsonValue,
+    allocations: allocationsToCreateInputs(decayedAllocations),
     changes: portfolio.changes,
     sourceTweetIds,
     ...(createdAt ? { createdAt } : {}),
@@ -362,14 +366,14 @@ async function synthesizeSingleSnapshot(
   // Compute tweet impact scores (non-fatal)
   try {
     const oldAllocations = previousSnapshot
-      ? (previousSnapshot.allocations as unknown as Allocation[])
+      ? allocationRowsToAllocations(previousSnapshot.allocationRows)
       : null;
     await computeTweetImpacts({
       quantId,
       snapshotId: savedSnapshot.id,
       sourceTweetIds,
       oldAllocations,
-      newAllocations: decayedAllocations as unknown as Allocation[],
+      newAllocations: decayedAllocations,
     });
   } catch (err) {
     logger.warn(
@@ -378,7 +382,10 @@ async function synthesizeSingleSnapshot(
     );
   }
 
-  return { snapshot: savedSnapshot, allocations: decayedAllocations };
+  return {
+    snapshot: savedSnapshot,
+    allocations: decayedAllocations,
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -463,7 +470,7 @@ async function generateRetroactiveSnapshots(
     "Generating retroactive weekly snapshots",
   );
 
-  let previousSnapshot: PortfolioSnapshot | null = null;
+  let previousSnapshot: PortfolioSnapshotWithAllocations | null = null;
   let cumulativeTweets: ClassificationWithTweet[] = [];
   let generatedCount = 0;
 
@@ -491,7 +498,7 @@ async function generateRetroactiveSnapshots(
       // Subsequent windows: incremental update
       const currentState = JSON.stringify({
         thesisSummary: previousSnapshot.thesisSummary,
-        allocations: previousSnapshot.allocations,
+        allocations: allocationRowsToAllocations(previousSnapshot.allocationRows),
       });
       const tweetsFormatted = formatClassificationsWithThreads(windowTweets);
       userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;
@@ -663,7 +670,7 @@ export async function synthesizeThesis(
 
   const currentState = JSON.stringify({
     thesisSummary: currentLatest.thesisSummary,
-    allocations: currentLatest.allocations,
+    allocations: allocationRowsToAllocations(currentLatest.allocationRows),
   });
   const tweetsFormatted = formatClassificationsWithThreads(newRelevant);
   const userContent = `CURRENT THESIS STATE (carry forward unless contradicted):\n${currentState}\n\nNEW RELEVANT TWEETS (since last update, chronological):\n${tweetsFormatted}`;

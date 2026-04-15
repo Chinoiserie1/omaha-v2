@@ -1,12 +1,13 @@
 import type { FastifyReply, FastifyRequest } from "fastify";
-import { prisma, type Prisma } from "@repo/database";
+import { prisma } from "@repo/database";
 import { z } from "zod";
-import type { ApiResponse } from "@repo/shared";
+import type { Allocation, ApiResponse } from "@repo/shared";
 import { AllocationSchema } from "@repo/shared";
 import { logger } from "../../../utils/logger.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import { rebalanceVault } from "../../../services/rebalancer.service.js";
+import { allocationsToCreateInputs } from "../../../utils/snapshot-converters.js";
 
 const AcceptProposalSchema = z.object({
   thesisSummary: z.string().min(1),
@@ -55,7 +56,7 @@ export async function acceptProposal(
   const snapshot = await portfolioRepo.createSnapshot({
     quantId,
     thesisSummary,
-    allocations: allocations as unknown as Prisma.InputJsonValue,
+    allocations: allocationsToCreateInputs(allocations as Allocation[]),
     changes,
     sourceTweetIds: [],
   });

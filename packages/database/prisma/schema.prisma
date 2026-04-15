@@ -115,16 +115,16 @@ model ClassifiedTweet {
 }
 
 model PortfolioSnapshot {
-  id              String           @id @default(cuid())
+  id              String                @id @default(cuid())
   quantId         String
-  quant           Quant            @relation(fields: [quantId], references: [id], onDelete: Cascade)
+  quant           Quant                 @relation(fields: [quantId], references: [id], onDelete: Cascade)
   thesisSummary   String
-  allocations     Json
   changes         String[]
   sourceTweetIds  String[]
-  createdAt       DateTime         @default(now())
+  createdAt       DateTime              @default(now())
   rebalanceEvents RebalanceEvent[]
   tweetImpacts    TweetImpact[]
+  allocationRows  SnapshotAllocation[]
 
   // Backtest: this snapshot is the "from" side of a performance period
   perfFrom SnapshotPerformance[] @relation("PerfFrom")
@@ -132,6 +132,25 @@ model PortfolioSnapshot {
   perfTo   SnapshotPerformance[] @relation("PerfTo")
 
   @@index([quantId, createdAt])
+}
+
+model SnapshotAllocation {
+  id         String            @id @default(cuid())
+  snapshotId String
+  snapshot   PortfolioSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  tokenId    String?
+  token      Token?            @relation(fields: [tokenId], references: [id])
+  asset      String
+  mint       String?
+  percentage Float
+  conviction String
+  reasoning  String
+  since      String
+  lastSignal String
+
+  @@index([snapshotId])
+  @@index([mint])
+  @@index([tokenId])
 }
 
 model TweetImpact {
@@ -205,17 +224,35 @@ model RebalanceEvent {
 }
 
 model HoldingsSnapshot {
-  id             String    @id @default(cuid())
+  id             String            @id @default(cuid())
   vaultId        String
-  vault          Vault     @relation(fields: [vaultId], references: [id], onDelete: Cascade)
-  holdings       Json
+  vault          Vault             @relation(fields: [vaultId], references: [id], onDelete: Cascade)
   totalEquityUsd Float
-  startDate      DateTime  @default(now())
+  startDate      DateTime          @default(now())
   endDate        DateTime?
-  createdAt      DateTime  @default(now())
+  createdAt      DateTime          @default(now())
+  holdingRows    SnapshotHolding[]
 
   @@index([vaultId, startDate])
   @@index([vaultId, endDate])
+}
+
+model SnapshotHolding {
+  id         String           @id @default(cuid())
+  snapshotId String
+  snapshot   HoldingsSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+  tokenId    String?
+  token      Token?           @relation(fields: [tokenId], references: [id])
+  mint       String
+  symbol     String
+  uiAmount   Float
+  price      Float
+  valueUsd   Float
+  percentage Float
+
+  @@index([snapshotId])
+  @@index([mint])
+  @@index([tokenId])
 }
 
 // ── Backtest Models ───────────────────────────────────────────
@@ -252,19 +289,21 @@ model SnapshotPerformance {
 // ── Token Price Models ────────────────────────────────────────
 
 model Token {
-  id        String       @id @default(cuid())
-  name      String
-  symbol    String       @unique
-  decimals  Int
-  mint      String       @unique
-  logoUri   String?
-  isVault   Boolean      @default(false)
-  isActive  Boolean      @default(true)
-  vaultId   String?      @unique
-  vault     Vault?       @relation(fields: [vaultId], references: [id])
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  prices    TokenPrice[]
+  id                  String               @id @default(cuid())
+  name                String
+  symbol              String               @unique
+  decimals            Int
+  mint                String               @unique
+  logoUri             String?
+  isVault             Boolean              @default(false)
+  isActive            Boolean              @default(true)
+  vaultId             String?              @unique
+  vault               Vault?               @relation(fields: [vaultId], references: [id])
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  prices              TokenPrice[]
+  snapshotAllocations SnapshotAllocation[]
+  snapshotHoldings    SnapshotHolding[]
 }
 
 model TokenPrice {

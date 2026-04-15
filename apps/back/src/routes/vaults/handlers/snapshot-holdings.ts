@@ -11,7 +11,7 @@ import type {
   VaultHoldingWithPct,
   VaultHoldingsResponse,
 } from "@repo/shared";
-import type { Prisma } from "@repo/database";
+import { holdingsToCreateInputs } from "../../../utils/snapshot-converters.js";
 
 type SnapshotHoldingsRequest = FastifyRequest<{ Params: { id: string } }>;
 
@@ -48,7 +48,7 @@ export async function snapshotHoldingsHandler(
 
     const snapshot = await holdingsRepo.createSnapshot({
       vaultId: vault.id,
-      holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
+      holdings: holdingsToCreateInputs(holdingsWithPct),
       totalEquityUsd,
     });
 

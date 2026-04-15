@@ -2,6 +2,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import * as vaultRepo from "../../../store/vault.repository.js";
 import * as portfolioRepo from "../../../store/portfolio.repository.js";
 import { getLogoUriByMints } from "../../../store/asset.repository.js";
+import { allocationRowsToAllocations } from "../../../utils/snapshot-converters.js";
 
 type GetVaultRequest = FastifyRequest<{
   Params: { id: string };
@@ -17,14 +18,14 @@ export async function getVault(request: GetVaultRequest, reply: FastifyReply) {
 
   let enrichedAllocations: unknown[] = [];
   if (portfolio) {
-    const rawAllocations = portfolio.allocations as { mint?: string }[];
-    const mints = rawAllocations
+    const allocations = allocationRowsToAllocations(portfolio.allocationRows);
+    const mints = allocations
       .map((a) => a.mint)
       .filter((m): m is string => !!m);
     const logoMap = await getLogoUriByMints(mints);
-    enrichedAllocations = rawAllocations.map((a) => ({
+    enrichedAllocations = allocations.map((a) => ({
       ...a,
-      logoUri: a.mint ? logoMap.get(a.mint) ?? null : null,
+      logoUri: a.mint ? (logoMap.get(a.mint) ?? null) : null,
     }));
   }
 

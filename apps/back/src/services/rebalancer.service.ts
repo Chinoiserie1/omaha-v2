@@ -12,6 +12,10 @@ import * as portfolioRepo from "../store/portfolio.repository.js";
 import * as holdingsRepo from "../store/holdings.repository.js";
 import type { Allocation, VaultHolding, VaultHoldingWithPct, SwapDelta, RebalanceStatus } from "@repo/shared";
 import type { Prisma } from "@repo/database";
+import {
+  allocationRowsToAllocations,
+  holdingsToCreateInputs,
+} from "../utils/snapshot-converters.js";
 
 const USDC_MINT_STR = USDC_MINT.toBase58();
 
@@ -205,7 +209,7 @@ export async function rebalanceVault(
 
   // 6. Resolve mints for allocations from Token DB
   const assetsMap = await getActiveTokensMap();
-  const snapshotAllocs = snapshot.allocations as unknown as Allocation[];
+  const snapshotAllocs = allocationRowsToAllocations(snapshot.allocationRows);
   const allocations: Allocation[] = snapshotAllocs.map((a) => ({
     asset: a.asset,
     percentage: a.percentage,
@@ -407,7 +411,7 @@ export async function rebalanceVault(
       );
       await holdingsRepo.createSnapshot({
         vaultId: vault.id,
-        holdings: holdingsWithPct as unknown as Prisma.InputJsonValue,
+        holdings: holdingsToCreateInputs(holdingsWithPct),
         totalEquityUsd: postHoldings.totalEquityUsd,
       });
       logger.info({ quantId }, "Post-rebalance holdings snapshot created");

@@ -111,30 +111,43 @@ Created by the thesis cron. Stores the KOL's recommended portfolio at a point in
 
 ```prisma
 model PortfolioSnapshot {
-  id              String    @id @default(cuid())
-  kolId           String
+  id              String                @id @default(cuid())
+  quantId         String
   thesisSummary   String
-  allocations     Json      // Array of { asset, percentage, conviction, reasoning }
   changes         String[]
   sourceTweetIds  String[]
-  createdAt       DateTime  @default(now())
+  createdAt       DateTime              @default(now())
+  allocationRows  SnapshotAllocation[]
 
   perfFrom  SnapshotPerformance[]  @relation("PerfFrom")
   perfTo    SnapshotPerformance[]  @relation("PerfTo")
 
-  @@index([kolId, createdAt])
+  @@index([quantId, createdAt])
+}
+
+model SnapshotAllocation {
+  id         String            @id @default(cuid())
+  snapshotId String
+  tokenId    String?           // FK → Token (optional)
+  asset      String            // symbol: "SOL", "BTC"
+  mint       String?           // on-chain mint address
+  percentage Float
+  conviction String            // "low" | "medium" | "high" | "stale"
+  reasoning  String
+  since      String
+  lastSignal String
+
+  @@index([snapshotId])
 }
 ```
 
-The `allocations` JSON has this shape:
+Each allocation is a relational row in `SnapshotAllocation`. Example data:
 
-```json
-[
-  { "asset": "SOL", "percentage": 35, "conviction": "high", "reasoning": "..." },
-  { "asset": "BTC", "percentage": 25, "conviction": "medium", "reasoning": "..." },
-  { "asset": "USDC", "percentage": 40, "conviction": "low", "reasoning": "..." }
-]
-```
+| asset | percentage | conviction | reasoning |
+|-------|-----------|------------|-----------|
+| SOL   | 35        | high       | Firedancer testnet exceeding expectations |
+| BTC   | 25        | medium     | Store of value thesis intact |
+| USDC  | 40        | low        | Dry powder / remainder |
 
 ### TokenPriceDaily
 
